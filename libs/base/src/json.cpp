@@ -162,6 +162,46 @@ class Parser {
     }
   }
 
+  /// Length of the valid UTF-8 sequence at the start of `t`, or 0.
+  static std::size_t utf8_len(std::string_view t) {
+    const auto b0 = static_cast<unsigned char>(t[0]);
+    if (b0 < 0x80) {
+      return 1;
+    }
+    std::size_t n = 0;
+    std::uint32_t cp = 0;
+    std::uint32_t min = 0;
+    if ((b0 & 0xE0U) == 0xC0U) {
+      n = 2;
+      cp = b0 & 0x1FU;
+      min = 0x80;
+    } else if ((b0 & 0xF0U) == 0xE0U) {
+      n = 3;
+      cp = b0 & 0x0FU;
+      min = 0x800;
+    } else if ((b0 & 0xF8U) == 0xF0U) {
+      n = 4;
+      cp = b0 & 0x07U;
+      min = 0x10000;
+    } else {
+      return 0;
+    }
+    if (t.size() < n) {
+      return 0;
+    }
+    for (std::size_t i = 1; i < n; ++i) {
+      const auto b = static_cast<unsigned char>(t[i]);
+      if ((b & 0xC0U) != 0x80U) {
+        return 0;
+      }
+      cp = (cp << 6U) | (b & 0x3FU);
+    }
+    if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF)) {
+      return 0;
+    }
+    return n;
+  }
+
   Result<void> hex4(std::uint32_t& out) {
     if (p_ + 4 > t_.size()) {
       return err("short \\u escape");
@@ -202,10 +242,15 @@ class Parser {
         return err("control character in a string");
       }
       if (c != '\\') {
-        // copy a run of plain bytes at once
+        // copy a run of plain bytes at once; they must be valid UTF-8 (RFC 8259 section 8.1: raw surrogates and
+        // overlong forms refused — a lone surrogate can only arrive as a \u escape)
         const std::size_t start = p_;
         while (!at_end() && t_[p_] != '"' && t_[p_] != '\\' && static_cast<unsigned char>(t_[p_]) >= 0x20) {
-          ++p_;
+          const std::size_t n = utf8_len(t_.substr(p_));
+          if (n == 0) {
+            return err("invalid UTF-8");
+          }
+          p_ += n;
         }
         s.append(t_.substr(start, p_ - start));
         continue;

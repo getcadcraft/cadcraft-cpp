@@ -2795,7 +2795,7 @@ Rec decode_object(Bytes buf, std::size_t offset, const Ctx& ctx) {
     throw DecodeError(msg("ccdwg.err.object_past_end", {{"n", size_d}}));
   }
   const auto size = static_cast<std::size_t>(size_d);
-  const std::uint64_t hsize = base::clamp_cast<std::uint64_t>(hsize_d);
+  const auto hsize = base::clamp_cast<std::uint64_t>(hsize_d);
   if (p + size > buf.size()) {
     throw DecodeError(msg("ccdwg.err.object_past_end", {{"n", static_cast<double>(size)}}));
   }

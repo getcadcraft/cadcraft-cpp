@@ -33,6 +33,10 @@ TEST_CASE("malformed and oversized input is refused, never crashes") {
                           R"({"a":})", "1e", R"("\u12")"}) {
     CHECK_FALSE(parse_json(bad).has_value());
   }
+  CHECK_FALSE(parse_json("\"\xED\xA0\x80\"").has_value());  // a raw surrogate is not UTF-8
+  CHECK_FALSE(parse_json("\"\xC0\xAF\"").has_value());      // overlong
+  CHECK_FALSE(parse_json("\"\xA2\"").has_value());          // a stray continuation byte
+  CHECK(parse_json("\"\xC3\xA9\"").has_value());            // é
   std::string deep(600, '[');
   deep += std::string(600, ']');
   const auto r = parse_json(deep);
