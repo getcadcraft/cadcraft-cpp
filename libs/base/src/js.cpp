@@ -191,7 +191,7 @@ std::size_t utf16_length(std::string_view s) noexcept {
   std::size_t units = 0;
   for (std::size_t i = 0; i < s.size();) {
     std::size_t n = 1;
-    units += code_point_at(s, i, n) >= 0x10000 ? 2 : 1;
+    units += code_point_at(s, i, n) >= 0x10000 ? std::size_t{2} : std::size_t{1};
     i += n;
   }
   return units;

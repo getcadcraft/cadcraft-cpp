@@ -175,8 +175,8 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
 
 /// The helper beside this executable (installed layout) or in the build tree's apps/ folder; CC_IMPORTER overrides.
 std::filesystem::path importer_path(const char* argv0) {
-  if (const char* env = std::getenv("CC_IMPORTER"); env != nullptr && *env != '\0') {  // NOLINT(concurrency-mt-unsafe)
-    return env;
+  if (const auto env = cc::base::env_var("CC_IMPORTER"); env && !env->empty()) {
+    return *env;
   }
   std::error_code ec;
   const std::filesystem::path self = std::filesystem::canonical(std::filesystem::path(argv0), ec);

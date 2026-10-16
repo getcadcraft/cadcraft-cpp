@@ -38,6 +38,7 @@ TEST_CASE("the real importer reads hostile bytes inside its sandbox and answers 
     junk.at(i) = std::byte{static_cast<unsigned char>(i * 13U)};
   }
   const auto r = cc::importer::run_helper(CC_IMPORTER, "dwg", junk);
+  INFO((r ? std::string() : r.error().message));
   REQUIRE(r.has_value());
   CHECK((*r)["report"]["error"].as_string().starts_with("not a DWG file"));
   const auto other = cc::importer::run_helper(CC_IMPORTER, "skp", junk);
@@ -57,7 +58,7 @@ TEST_CASE("the real importer reads hostile bytes inside its sandbox and answers 
 TEST_CASE("a drawing read in the helper equals the drawing read in-process") {
   const std::filesystem::path f = std::filesystem::path(CC_CORPUS_DIR) / "fixtures/dwg/kitchen-equipment.dwg";
   if (!std::filesystem::exists(f)) {
-    if (std::getenv("CC_REQUIRE_CORPUS") != nullptr) {  // NOLINT(concurrency-mt-unsafe)
+    if (cc::base::env_var("CC_REQUIRE_CORPUS")) {
       FAIL("CC_REQUIRE_CORPUS is set but the public fixtures are missing");
     }
     SKIP("public fixtures not fetched (cmake -DDEST=build/corpus -P tools/corpus.cmake)");
@@ -65,6 +66,7 @@ TEST_CASE("a drawing read in the helper equals the drawing read in-process") {
   const auto bytes = cc::base::read_file(f, std::uint64_t{1} << 30U);
   REQUIRE(bytes.has_value());
   auto isolated = cc::importer::run_helper(CC_IMPORTER, "dwg", *bytes);
+  INFO((isolated ? std::string() : isolated.error().message));
   REQUIRE(isolated.has_value());
   cc::base::Value direct = cc::dwg::read_dwg(*bytes);
   isolated->find("report")->erase("ms");

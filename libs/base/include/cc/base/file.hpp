@@ -6,7 +6,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <span>
+#include <string>
 #include <vector>
 
 #include "cc/base/error.hpp"
@@ -18,5 +20,9 @@ namespace cc::base {
 
 /// Writes `data` to `path` atomically: readers see the old file or the new one, never a part.
 [[nodiscard]] Result<void> write_file_atomic(const std::filesystem::path& path, std::span<const std::byte> data);
+
+/// An environment variable's value, or nothing when it is unset (getenv, or _dupenv_s on MSVC). Read it at start-up
+/// on one thread: the environment is not thread-safe on any platform.
+[[nodiscard]] std::optional<std::string> env_var(const char* name);
 
 }  // namespace cc::base

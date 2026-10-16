@@ -221,11 +221,11 @@ bool lock_down_helper(const Limits& limits) {
     rlimit r{v, v};
     return ::setrlimit(res, &r) == 0;
   };
-  bool ok = cap(RLIMIT_CPU, static_cast<rlim_t>(limits.max_seconds)) && cap(RLIMIT_CORE, 0) && cap(RLIMIT_FSIZE, 0) &&
-            cap(RLIMIT_NPROC, 0);
+  bool ok = cap(RLIMIT_CPU, static_cast<rlim_t>(limits.max_seconds)) && cap(RLIMIT_CORE, 0) && cap(RLIMIT_FSIZE, 0);
 #if !defined(CC_SANITIZED)
-  // Sanitizers reserve terabytes of address space: the memory cap is for the shipping build.
-  ok = ok && cap(RLIMIT_AS, static_cast<rlim_t>(limits.max_memory));
+  // Sanitizers reserve terabytes of address space, and LeakSanitizer clones a thread to check for leaks at exit (an
+  // NPROC cap of 0 binds everyone but root): these caps are for the shipping build.
+  ok = ok && cap(RLIMIT_AS, static_cast<rlim_t>(limits.max_memory)) && cap(RLIMIT_NPROC, 0);
 #endif
 #if defined(__linux__) && !defined(CC_SANITIZED)
   // seccomp: after this only these system calls are allowed; anything else kills the helper. (Sanitizer runtimes

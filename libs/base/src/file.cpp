@@ -2,8 +2,11 @@
 #include "cc/base/file.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
 #include <ios>
+#include <memory>
+#include <optional>
 #include <random>
 #include <string>
 #include <system_error>
@@ -180,5 +183,23 @@ Result<void> write_file_atomic(const fs::path& path, std::span<const std::byte> 
 }
 
 #endif
+
+std::optional<std::string> env_var(const char* name) {
+#if defined(_MSC_VER)
+  char* raw = nullptr;
+  std::size_t len = 0;
+  if (_dupenv_s(&raw, &len, name) != 0 || raw == nullptr) {
+    return std::nullopt;
+  }
+  const std::unique_ptr<char, decltype(&std::free)> owned(raw, &std::free);  // NOLINT(cppcoreguidelines-no-malloc)
+  return std::string(owned.get());
+#else
+  const char* v = std::getenv(name);  // NOLINT(concurrency-mt-unsafe) — read at start-up, see the header
+  if (v == nullptr) {
+    return std::nullopt;
+  }
+  return std::string(v);
+#endif
+}
 
 }  // namespace cc::base

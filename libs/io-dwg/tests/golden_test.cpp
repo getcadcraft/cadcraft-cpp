@@ -25,7 +25,7 @@ TEST_CASE("the reader matches the JS reader on the public fixtures") {
   const fs::path golden = fs::path(CC_GOLDEN_DIR) / "dwg";
   const fs::path corpus(CC_CORPUS_DIR);
   if (!fs::exists(golden) || !fs::exists(corpus / "fixtures")) {
-    if (std::getenv("CC_REQUIRE_CORPUS") != nullptr) {  // NOLINT(concurrency-mt-unsafe)
+    if (cc::base::env_var("CC_REQUIRE_CORPUS")) {
       FAIL("CC_REQUIRE_CORPUS is set but the public fixtures are missing");
     }
     SKIP("references or fixtures missing (cmake -DDEST=build/corpus -P tools/corpus.cmake)");
