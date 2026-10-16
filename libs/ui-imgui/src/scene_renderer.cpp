@@ -96,15 +96,19 @@ struct TextOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f, @locatio
   let anchor = to_device(g.a.xy);
   let cr = cos(g.a.w);
   let sr = sin(g.a.w);
-  let th = -atan2(-(u.m.y * cr + u.m.w * sr), u.m.x * cr + u.m.z * sr);
+  // the text's baseline on screen (dwg-view.js turns the canvas by atan2 of it): its unit vector is the cos/sin of
+  // the turn, with no atan2 (a software atan2 got −0 wrong: text upside down in the browser)
+  let base = vec2f(u.m.x * cr + u.m.z * sr, u.m.y * cr + u.m.w * sr);
+  let blen = length(base);
+  let dir = select(vec2f(1.0, 0.0), base / blen, blen > 1e-12);
   let c = kCorner[vi];
   let em = vec2f(select(g.q.x, g.q.z, c.x > 0.5), select(g.q.y, g.q.w, c.y > 0.5));
   var local = vec2f(em.x, -em.y) * size;
   if (g.e.x > 0.5) {
     local.x = -local.x;
   }
-  let rc = cos(th);
-  let rs = sin(th);
+  let rc = dir.x;
+  let rs = dir.y;
   o.pos = to_clip(anchor + vec2f(local.x * rc - local.y * rs, local.x * rs + local.y * rc));
   o.uv = vec2f(select(g.uv.x, g.uv.z, c.x > 0.5), select(g.uv.w, g.uv.y, c.y > 0.5));
   o.px_per_em = size;

@@ -65,3 +65,6 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
   JS 188–209 / 43–88) — the generic Value tree and one thread cost wasm the reader's native 2–4× lead. Native: parse
   15–72 ms, compile 3–5, scene 19–21, CPU per frame < 0.02 ms (GPU time on lavapipe is a CPU rasteriser: not a GPU
   number).
+- M3.3a: text was upside down in the browser (Chrome's software WebGPU) and right natively: the text shader turned
+  glyphs by atan2(−dy, dx) and took its cos/sin, and a software atan2 returned π for −0. It now uses the normalised
+  baseline direction itself (exact, no trig round trip). Found by checking the deployed site in headless Chromium.
