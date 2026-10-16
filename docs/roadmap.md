@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-16 · Change: first version (milestones from the fork-cpp kick-off).
+Last updated 2026-10-16 · Change: M1–M3 done; re-planned with measured numbers (M3.5 speed before M4).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -9,11 +9,33 @@ benchmark table format below so the numbers compare.
 
 | # | Milestone | Ends with | Status |
 |---|---|---|---|
-| M1 | Source tree + gate | `cmake/` (cc_library with layer check, hardening, sanitizer/fuzz presets), CMakePresets.json, vcpkg.json, .clang-tidy, .clang-format, `tools/*.cmake` (format, layers, tidy, assets, licenses, osv, identity, corpus, fuzz smoke), CI workflow incl. ASan/UBSan, TSan, MSVC + GCC jobs, wasm preset; CI green on the empty skeleton | in progress |
-| M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | in progress: reader at parity 78/78 (M2.1) |
-| M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | planned |
-| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | planned |
+| M1 | Source tree + gate | `cmake/` (cc_library with layer check, hardening, sanitizer/fuzz presets), CMakePresets.json, vcpkg.json, .clang-tidy, .clang-format, `tools/*.cmake` (format, layers, tidy, assets, licenses, osv, identity, corpus, fuzz smoke), CI workflow incl. ASan/UBSan, TSan, MSVC + GCC jobs, wasm preset; CI green on the empty skeleton | done |
+| M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | done: 78/78; also DXF 104/104 (M3.1) |
+| M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | done: draw lists 202/202; live on cpp.getcadcraft.com (?sample, ?bench) |
+| M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (today 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (today on par) | next |
+| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | after M3.5 |
 | M5+ | The rest | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M3.** | planned |
+
+## Re-plan after M3 (measured 2026-10-16, quiet machine)
+
+| Measure | 0.5 JS | C++ | Rust |
+|---|---|---|---|
+| DWG parse, 8 largest corpus files (kit bench, best of 7) | 21.9–60.9 ms | 8.2–44.0 ms (1.1–3.3×) | 6.1–24.7 ms (2.1–4.4×) |
+| Draw lists (compile), largest files | 0.4–8.9 ms | 0.06–5.7 ms (1.3–6.7×) | — |
+| Browser, kitchen DXF, open → first frame (cold / warm) | 188–209 / 43–88 ms | 192–201 / 58–87 ms | — |
+| Native: scene build / CPU per frame | — | 19–21 ms / < 0.02 ms | — |
+
+What the numbers say: the reader logic is fast, but the model is a generic JS-shaped `Value` tree (small allocations,
+linear key search), and on the web that runs on one thread. M3.5 therefore comes before M4:
+
+1. **A typed model behind the parity form**: interned keys and flat member storage in `Value` (the profile's top four
+   entries), measured per change; then the viewer reads a typed drawing straight from the reader where it pays.
+2. **Threads on the web**: the read in a worker (pthreads are on; COOP/COEP are sent), so a big file never blocks a
+   frame and a trap costs only the worker.
+3. **First frame**: pipelines created asynchronously at start, the ASCII glyphs of the atlas built ahead.
+4. Touch input for the web build (pinch, two-finger pan; the tablet route below).
+
+Then M4 as planned; M5+ order unchanged.
 
 ## Benchmark table format (shared with the Rust fork)
 
@@ -24,7 +46,17 @@ Speed-up = JS ÷ fork. Parity = the kit's verdict with its per-engine tolerance 
 "same" or "<n> paths".
 
 | File | Version | Size (MB) | 0.5 JS (ms) | Rust (ms) | Speed-up | Parity | C++ (ms) | Speed-up | Parity |
-|---|---|---|---|---|---|---|---|---|---|
+|---|---|---:|---:|---:|---:|---|---:|---:|---|
+| example-2007.dwg | AC1015 (R2000) | 0.64 | 23.3 | 7.29 | 3.20× | same | 8.33 | 2.80× | same |
+| blocks-and-tables-imperial.dwg | AC1015 (R2000) | 0.63 | 60.9 | 21.1 | 2.89× | same | 26.1 | 2.33× | same |
+| example-2010.dwg | AC1015 (R2000) | 0.63 | 26.9 | 6.08 | 4.43× | same | 8.21 | 3.28× | same |
+| example-2000.dwg | AC1015 (R2000) | 0.55 | 25.5 | 10.9 | 2.35× | same | 11.4 | 2.23× | same |
+| kitchen-equipment-r2000.dwg | AC1015 (R2000) | 0.55 | 48.0 | 20.9 | 2.29× | same | 44.0 | 1.09× | same |
+| kitchen-equipment.dwg | AC1015 (R2000) | 0.55 | 52.1 | 24.7 | 2.11× | same | 41.1 | 1.27× | same |
+| example-2010.dwg | AC1021 (R2007) | 0.43 | 21.9 | 9.21 | 2.38× | same | 13.0 | 1.69× | same |
+| example-2007.dwg | AC1021 (R2007) | 0.43 | 24.0 | 7.70 | 3.11× | same | 10.1 | 2.37× | same |
+
+(2026-10-16 13:50 UTC, `bench.mjs --engine dwg --forks js,rust,cpp --largest 8 --runs 7`.)
 
 CLI contract: `cadcraft-cli parity dwg <file>` (the model as JSON) and `cadcraft-cli bench dwg <file> --runs N`.
 
