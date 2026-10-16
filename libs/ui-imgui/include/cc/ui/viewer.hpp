@@ -74,6 +74,9 @@ class Viewer {
   struct Stats {
     double frame_ms = 0;
     std::size_t draws = 0;
+    engine::OpenTimes open;  // the last drawing opened: read, parse, compile
+    double scene_ms = 0;     // its scene (geometry, text layout, new glyphs)
+    double upload_ms = 0;    // its buffers to the GPU
   };
   [[nodiscard]] Stats stats() const noexcept { return stats_; }
   [[nodiscard]] const i18n::Catalog& words() const noexcept { return *words_; }

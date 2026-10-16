@@ -18,6 +18,9 @@ namespace cc::dwg {
 struct ReadOptions {
   /// Largest file accepted (bytes); larger input gives report.error.
   std::size_t max_bytes = std::size_t{1} << 31U;
+  /// Threads that decode the objects (they are independent; the model is the same whatever the count). 0 = the
+  /// machine's cores, up to 8; 1 = this thread only (the sandboxed import helper may not start threads).
+  unsigned threads = 0;
 };
 
 [[nodiscard]] base::Value read_dwg(std::span<const std::byte> input, const ReadOptions& opts = {});

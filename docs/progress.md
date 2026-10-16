@@ -68,3 +68,10 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
 - M3.3a: text was upside down in the browser (Chrome's software WebGPU) and right natively: the text shader turned
   glyphs by atan2(−dy, dx) and took its cos/sin, and a software atan2 returned π for −0. It now uses the normalised
   baseline direction itself (exact, no trig round trip). Found by checking the deployed site in headless Chromium.
+- M3.5a: DWG objects decode on up to 8 threads (decoders only read the bytes and the immutable context; results go
+  to their map slot, so the model is byte-identical: tested, kit 78/78). Kitchen DWG best 34.8 → 25.1 ms on the
+  loaded server (median 40.0 → 33.4). The import helper and the fuzzer stay on one thread. Smaller field reservation
+  per record (32 → 12): ~6 %. Tried and dropped: mimalloc in the web build and jemalloc natively (within noise /
+  6–8 %): the cost is the model's shape, not the allocator.
+  The gate's ASan run caught a use-after-scope in the first version (a worker read a local that the block destroyed
+  before joining the threads); fixed by capturing by value. Hardware never hit the window: the sanitizer did.

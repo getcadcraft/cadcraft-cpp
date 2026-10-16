@@ -157,11 +157,16 @@ render::Rgba Viewer::background() const {
 
 void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
   doc_ = std::move(d);
+  stats_.open = doc_->times;
+  const std::uint64_t t0 = SDL_GetTicksNS();
   scene_ = font_ ? render::build_scene(doc_->drawing, *font_) : render::Scene{};
+  const std::uint64_t t1 = SDL_GetTicksNS();
   renderer_.upload(scene_);
   if (font_) {
     renderer_.upload_atlas(font_->atlas());
   }
+  stats_.scene_ms = static_cast<double>(t1 - t0) / 1e6;
+  stats_.upload_ms = static_cast<double>(SDL_GetTicksNS() - t1) / 1e6;
   hidden_.assign(doc_->drawing.layers.size(), false);
   for (std::size_t i = 0; i < hidden_.size(); ++i) {
     hidden_[i] = !doc_->drawing.layers[i].on;

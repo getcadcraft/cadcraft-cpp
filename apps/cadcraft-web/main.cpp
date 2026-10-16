@@ -74,9 +74,10 @@ struct App {
   bool bench = false;
   int bench_frame = -1;
   double last = 0;
-  std::vector<double> frame_ms;   // between frames (what the user sees)
-  std::vector<double> cpu_ms;     // inside a frame: input, draw list, encode, submit
-  std::vector<double> open_runs;  // open → first frame, ms
+  std::vector<double> frame_ms;     // between frames (what the user sees)
+  std::vector<double> cpu_ms;       // inside a frame: input, draw list, encode, submit
+  std::vector<double> open_runs;    // open → first frame, ms
+  std::vector<std::string> phases;  // each run's parse / compile / scene / upload, ms
 };
 App* g_app = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables) — the browser's loop has no context
 
@@ -131,10 +132,17 @@ void loop() {
     a.last = t0;
     if (++a.bench_frame == 241) {
       const auto s = a.host->viewer().stats();
-      const std::string r = "{\"frames\":240,\"frame_ms_median\":" + median(a.frame_ms) +
-                            ",\"cpu_ms_median\":" + median(a.cpu_ms) + ",\"open_to_first_frame_ms\":[" +
-                            join(a.open_runs) + "]" + ",\"draws\":" + std::to_string(s.draws) + ",\"adapter\":\"" +
-                            a.gpu->adapter_name + "\"}";
+      const std::string r =
+          "{\"frames\":240,\"frame_ms_median\":" + median(a.frame_ms) + ",\"cpu_ms_median\":" + median(a.cpu_ms) +
+          ",\"open_to_first_frame_ms\":[" + join(a.open_runs) + "]" + ",\"phases\":[" +
+          [&] {
+            std::string j;
+            for (const auto& p : a.phases) {
+              j += (j.empty() ? "" : ",") + p;
+            }
+            return j;
+          }() +
+          "]" + ",\"draws\":" + std::to_string(s.draws) + ",\"adapter\":\"" + a.gpu->adapter_name + "\"}";
       cc_web_report(r.c_str());
     }
   }
@@ -160,6 +168,10 @@ extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_open(const std::uint8_t* data, int s
     g_app->host->viewer().inbox().post({.name = file, .path = {}, .bytes = bytes});
     g_app->host->frame();
     g_app->open_runs.push_back(cc_web_now() - t0);
+    const auto st = g_app->host->viewer().stats();
+    g_app->phases.push_back(
+        "{\"parse\":" + std::to_string(st.open.parse_ms) + ",\"compile\":" + std::to_string(st.open.compile_ms) +
+        ",\"scene\":" + std::to_string(st.scene_ms) + ",\"upload\":" + std::to_string(st.upload_ms) + "}");
   }
   g_app->bench_frame = 0;
 }

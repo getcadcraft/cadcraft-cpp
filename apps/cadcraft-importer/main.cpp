@@ -68,7 +68,8 @@ int run(std::string_view format) {
   if (format != "dwg") {
     return answer_error("unsupported", "format not ported yet", 3);
   }
-  const cc::base::Value model = cc::dwg::read_dwg(input);
+  // one thread: the seccomp filter and the NPROC cap forbid starting more (and a crash stays one process)
+  const cc::base::Value model = cc::dwg::read_dwg(input, {.threads = 1});
   std::string out;
   out.reserve(input.size() * 8);
   cc::base::write_json(model, out);

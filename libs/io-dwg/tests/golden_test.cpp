@@ -58,3 +58,17 @@ TEST_CASE("the reader matches the JS reader on the public fixtures") {
   }
   CHECK(checked == 4);
 }
+
+TEST_CASE("the model is the same whatever the number of decoding threads") {
+  const fs::path f = fs::path(CC_CORPUS_DIR) / "fixtures/dwg/kitchen-equipment.dwg";
+  if (!fs::exists(f)) {
+    SKIP("public fixtures not fetched");
+  }
+  const auto bytes = cc::base::read_file(f, std::uint64_t{1} << 30U);
+  REQUIRE(bytes.has_value());
+  Value one = cc::dwg::read_dwg(*bytes, {.threads = 1});
+  Value many = cc::dwg::read_dwg(*bytes, {.threads = 8});
+  one.find("report")->erase("ms");
+  many.find("report")->erase("ms");
+  CHECK(cc::base::to_json(one) == cc::base::to_json(many));
+}

@@ -7,10 +7,14 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <optional>
 #include <set>
+#include <string>
 #include <string_view>
+#include <thread>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "cc/base/checked.hpp"
 #include "container.hpp"
@@ -1928,20 +1932,55 @@ Value read_dwg(std::span<const std::byte> input, const ReadOptions& opts) {
   int crc_bad = 0;
   std::vector<std::pair<std::string, int>> damaged_types;
   if (const Section* objs = c.section("AcDb:AcDbObjects")) {
-    for (const auto& [handle, off] : map) {
-      Rec rec;
-      try {
-        if (off < 0) {
-          throw DecodeError(msg("ccdwg.err.offset_outside"));
+    // Decoding is independent per object (decoders read only the bytes and the immutable context): split the map
+    // across threads, each result in its slot, then take them in map order exactly as one thread would.
+    struct Decoded {
+      std::optional<Rec> rec;
+      std::string error;  // the exception's text when decoding threw
+    };
+    std::vector<Decoded> decoded(map.size());
+    auto decode_range = [&](std::size_t from, std::size_t to) {
+      for (std::size_t i = from; i < to; ++i) {
+        const auto [handle, off] = map[i];
+        try {
+          if (off < 0) {
+            throw DecodeError(msg("ccdwg.err.offset_outside"));
+          }
+          decoded[i].rec = decode_object(objs->view, static_cast<std::size_t>(off), ctx);
+        } catch (const std::exception& e) {
+          decoded[i].error = error_text(e);
         }
-        rec = decode_object(objs->view, static_cast<std::size_t>(off), ctx);
-      } catch (const std::exception& e) {
+      }
+    };
+    unsigned threads =
+        opts.threads != 0 ? opts.threads : std::min(8U, std::max(1U, std::thread::hardware_concurrency()));
+    threads = static_cast<unsigned>(std::min<std::size_t>(threads, map.size() / 256 + 1));  // small files: one thread
+    if (threads <= 1) {
+      decode_range(0, map.size());
+    } else {
+      std::vector<std::jthread> pool;
+      const std::size_t chunk = (map.size() + threads - 1) / threads;
+      for (unsigned t = 1; t < threads; ++t) {
+        const std::size_t from = std::min(map.size(), chunk * t);
+        const std::size_t to = std::min(map.size(), from + chunk);
+        // by value: `pool` is joined when the block ends, after the locals declared below it are gone
+        pool.emplace_back([&decode_range, from, to] { decode_range(from, to); });
+      }
+      decode_range(0, std::min(map.size(), chunk));
+    }  // the jthreads join here
+    for (std::size_t i = 0; i < map.size(); ++i) {
+      const std::int64_t handle = map[i].first;
+      Decoded& d = decoded[i];
+      if (!d.rec.has_value()) {
         ++damaged;
         if (damaged <= 20) {
-          notes.push_back(msg("ccdwg.read.object_failed", {{"handle", handle_hex(handle)}, {"reason", error_text(e)}}));
+          notes.push_back(
+              msg("ccdwg.read.object_failed", {{"handle", handle_hex(handle)}, {"reason", decoded[i].error}}));
         }
         continue;
       }
+      Rec rec = std::move(d.rec.value());
+      d.rec.reset();
       if (rec.handle != handle) {
         ++damaged;
         if (damaged <= 20) {

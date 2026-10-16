@@ -8,7 +8,7 @@
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   const auto bytes = std::as_bytes(std::span(data, size));
-  const cc::base::Value model = cc::dwg::read_dwg(bytes);
+  const cc::base::Value model = cc::dwg::read_dwg(bytes, {.threads = 1});  // deterministic and fast per input
   (void)model;
   return 0;
 }
