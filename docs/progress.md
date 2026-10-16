@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-16 · Change: first entries.
+Last updated 2026-10-16 · Change: M2.3–M2.4.
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -22,3 +22,11 @@ Last updated 2026-10-16 · Change: first entries.
   output cap) with crash/hang/garbage tests; `cadcraft-cli info|convert --isolated`; base/json.hpp (bounded parser,
   fuzzed with a round-trip property); golden references for the public fixtures (tests/golden) checked in CI; gate
   fixes (tidy also checks files not committed yet). All 72 corpus DWGs parse inside the seccomp filter.
+- M2.3: a first fuzz hour found undefined behaviour (double → int64 in the R2007 page map); `base::clamp_cast`, modular
+  numbers and the object map kept as doubles like the JS; regression inputs in fuzz/corpus/dwg. M2.3a: the JSON parser
+  refuses invalid UTF-8 (found by fuzz_json). Parity still 78/78.
+- Long fuzz run (fuzz_dwg 30 min × 3 workers, fuzz_json 10 min, 9.6 M runs clean): three more DWG inputs —
+  JS `(csize + 7) & ~7` cast through uint64 (now `base::js_to_int32`, JS's ToInt32) and `append_number` reading past
+  to_chars' "inf" (now prints `NaN` / `Infinity` like String()). Regression inputs + unit tests. On one of them the
+  JS decodes an object whose size is NaN and the C++ refuses it: only a note's wording differs (docs/gaps.md).
+- M2.4: the JS reader unit tests ported (bits_test: spec ch. 2 worked examples, CRC, never-crash on truncation).

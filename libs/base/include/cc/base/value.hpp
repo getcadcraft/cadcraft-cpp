@@ -227,6 +227,8 @@ inline Value object_with_capacity(std::size_t n) {
 // undefined members dropped, undefined array items as null, lone surrogates as \uXXXX escapes)
 void write_json(const Value& v, std::string& out);
 [[nodiscard]] std::string to_json(const Value& v);
+/// Appends `s` as a JSON string literal, escaped as JSON.stringify escapes it.
+void append_json_string(std::string& out, std::string_view s);
 
 /// Appends the shortest decimal that reads back as `d` (JS Number#toString digits; exponent form for |d| ≥ 1e21
 /// or < 1e-6).

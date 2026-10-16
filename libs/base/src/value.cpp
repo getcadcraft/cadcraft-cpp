@@ -110,6 +110,14 @@ Value make_object(std::initializer_list<std::pair<std::string_view, Value>> memb
 
 // ---------------------------------------------------------------- numbers
 void append_number(std::string& out, double d) {
+  if (std::isnan(d)) {  // String(NaN), String(±Infinity)
+    out += "NaN";
+    return;
+  }
+  if (std::isinf(d)) {
+    out += d > 0 ? "Infinity" : "-Infinity";
+    return;
+  }
   if (d == 0.0) {
     out += '0';
     return;
@@ -358,6 +366,10 @@ void write_value(const Value& v, std::string& out) {
 }
 
 }  // namespace
+
+void append_json_string(std::string& out, std::string_view s) {
+  write_string(out, s);
+}
 
 void write_json(const Value& v, std::string& out) {
   write_value(v, out);

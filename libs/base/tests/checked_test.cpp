@@ -26,3 +26,15 @@ TEST_CASE("narrow and to_int keep values that fit and refuse the rest") {
   CHECK_FALSE(cc::base::to_int<std::int64_t>(9.3e18).has_value());
   CHECK_FALSE(cc::base::to_int<std::uint8_t>(-1.0).has_value());
 }
+
+TEST_CASE("js_to_int32 is JavaScript's ToInt32") {
+  // the R2007 page sizes use JS's (csize + 7) & ~7; a huge size once overflowed a cast (fuzz regress-1eab6261037a)
+  CHECK(cc::base::js_to_int32(0.0) == 0);
+  CHECK(cc::base::js_to_int32(-3.9) == -3);
+  CHECK(cc::base::js_to_int32(2147483648.0) == -2147483647 - 1);
+  CHECK(cc::base::js_to_int32(4294967297.0) == 1);
+  CHECK(cc::base::js_to_int32(-4294967297.0) == -1);
+  CHECK(cc::base::js_to_int32(1.8446744073709552e19) == 0);
+  CHECK(cc::base::js_to_int32(std::nan("")) == 0);
+  CHECK(cc::base::js_to_int32(std::numeric_limits<double>::infinity()) == 0);
+}

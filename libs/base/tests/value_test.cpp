@@ -33,6 +33,10 @@ TEST_CASE("numbers print as JavaScript prints them") {
   CHECK(num(412148564080.0) == "412148564080");
   CHECK(num(4294967295.0) == "4294967295");
   CHECK(num(0.30000000000000004) == "0.30000000000000004");
+  // String(NaN) / String(±Infinity): once read past the end of to_chars' "inf" (fuzz regress-c0449ba28405)
+  CHECK(num(std::numeric_limits<double>::quiet_NaN()) == "NaN");
+  CHECK(num(std::numeric_limits<double>::infinity()) == "Infinity");
+  CHECK(num(-std::numeric_limits<double>::infinity()) == "-Infinity");
 }
 
 TEST_CASE("objects keep insertion order, reassignment keeps the place, undefined members are dropped") {

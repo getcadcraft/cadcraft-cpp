@@ -2,6 +2,7 @@
 // Checked integer arithmetic and conversions (AGENTS.md section 4, integer safety).
 #pragma once
 
+#include <bit>
 #include <cmath>
 #include <concepts>
 #include <cstdint>
@@ -75,6 +76,21 @@ template <std::integral To>
     return std::numeric_limits<To>::max();
   }
   return static_cast<To>(v);
+}
+
+/// JavaScript's ToInt32 (the operand conversion of `|`, `&`, `>>`, …): NaN and ±Infinity → 0, otherwise truncated
+/// toward zero and taken modulo 2^32 as a signed 32-bit integer. For ports that mirror the reference's bitwise
+/// arithmetic.
+[[nodiscard]] inline std::int32_t js_to_int32(double v) noexcept {
+  if (!std::isfinite(v)) {
+    return 0;
+  }
+  double m = std::fmod(std::trunc(v), 4294967296.0);  // in (-2^32, 2^32)
+  if (m < 0) {
+    m += 4294967296.0;
+  }
+  const auto u = static_cast<std::uint32_t>(m);
+  return std::bit_cast<std::int32_t>(u);
 }
 
 }  // namespace cc::base

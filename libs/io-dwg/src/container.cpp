@@ -953,7 +953,7 @@ std::vector<std::uint8_t> load_sys_page(Bytes b, double at, double csize, double
                                         const std::string& what) {
   plausible(usize, b.size());
   plausible(csize * factor, b.size());
-  const auto aligned = static_cast<double>((static_cast<std::uint64_t>(csize) + 7U) & ~std::uint64_t{7});
+  const auto aligned = static_cast<double>(base::js_to_int32(csize + 7) & ~std::int32_t{7});  // JS (csize + 7) & ~7
   const double blocks = std::ceil(aligned * factor / 239);
   if (at + blocks * 255 > static_cast<double>(b.size())) {
     throw Unsupported(msg("ccdwg.open.r2007_past_end", {{"what", what}}));
