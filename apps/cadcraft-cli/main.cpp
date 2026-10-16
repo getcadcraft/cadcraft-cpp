@@ -5,7 +5,8 @@
 //   cadcraft-cli convert --json <file.dwg>       the drawing model as JSON (the JS readDwg model's shape)
 //   … info / convert take --isolated: parse in the sandboxed helper (cadcraft-importer) instead of in this process
 //   cadcraft-cli parity <engine> <file>          the parity kit's contract (tools/fork-parity in the site repo):
-//                                                dwg → the model as JSON; other engines → exit 3 (not ported yet)
+//                                                dwg, dxf → the model as JSON; other engines → exit 3 (not ported yet)
+//                                                (dxf is this fork's own check against BimCraft's readDxfModel)
 //   cadcraft-cli bench <engine> <file> [--runs N]  {"open_ms":[…],"parse_ms":[…],"first_frame_ms":null,"runtime":"…"}
 //   cadcraft-cli version | help
 //
@@ -32,6 +33,7 @@
 #include "cc/base/file.hpp"
 #include "cc/base/value.hpp"
 #include "cc/dwg/read.hpp"
+#include "cc/dxf/read.hpp"
 #include "cc/importer/importer.hpp"
 
 namespace {
@@ -45,7 +47,7 @@ void usage(std::FILE* out) {
              "  info [--isolated] <file.dwg>        version, counts and notes\n"
              "  convert [--isolated] --json <file>  the drawing model as JSON\n"
              "                                      (--isolated: parse in the sandboxed import helper)\n"
-             "  parity <engine> <file>              engine output for the parity kit (engines: dwg)\n"
+             "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
              "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
              "  version                             print the version\n");
 }
@@ -67,11 +69,33 @@ void print_error_json(std::string_view code, std::string_view message) {
 }
 
 bool engine_known(std::string_view e) {
-  return e == "dwg" || e == "ifc-step" || e == "ifc-geom" || e == "skp";
+  return e == "dwg" || e == "dxf" || e == "ifc-step" || e == "ifc-geom" || e == "skp";
+}
+bool engine_ported(std::string_view e) {
+  return e == "dwg" || e == "dxf";
+}
+
+/// The engine's model of the file's bytes, as the 0.5 app builds it (DXF: BimCraft's decode, then readDxfModel).
+cc::base::Result<cc::base::Value> run_engine(std::string_view engine, std::span<const std::byte> bytes) {
+  if (engine == "dxf") {
+    return cc::dxf::read_dxf_model(cc::dxf::decode_text(bytes));
+  }
+  return cc::dwg::read_dwg(bytes);
+}
+std::string_view errc_name(cc::base::Errc c) {
+  switch (c) {
+    case cc::base::Errc::out_of_range: return "out_of_range";
+    case cc::base::Errc::overflow: return "overflow";
+    case cc::base::Errc::invalid: return "invalid";
+    case cc::base::Errc::too_big: return "too_big";
+    case cc::base::Errc::unsupported: return "unsupported";
+    case cc::base::Errc::io: return "io";
+  }
+  return "invalid";
 }
 
 int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
-  if (engine != "dwg") {
+  if (!engine_ported(engine)) {
     print_error_json("unsupported", engine_known(engine) ? "engine not ported yet" : "unknown engine");
     return 3;
   }
@@ -80,7 +104,12 @@ int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
     print_error_json("io", bytes.error().message);
     return 1;
   }
-  cc::base::Value model = cc::dwg::read_dwg(*bytes);
+  auto parsed = run_engine(engine, *bytes);
+  if (!parsed) {
+    print_error_json(errc_name(parsed.error().code), parsed.error().message);
+    return 1;
+  }
+  cc::base::Value model = std::move(*parsed);
   if (cc::base::Value* rep = model.find("report")) {
     rep->erase("ms");
   }
@@ -93,7 +122,7 @@ int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
 }
 
 int cmd_bench(std::string_view engine, const std::filesystem::path& file, int runs) {
-  if (engine != "dwg") {
+  if (!engine_ported(engine)) {
     print_error_json("unsupported", engine_known(engine) ? "engine not ported yet" : "unknown engine");
     return 3;
   }
@@ -105,7 +134,8 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
       print_error_json("io", warm.error().message);
       return 1;
     }
-    (void)cc::dwg::read_dwg(*warm);
+    const auto warm_model = run_engine(engine, *warm);
+    (void)warm_model;
   }
   cc::base::Array open_ms;
   cc::base::Array parse_ms;
@@ -117,7 +147,7 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
       print_error_json("io", bytes.error().message);
       return 1;
     }
-    const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+    const auto model = run_engine(engine, *bytes);
     const auto t2 = Clock::now();
     open_ms.emplace_back(std::round(ms(t1 - t0) * 1000) / 1000);
     parse_ms.emplace_back(std::round(ms(t2 - t1) * 1000) / 1000);

@@ -1,0 +1,4 @@
+# Seed files for fuzz_dxf, relative to build/corpus (fetched by tools/corpus.cmake; never committed).
+fixtures/dwg/base-plan.dxf
+fixtures/dwg/kitchen-equipment.dxf
+fixtures/electrical/electrical-sample.dxf

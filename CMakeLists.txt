@@ -48,6 +48,7 @@ endif()
 # Libraries in layer order (cc_library refuses a dependency that is not defined yet).
 add_subdirectory(libs/base)       # L0
 add_subdirectory(libs/io-dwg)     # L3
+add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/importer)   # L4
 
 if(CC_BUILD_APPS AND NOT EMSCRIPTEN)
