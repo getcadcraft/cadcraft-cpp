@@ -773,9 +773,10 @@ void Builder::apply_mlatt(const Rec& rec, Value& f) const {
 Value Builder::convert(Rec& rec, std::int64_t owner_handle) {
   const int ver = ctx_->ver;
   used_.insert(rec.handle);
-  Value e = make_object({{"handle", handle_hex(rec.handle)},
-                         {"type", rec.type},
-                         {"owner", handle_hex(owner_handle != 0 ? owner_handle : owner_of(rec))}});
+  Value e = base::object_with_capacity(rec.f.as_object().size() + 18);
+  e.append("handle", handle_hex(rec.handle));
+  e.append("type", rec.type);
+  e.append("owner", handle_hex(owner_handle != 0 ? owner_handle : owner_of(rec)));
   e.set("layer", layer_name(rec.ref("layer")));
   const auto lt_name = [&]() -> Value { return name_or_hex(rec.ref("ltype")); };
   if (ver < 15) {
@@ -845,9 +846,11 @@ Value Builder::convert(Rec& rec, std::int64_t owner_handle) {
     return e;
   }
   Value f = type_fields(rec);
-  for (base::Member& m : f.as_object()) {
-    e.set(m.key, std::move(m.value));
-  }
+  // Object.assign(e, f): f (the record's fields) can repeat only the common keys convert() set above.
+  static constexpr std::array<std::string_view, 17> kCommon = {
+      "handle",       "type",     "owner",     "layer",     "linetype", "color",   "lineweight", "ltscale", "invisible",
+      "transparency", "material", "plotStyle", "colorBook", "xdata",    "extDict", "reactors",   "space"};
+  e.assign_from(std::move(f), kCommon);
   if (rec.error) {
     e.set("damaged", *rec.error);
   }

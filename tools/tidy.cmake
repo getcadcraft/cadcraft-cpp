@@ -19,6 +19,16 @@ if(NOT DEFINED ENV{CC_TIDY_ALL} AND GIT_FOUND AND EXISTS "${SRC}/.git")
   if(rc EQUAL 0)
     execute_process(COMMAND ${GIT_EXECUTABLE} diff --name-only --diff-filter=ACMR ${base} -- "*.cpp"
                     WORKING_DIRECTORY ${SRC} OUTPUT_VARIABLE changed OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # files not committed yet are changed too
+    execute_process(COMMAND ${GIT_EXECUTABLE} ls-files --others --exclude-standard -- "*.cpp"
+                    WORKING_DIRECTORY ${SRC} OUTPUT_VARIABLE untracked OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(untracked)
+      if(changed)
+        string(APPEND changed "\n${untracked}")
+      else()
+        set(changed "${untracked}")
+      endif()
+    endif()
     if(changed)
       string(REPLACE "\n" ";" files "${changed}")
     else()

@@ -89,8 +89,6 @@ function(cc_test name)
   target_link_libraries(${target} PRIVATE ${A_DEPS} Catch2::Catch2WithMain)
   target_compile_features(${target} PRIVATE cxx_std_23)
   cc_apply_policy(${target})
-  # Catch2 macros expand to code our warning set dislikes; the tests themselves still get every warning.
-  target_compile_definitions(${target} PRIVATE CATCH_CONFIG_PREFIX_MESSAGES)
   catch_discover_tests(${target} TEST_PREFIX "${name}." PROPERTIES LABELS "unit;${A_LABELS}"
                        DISCOVERY_MODE PRE_TEST)
 endfunction()

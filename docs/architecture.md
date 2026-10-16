@@ -55,6 +55,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | Library | Layer | What |
 |---|---|---|
 | `libs/base` | L0 | `Error`/`Result`, checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form) |
+| `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module |
 
 ### The JS reference
@@ -70,6 +71,18 @@ The engines build their output as `cc::base::Value` with the JS field names, ord
 a JS number a double, an absent field stays absent), so the parity kit compares them field for field. This costs speed
 (a generic tree of small allocations); the measured numbers are in ROADMAP.md, and the plan to recover it (a typed
 fast path for the viewer, an arena for the model) is in docs/roadmap.md, M3.
+
+## The import helper (AGENTS.md section 4, out-of-process import)
+
+`cadcraft-importer <format>` reads the file's bytes on stdin (it never opens a file and gets an empty environment),
+then locks itself down before parsing: RLIMIT_AS 4 GiB, RLIMIT_CPU 120 s, no core files, no file writes, no new
+processes, `PR_SET_NO_NEW_PRIVS`, and a seccomp-BPF filter that kills it on any system call outside read, write,
+close, exit, memory management (brk, mmap, munmap, mremap, madvise, mprotect), futex, rt_sigreturn, clock_gettime,
+gettid, getpid. It writes the model as one JSON document (base/json.hpp parses it back with depth and size limits).
+Sanitizer builds skip the address-space cap and the filter (their runtimes need both). The client enforces the wall
+clock (default 120 s) and the size of the answer. Linux only so far; Windows (job object, restricted token) and macOS
+(sandbox profile) read in-process until their desktop builds (docs/gaps.md). Tests: a helper that crashes, hangs or
+answers garbage costs a message; the whole corpus parses inside the filter; the helper's model equals the in-process one.
 
 ## Errors
 

@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <exception>
 #include <span>
+#include <string_view>
 
 #include "cc/base/error.hpp"
 
@@ -25,6 +26,12 @@ using Bytes = std::span<const std::byte>;
 [[nodiscard]] inline std::span<const std::uint8_t> as_u8(Bytes b) noexcept {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
   return {reinterpret_cast<const std::uint8_t*>(b.data()), b.size()};
+}
+
+/// The bytes as text (a JSON document, a SAT file …): the same sanctioned view change, to char.
+[[nodiscard]] inline std::string_view as_text(Bytes b) noexcept {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  return {reinterpret_cast<const char*>(b.data()), b.size()};
 }
 
 [[nodiscard]] inline Result<std::uint8_t> byte_at(Bytes b, std::size_t i) {

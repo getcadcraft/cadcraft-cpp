@@ -60,7 +60,7 @@ struct Rec {
   std::string type;
   bool is_entity = false;
   std::optional<std::string> class_name;
-  Value f = base::object_with_capacity(16);
+  Value f = base::object_with_capacity(32);
   std::vector<HandleRef> h;
   std::vector<Eed> eed;
   bool has_eed = false;

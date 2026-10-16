@@ -18,3 +18,7 @@ Last updated 2026-10-16 · Change: first entries.
   by three parallel agents). Parity kit: **78 of 78 corpus files match the JS model, no known differences.** First
   benchmark 1.0–3.9× faster than JS (the generic Value tree dominates the profile; see ROADMAP.md).
 - forks-infra froze the JS reference at testfiles/fork-parity/js-0.5 (commit 594ab3e); read engines and app code there.
+- M2.2: the out-of-process importer (apps/cadcraft-importer + libs/importer: rlimits, seccomp filter, wall clock,
+  output cap) with crash/hang/garbage tests; `cadcraft-cli info|convert --isolated`; base/json.hpp (bounded parser,
+  fuzzed with a round-trip property); golden references for the public fixtures (tests/golden) checked in CI; gate
+  fixes (tidy also checks files not committed yet). All 72 corpus DWGs parse inside the seccomp filter.

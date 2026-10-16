@@ -18,6 +18,7 @@ First timings (bench.mjs, best of 5, 2026-10-16, machine busy with three compile
 
 ## Progress log
 
+- 2026-10-16 M2.2: sandboxed import helper, JSON parser, golden parity test in CI.
 - 2026-10-16 M2.1: io-dwg reader at parity with readDwg on the whole corpus (78/78).
 
 - 2026-10-16 M1: toolchain (LLVM 22, CMake 4.4.4, Ninja 1.13.2, vcpkg 2026.07.29, emsdk 6.0.10), source tree, gate.

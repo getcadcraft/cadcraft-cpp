@@ -80,6 +80,12 @@ class Value {
   // ---- object helpers (this must be an object)
   /// Sets `key`; an existing key keeps its place (JS assignment).
   Value& set(std::string_view key, Value v);
+  /// Appends a member without looking for an existing one: the caller knows `key` is new.
+  Value& append(std::string_view key, Value v);
+  /// JS Object.assign(this, other): each member of `other` is set (an existing key keeps its place). `other` is
+  /// consumed. Keys of `other` that `this` cannot already hold may skip the search: `known` lists this object's
+  /// keys that `other` might repeat (nullptr = search every key).
+  void assign_from(Value other, std::span<const std::string_view> known);
   /// The member's value, or nullptr when the key is absent (an undefined member is present).
   [[nodiscard]] const Value* find(std::string_view key) const;
   [[nodiscard]] Value* find(std::string_view key);

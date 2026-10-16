@@ -40,6 +40,33 @@ Value& Value::set(std::string_view key, Value v) {
   return o.back().value;
 }
 
+Value& Value::append(std::string_view key, Value v) {
+  Object& o = as_object();
+  o.push_back(Member{std::string(key), std::move(v)});
+  return o.back().value;
+}
+
+void Value::assign_from(Value other, std::span<const std::string_view> known) {
+  Object& src = other.as_object();
+  Object& dst = as_object();
+  dst.reserve(dst.size() + src.size());
+  for (Member& m : src) {
+    bool maybe = false;
+    for (const std::string_view k : known) {
+      if (k == m.key) {
+        maybe = true;
+        break;
+      }
+    }
+    if (maybe) {
+      set(m.key, std::move(m.value));
+    } else {
+      dst.push_back(Member{std::move(m.key), std::move(m.value)});
+    }
+  }
+  src.clear();
+}
+
 const Value* Value::find(std::string_view key) const {
   for (const Member& m : as_object()) {
     if (m.key == key) {

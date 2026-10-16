@@ -12,6 +12,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 env:
+  CC_REQUIRE_CORPUS: "1"   # tests that need the public fixtures fail (not skip) when they are missing
   VCPKG_COMMIT: 9e593bb18ea69cc5095e012465dcd675a822ed0d
   EMSDK_VERSION: 6.0.10
   LLVM_VERSION: "22"
@@ -59,6 +60,9 @@ jobs:
           path: .vcpkg-cache
           key: vcpkg-${{ matrix.job }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'triplets/**', 'cmake/toolchains/**') }}
           restore-keys: vcpkg-${{ matrix.job }}-${{ env.VCPKG_COMMIT }}-
+      - name: Public fixtures
+        if: matrix.job != 'wasm'
+        run: cmake -DDEST=build/corpus -P tools/corpus.cmake
       - name: Gate (format, layers, tidy, build, tests, assets, licenses, osv, identity)
         if: matrix.job == 'gate'
         run: |
@@ -68,9 +72,6 @@ jobs:
           cmake --preset ci
           cmake --build --preset ci
           ctest --preset ci-quick
-      - name: Public fixtures
-        if: matrix.job != 'wasm'
-        run: cmake -DDEST=build/corpus -P tools/corpus.cmake
       - name: ${{ matrix.job }}
         if: matrix.job == 'asan' || matrix.job == 'tsan' || matrix.job == 'wasm' || matrix.job == 'gcc'
         env:
@@ -105,5 +106,7 @@ jobs:
           path: .vcpkg-cache
           key: vcpkg-msvc-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'triplets/**') }}
           restore-keys: vcpkg-msvc-${{ env.VCPKG_COMMIT }}-
+      - name: Public fixtures
+        run: cmake -DDEST=build/corpus -P tools/corpus.cmake
       - name: MSVC build + tests
         run: cmake --workflow --preset msvc

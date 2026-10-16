@@ -3,6 +3,7 @@
 //
 //   cadcraft-cli info <file.dwg>                 version, counts, notes
 //   cadcraft-cli convert --json <file.dwg>       the drawing model as JSON (the JS readDwg model's shape)
+//   … info / convert take --isolated: parse in the sandboxed helper (cadcraft-importer) instead of in this process
 //   cadcraft-cli parity <engine> <file>          the parity kit's contract (tools/fork-parity in the site repo):
 //                                                dwg → the model as JSON; other engines → exit 3 (not ported yet)
 //   cadcraft-cli bench <engine> <file> [--runs N]  {"open_ms":[…],"parse_ms":[…],"first_frame_ms":null,"runtime":"…"}
@@ -31,6 +32,7 @@
 #include "cc/base/file.hpp"
 #include "cc/base/value.hpp"
 #include "cc/dwg/read.hpp"
+#include "cc/importer/importer.hpp"
 
 namespace {
 
@@ -40,8 +42,9 @@ constexpr std::uint64_t kMaxFile = std::uint64_t{1} << 31U;  // 2 GiB
 void usage(std::FILE* out) {
   std::print(out,
              "usage: cadcraft-cli <command> [options]\n"
-             "  info <file.dwg>                     version, counts and notes\n"
-             "  convert --json <file.dwg>           the drawing model as JSON\n"
+             "  info [--isolated] <file.dwg>        version, counts and notes\n"
+             "  convert [--isolated] --json <file>  the drawing model as JSON\n"
+             "                                      (--isolated: parse in the sandboxed import helper)\n"
              "  parity <engine> <file>              engine output for the parity kit (engines: dwg)\n"
              "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
              "  version                             print the version\n");
@@ -140,13 +143,58 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
   return 0;
 }
 
-int cmd_info(const std::filesystem::path& file) {
-  const auto bytes = cc::base::read_file(file, kMaxFile);
+/// The helper beside this executable (installed layout) or in the build tree's apps/ folder; CC_IMPORTER overrides.
+std::filesystem::path importer_path(const char* argv0) {
+  if (const char* env = std::getenv("CC_IMPORTER"); env != nullptr && *env != '\0') {  // NOLINT(concurrency-mt-unsafe)
+    return env;
+  }
+  std::error_code ec;
+  const std::filesystem::path self = std::filesystem::canonical(std::filesystem::path(argv0), ec);
+  const std::filesystem::path dir = ec ? std::filesystem::path(".") : self.parent_path();
+  for (const auto& c : {dir / "cadcraft-importer", dir / ".." / "cadcraft-importer" / "cadcraft-importer"}) {
+    if (std::filesystem::exists(c, ec)) {
+      return c;
+    }
+  }
+  return dir / "cadcraft-importer";
+}
+
+const char* g_argv0 = "cadcraft-cli";  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables) — set once in main
+
+cc::base::Result<cc::base::Value> load_model(const std::filesystem::path& file, bool isolated) {
+  auto bytes = cc::base::read_file(file, kMaxFile);
   if (!bytes) {
-    std::println(stderr, "cadcraft-cli: {}", bytes.error().message);
+    return std::unexpected(bytes.error());
+  }
+  if (isolated) {
+    return cc::importer::run_helper(importer_path(g_argv0), "dwg", *bytes);
+  }
+  return cc::dwg::read_dwg(*bytes);
+}
+
+int cmd_convert(const std::filesystem::path& file, bool isolated) {
+  auto m = load_model(file, isolated);
+  if (!m) {
+    print_error_json("failed", m.error().message);
     return 1;
   }
-  const cc::base::Value m = cc::dwg::read_dwg(*bytes);
+  if (cc::base::Value* rep = m->find("report")) {
+    rep->erase("ms");
+  }
+  std::string out;
+  cc::base::write_json(*m, out);
+  out += '\n';
+  (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
+int cmd_info(const std::filesystem::path& file, bool isolated) {
+  auto loaded = load_model(file, isolated);
+  if (!loaded) {
+    std::println(stderr, "cadcraft-cli: {}", loaded.error().message);
+    return 1;
+  }
+  const cc::base::Value& m = *loaded;
   const cc::base::Value& rep = m["report"];
   if (rep["error"].is_string()) {
     std::println(stderr, "cadcraft-cli: {}", rep["error"].as_string());
@@ -182,11 +230,13 @@ int run(const std::vector<std::string_view>& args) {
     std::println("cadcraft-cli {}", kVersion);
     return 0;
   }
-  if (cmd == "info" && args.size() == 3) {
-    return cmd_info(std::filesystem::path(args[2]));
+  const bool isolated = args.size() > 2 && args[2] == "--isolated";
+  const std::size_t a = isolated ? 3 : 2;
+  if (cmd == "info" && args.size() == a + 1) {
+    return cmd_info(std::filesystem::path(args[a]), isolated);
   }
-  if (cmd == "convert" && args.size() == 4 && args[2] == "--json") {
-    return cmd_parity("dwg", std::filesystem::path(args[3]));
+  if (cmd == "convert" && args.size() == a + 2 && args[a] == "--json") {
+    return cmd_convert(std::filesystem::path(args[a + 1]), isolated);
   }
   if (cmd == "parity" && args.size() == 4) {
     return cmd_parity(args[2], std::filesystem::path(args[3]));
@@ -199,9 +249,9 @@ int run(const std::vector<std::string_view>& args) {
         return 2;
       }
       int n = 0;
-      const std::span<const char> a(args[5]);
-      const auto [ptr, ec] = std::from_chars(a.data(), std::to_address(a.end()), n);
-      if (ec != std::errc{} || ptr != std::to_address(a.end()) || n < 1 || n > 1000) {
+      const std::span<const char> txt(args[5]);
+      const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), n);
+      if (ec != std::errc{} || ptr != std::to_address(txt.end()) || n < 1 || n > 1000) {
         usage(stderr);
         return 2;
       }
@@ -218,7 +268,11 @@ int run(const std::vector<std::string_view>& args) {
 
 int main(int argc, char** argv) {
   try {
-    return run(std::vector<std::string_view>(argv, std::next(argv, argc)));
+    const std::span<char*> raw(argv, static_cast<std::size_t>(argc));
+    if (!raw.empty()) {
+      g_argv0 = raw.front();
+    }
+    return run(std::vector<std::string_view>(raw.begin(), raw.end()));
   } catch (const std::exception& e) {
     say_failure(e.what());
   } catch (...) {
