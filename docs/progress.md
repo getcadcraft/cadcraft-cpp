@@ -48,3 +48,20 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
   tools/gen/js-case.mjs) and ICU's collation for every Windows-1252 character (tools/gen/js-collation.mjs). All 2728
   match now. Compile fuzz: a spline degree its control points cannot carry (JS throws; C++ draws the polygon) and a
   MINSERT of 10⁹ cells (the JS runs out of memory; C++ stops at `max_coords` and marks it truncated).
+- M3.3: the 2D viewer. libs/text (FreeType, Archivo variable font at the condensed width, SDF atlas grown on demand;
+  bitmap-to-SDF: 4× faster than FreeType's outline SDF), libs/render (dwg-view.js colours, fit/zoom/pan, viewport
+  matrices, per-batch origin-relative float geometry for survey coordinates), libs/ui-imgui (WebGPU: instanced
+  segment quads, even-odd stencil fills, SDF text with 4-sample coverage, 4× MSAA; ImGui chrome in the site's tokens;
+  menu, space tabs, layers panel, status bar; 0.5 lang catalogs, keys unchanged), libs/engine (open: DWG/DXF by bytes,
+  xrefs beside the file), libs/i18n, libs/image (PNG). Apps: cadcraft (desktop, SDL3 + Dawn), cadcraft-shot (headless
+  PNG + --bench), cadcraft-web (Emscripten + emdawnwebgpu, ?sample, ?bench, file picker and drops as EM_JS glue, no
+  inline script). Checked by eye against BimCraft's own dwg-view.js on the same sheet (headless Chromium): geometry,
+  viewports, clips, fills and colours match; text differs in face (the page falls back to Arial).
+- Dependencies: SDL3 and Dawn without default features (dbus → libsystemd is LGPL, D3D12 → DXC is NCSA); Dear ImGui
+  fetched by commit (its vcpkg bindings would pull those defaults back in). Each triplet now has its own vcpkg
+  installed tree (a shared one let one preset's install remove another's packages); the wasm triplet chain-loads
+  cmake/toolchains/emscripten-cc.cmake so its C flags (threads, wasm longjmp) reach the dependencies at all.
+- Timings (quiet machine, release): open → first frame in the browser equals the JS (C++ 192–201 ms cold, 58–87 warm;
+  JS 188–209 / 43–88) — the generic Value tree and one thread cost wasm the reader's native 2–4× lead. Native: parse
+  15–72 ms, compile 3–5, scene 19–21, CPU per frame < 0.02 ms (GPU time on lavapipe is a CPU rasteriser: not a GPU
+  number).

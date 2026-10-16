@@ -39,7 +39,9 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends ninja-build g++-14 \
             clang-${LLVM_VERSION} clang-tidy-${LLVM_VERSION} clang-format-${LLVM_VERSION} lld-${LLVM_VERSION} llvm-${LLVM_VERSION} \
-            libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev libclang-rt-${LLVM_VERSION}-dev
+            libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev libclang-rt-${LLVM_VERSION}-dev \
+            pkg-config libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
+            libxinerama-dev libxkbcommon-dev libwayland-dev wayland-protocols libegl1-mesa-dev libdecor-0-dev
           echo "/usr/lib/llvm-${LLVM_VERSION}/bin" >> "$GITHUB_PATH"
       - name: vcpkg at the pinned baseline
         run: |

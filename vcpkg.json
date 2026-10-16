@@ -7,5 +7,33 @@
   "builtin-baseline": "9e593bb18ea69cc5095e012465dcd675a822ed0d",
   "dependencies": [
     { "name": "catch2", "platform": "!emscripten" }
-  ]
+  ],
+  "features": {
+    "gui": {
+      "description": "The viewer and the apps: SDL3, Dawn (WebGPU), FreeType, glm. Default features are off on purpose: SDL3's dbus/ibus pull in libsystemd (LGPL) and Dawn's D3D12 pulls in DXC (NCSA), both outside the licence allowlist.",
+      "dependencies": [
+        {
+          "name": "sdl3",
+          "default-features": false,
+          "features": [
+            { "name": "x11", "platform": "linux" },
+            { "name": "wayland", "platform": "linux" }
+          ]
+        },
+        {
+          "name": "dawn",
+          "default-features": false,
+          "features": [
+            { "name": "vulkan", "platform": "linux | (windows & !uwp)" },
+            { "name": "x11", "platform": "linux" },
+            { "name": "wayland", "platform": "linux" },
+            { "name": "d3d11", "platform": "windows" },
+            { "name": "metal", "platform": "osx" }
+          ]
+        },
+        { "name": "freetype", "default-features": false, "features": ["brotli", "zlib"] },
+        "glm"
+      ]
+    }
+  }
 }

@@ -6,7 +6,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/_spdx.cmake)
 set(ALLOW MIT Apache-2.0 "Apache-2.0 WITH LLVM-exception" BSD-2-Clause BSD-3-Clause ISC Zlib BSL-1.0 FTL OFL-1.1
     Unicode-3.0 Unicode-DFS-2016 CC0-1.0 Unlicense)
 # port → licence checked by hand (port declares none or a non-SPDX text). Keep the reason in THIRD_PARTY.md.
-set(KNOWN "")
+# vulkan-utility-libraries: the port declares no licence; its copyright file says "SPDX-License-Identifier: Apache-2.0"
+# (Khronos, checked 2026-10-16).
+set(KNOWN "vulkan-utility-libraries=Apache-2.0")
 file(GLOB sboms ${INSTALLED}/share/*/vcpkg.spdx.json)
 set(bad "")
 set(count 0)

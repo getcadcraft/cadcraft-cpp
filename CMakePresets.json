@@ -11,7 +11,8 @@
       "cacheVariables": {
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
         "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vcpkg_installed",
-        "VCPKG_INSTALL_OPTIONS": "--no-print-usage"
+        "VCPKG_INSTALL_OPTIONS": "--no-print-usage",
+        "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
     {
@@ -36,13 +37,13 @@
     },
     {
       "name": "tsan", "inherits": "linux-clang", "displayName": "Clang TSan",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "thread" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "thread", "CC_BUILD_GUI": "OFF" }
     },
     {
       "name": "fuzz", "inherits": "linux-clang", "displayName": "libFuzzer targets (ASan + UBSan)",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "address;undefined", "CC_FUZZ": "ON",
-        "CC_BUILD_TESTS": "OFF", "CC_BUILD_APPS": "OFF"
+        "CC_BUILD_TESTS": "OFF", "CC_BUILD_APPS": "OFF", "CC_BUILD_GUI": "OFF", "CC_BUILD_RENDER": "OFF"
       }
     },
     {
@@ -55,7 +56,9 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VCPKG_TARGET_TRIPLET": "x64-linux-gcc",
-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/gcc.cmake"
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vcpkg_installed-gcc",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/gcc.cmake",
+        "VCPKG_MANIFEST_FEATURES": "", "CC_BUILD_GUI": "OFF", "CC_BUILD_RENDER": "OFF"
       }
     },
     {
@@ -73,8 +76,10 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "VCPKG_TARGET_TRIPLET": "wasm32-emscripten-cc",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vcpkg_installed-wasm",
         "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
-        "CMAKE_CXX_FLAGS": "-fwasm-exceptions -pthread -msimd128",
+        "CMAKE_CXX_FLAGS": "-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -pthread -msimd128",
+        "CMAKE_EXE_LINKER_FLAGS": "-fwasm-exceptions -sSUPPORT_LONGJMP=wasm -pthread",
         "CC_BUILD_TESTS": "OFF"
       }
     }
