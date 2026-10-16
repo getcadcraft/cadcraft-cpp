@@ -1,0 +1,13 @@
+# WebAssembly through Emscripten: wasm exceptions, threads, SIMD (AGENTS.md section 10, web performance).
+set(VCPKG_TARGET_ARCHITECTURE wasm32)
+set(VCPKG_CRT_LINKAGE dynamic)
+set(VCPKG_LIBRARY_LINKAGE static)
+set(VCPKG_CMAKE_SYSTEM_NAME Emscripten)
+set(VCPKG_BUILD_TYPE release)
+set(VCPKG_ENV_PASSTHROUGH_UNTRACKED EMSDK PATH)
+set(VCPKG_C_FLAGS "-fwasm-exceptions -pthread -msimd128")
+set(VCPKG_CXX_FLAGS "-fwasm-exceptions -pthread -msimd128")
+if(NOT DEFINED ENV{EMSDK})
+  message(FATAL_ERROR "EMSDK is not set (source tools/env.sh)")
+endif()
+set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "$ENV{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake")

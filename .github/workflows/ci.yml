@@ -1,0 +1,109 @@
+# The quality gate (AGENTS.md section 11) as parallel jobs. `cmake --workflow --preset ci` runs the same checks
+# serially on a developer machine. Toolchain versions match docs/architecture.md.
+name: ci
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 3 * * *"   # nightly: whole-tree clang-tidy and longer fuzzing
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  VCPKG_COMMIT: 9e593bb18ea69cc5095e012465dcd675a822ed0d
+  EMSDK_VERSION: 6.0.10
+  LLVM_VERSION: "22"
+  VCPKG_DISABLE_METRICS: "1"
+  VCPKG_BINARY_SOURCES: "clear;files,${{ github.workspace }}/.vcpkg-cache,readwrite"
+
+jobs:
+  linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        job: [gate, asan, tsan, fuzz, wasm, gcc]
+    name: ${{ matrix.job }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: LLVM ${{ env.LLVM_VERSION }}, Ninja, GCC 14
+        run: |
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /usr/share/keyrings/llvm-apt.gpg
+          echo "deb [signed-by=/usr/share/keyrings/llvm-apt.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_VERSION} main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends ninja-build g++-14 \
+            clang-${LLVM_VERSION} clang-tidy-${LLVM_VERSION} clang-format-${LLVM_VERSION} lld-${LLVM_VERSION} \
+            libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev libclang-rt-${LLVM_VERSION}-dev
+          echo "/usr/lib/llvm-${LLVM_VERSION}/bin" >> "$GITHUB_PATH"
+      - name: vcpkg at the pinned baseline
+        run: |
+          git clone -q https://github.com/microsoft/vcpkg.git "$RUNNER_TEMP/vcpkg"
+          git -C "$RUNNER_TEMP/vcpkg" checkout -q "$VCPKG_COMMIT"
+          "$RUNNER_TEMP/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$RUNNER_TEMP/vcpkg" >> "$GITHUB_ENV"
+      - name: Emscripten ${{ env.EMSDK_VERSION }}
+        if: matrix.job == 'wasm'
+        run: |
+          git clone -q https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          cd "$RUNNER_TEMP/emsdk" && git checkout -q "$EMSDK_VERSION"
+          ./emsdk install "$EMSDK_VERSION" && ./emsdk activate "$EMSDK_VERSION"
+          echo "EMSDK=$RUNNER_TEMP/emsdk" >> "$GITHUB_ENV"
+          echo "$RUNNER_TEMP/emsdk/upstream/emscripten" >> "$GITHUB_PATH"
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .vcpkg-cache
+          key: vcpkg-${{ matrix.job }}-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'triplets/**', 'cmake/toolchains/**') }}
+          restore-keys: vcpkg-${{ matrix.job }}-${{ env.VCPKG_COMMIT }}-
+      - name: Gate (format, layers, tidy, build, tests, assets, licenses, osv, identity)
+        if: matrix.job == 'gate'
+        run: |
+          mkdir -p .vcpkg-cache
+          if [ "${{ github.event_name }}" = "schedule" ]; then export CC_TIDY_ALL=1; fi
+          if [ "${{ github.event_name }}" = "push" ]; then export CC_TIDY_BASE="${{ github.event.before }}"; fi
+          cmake --preset ci
+          cmake --build --preset ci
+          ctest --preset ci-quick
+      - name: Public fixtures
+        if: matrix.job != 'wasm'
+        run: cmake -DDEST=build/corpus -P tools/corpus.cmake
+      - name: ${{ matrix.job }}
+        if: matrix.job == 'asan' || matrix.job == 'tsan' || matrix.job == 'wasm' || matrix.job == 'gcc'
+        env:
+          CC_GCC: gcc-14
+          CC_GXX: g++-14
+        run: |
+          mkdir -p .vcpkg-cache
+          cmake --workflow --preset ${{ matrix.job }}
+      - name: Fuzz (build + smoke)
+        if: matrix.job == 'fuzz'
+        run: |
+          mkdir -p .vcpkg-cache
+          if [ "${{ github.event_name }}" = "schedule" ]; then export CC_FUZZ_SECONDS=600; fi
+          cmake --workflow --preset fuzz
+          cmake -DSRC="$PWD" -DFUZZ_BUILD="$PWD/build/fuzz" -P tools/fuzz_smoke.cmake
+
+  msvc:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      - name: vcpkg at the pinned baseline
+        shell: pwsh
+        run: |
+          git clone -q https://github.com/microsoft/vcpkg.git "$env:RUNNER_TEMP\vcpkg"
+          git -C "$env:RUNNER_TEMP\vcpkg" checkout -q $env:VCPKG_COMMIT
+          & "$env:RUNNER_TEMP\vcpkg\bootstrap-vcpkg.bat" -disableMetrics
+          "VCPKG_ROOT=$env:RUNNER_TEMP\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Append
+          New-Item -ItemType Directory -Force -Path .vcpkg-cache | Out-Null
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .vcpkg-cache
+          key: vcpkg-msvc-${{ env.VCPKG_COMMIT }}-${{ hashFiles('vcpkg.json', 'triplets/**') }}
+          restore-keys: vcpkg-msvc-${{ env.VCPKG_COMMIT }}-
+      - name: MSVC build + tests
+        run: cmake --workflow --preset msvc

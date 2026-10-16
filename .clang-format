@@ -1,0 +1,17 @@
+# Google style with a 120-column limit (the JS reference uses wide lines; matching it keeps ports readable).
+BasedOnStyle: Google
+ColumnLimit: 120
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<[a-z_]+>$'          # standard library
+    Priority: 1
+  - Regex: '^<'                   # third-party
+    Priority: 2
+  - Regex: '^"'                   # ours
+    Priority: 3
+DerivePointerAlignment: false
+PointerAlignment: Left
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true

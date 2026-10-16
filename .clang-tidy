@@ -1,0 +1,60 @@
+# AGENTS.md section 4: these families, warnings are errors. Every exclusion says why.
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  readability-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -readability-identifier-length,
+  -readability-function-cognitive-complexity,
+  -modernize-use-trailing-return-type,
+  -misc-non-private-member-variables-in-classes,
+  -cppcoreguidelines-non-private-member-variables-in-classes,
+  -misc-use-anonymous-namespace,
+  -misc-include-cleaner,
+  -readability-uppercase-literal-suffix,
+  -cppcoreguidelines-avoid-do-while,
+  -cert-err58-cpp,
+  -readability-convert-member-functions-to-static,
+  -modernize-use-designated-initializers,
+  -readability-math-missing-parentheses,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -readability-use-concise-preprocessor-directives
+# Why each one is off:
+#  easily-swappable-parameters  every (x, y) / (offset, size) pair trips it; the types are what they are
+#  magic-numbers (both)         format specs are full of bit widths, codes and offsets named by the spec chapter
+#  identifier-length            spec field names are short (x, y, rc, bs)
+#  cognitive-complexity         record decoders follow the spec's field order in one function by design
+#  trailing-return-type         style only
+#  non-private-member-variables plain data structs are the model (section 6: plain data)
+#  use-anonymous-namespace      static functions are fine
+#  include-cleaner              false positives on the standard library's internal headers with libc++
+#  uppercase-literal-suffix     style only
+#  avoid-do-while               used where the spec's loop is "do … while (more)"
+#  err58-cpp                    Catch2 test registration objects
+#  convert-member-functions-to-static  noisy on readers whose methods may grow state
+#  use-designated-initializers  style only
+#  math-missing-parentheses     bit arithmetic written as in the spec
+#  avoid-unchecked-container-access, constant-array-index
+#                               the hardened standard library traps on an out-of-bounds operator[] in every build
+#                               (section 4); .at() would turn the same bug into a catchable exception instead
+#  use-concise-preprocessor-directives  #elifdef is too new for every compiler we build with
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/(libs|apps|fuzz)/.*'
+CheckOptions:
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: true
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: true
+  - key: cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: true
+  - key: misc-const-correctness.AnalyzeValues
+    value: false

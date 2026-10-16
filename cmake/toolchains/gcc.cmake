@@ -1,0 +1,11 @@
+# GCC 13+ with libstdc++ (the GCC CI job). Compiler names from CC_GCC / CC_GXX, default gcc-14 / g++-14.
+if(DEFINED ENV{CC_GCC})
+  set(CMAKE_C_COMPILER $ENV{CC_GCC})
+else()
+  set(CMAKE_C_COMPILER gcc-14)
+endif()
+if(DEFINED ENV{CC_GXX})
+  set(CMAKE_CXX_COMPILER $ENV{CC_GXX})
+else()
+  set(CMAKE_CXX_COMPILER g++-14)
+endif()

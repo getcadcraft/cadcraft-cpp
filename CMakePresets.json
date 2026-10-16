@@ -1,0 +1,134 @@
+{
+  "version": 8,
+  "cmakeMinimumRequired": { "major": 3, "minor": 28, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+      "cacheVariables": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/triplets",
+        "VCPKG_INSTALLED_DIR": "${sourceDir}/build/vcpkg_installed",
+        "VCPKG_INSTALL_OPTIONS": "--no-print-usage"
+      }
+    },
+    {
+      "name": "linux-clang",
+      "hidden": true,
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-linux-cc",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/clang-libcxx.cmake"
+      }
+    },
+    { "name": "dev", "inherits": "linux-clang", "displayName": "Clang Debug (-O1)", "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" } },
+    { "name": "release", "inherits": "linux-clang", "displayName": "Clang Release (-O2, ThinLTO)", "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" } },
+    {
+      "name": "asan", "inherits": "linux-clang", "displayName": "Clang ASan + UBSan",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "address;undefined" }
+    },
+    {
+      "name": "ubsan", "inherits": "linux-clang", "displayName": "Clang UBSan",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "undefined" }
+    },
+    {
+      "name": "tsan", "inherits": "linux-clang", "displayName": "Clang TSan",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "thread" }
+    },
+    {
+      "name": "fuzz", "inherits": "linux-clang", "displayName": "libFuzzer targets (ASan + UBSan)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug", "CC_SANITIZE": "address;undefined", "CC_FUZZ": "ON",
+        "CC_BUILD_TESTS": "OFF", "CC_BUILD_APPS": "OFF"
+      }
+    },
+    {
+      "name": "ci", "inherits": "linux-clang", "displayName": "Quality gate (Release + every check)",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CC_GATE": "ON" }
+    },
+    {
+      "name": "gcc", "inherits": "base", "displayName": "GCC 13+ Release",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-gcc",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/gcc.cmake"
+      }
+    },
+    {
+      "name": "msvc", "inherits": "base", "displayName": "MSVC Release",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "cl", "CMAKE_CXX_COMPILER": "cl",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+      }
+    },
+    {
+      "name": "wasm", "inherits": "base", "displayName": "WebAssembly (Emscripten, WebGPU)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_TARGET_TRIPLET": "wasm32-emscripten-cc",
+        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+        "CMAKE_CXX_FLAGS": "-fwasm-exceptions -pthread -msimd128",
+        "CC_BUILD_TESTS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "dev", "configurePreset": "dev" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "asan", "configurePreset": "asan" },
+    { "name": "ubsan", "configurePreset": "ubsan" },
+    { "name": "tsan", "configurePreset": "tsan" },
+    { "name": "fuzz", "configurePreset": "fuzz" },
+    { "name": "ci", "configurePreset": "ci" },
+    { "name": "gcc", "configurePreset": "gcc" },
+    { "name": "msvc", "configurePreset": "msvc" },
+    { "name": "wasm", "configurePreset": "wasm" }
+  ],
+  "testPresets": [
+    {
+      "name": "test-base", "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error", "stopOnFailure": false }
+    },
+    { "name": "dev", "inherits": "test-base", "configurePreset": "dev" },
+    { "name": "release", "inherits": "test-base", "configurePreset": "release" },
+    {
+      "name": "asan", "inherits": "test-base", "configurePreset": "asan",
+      "environment": {
+        "ASAN_OPTIONS": "detect_leaks=1:abort_on_error=1:strict_string_checks=1:detect_stack_use_after_return=1",
+        "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"
+      }
+    },
+    {
+      "name": "ubsan", "inherits": "test-base", "configurePreset": "ubsan",
+      "environment": { "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1" }
+    },
+    {
+      "name": "tsan", "inherits": "test-base", "configurePreset": "tsan",
+      "environment": { "TSAN_OPTIONS": "halt_on_error=1:second_deadlock_stack=1" }
+    },
+    { "name": "ci", "inherits": "test-base", "configurePreset": "ci", "filter": { "exclude": { "label": "^gate-skip$" } } },
+    { "name": "ci-quick", "inherits": "test-base", "configurePreset": "ci", "filter": { "exclude": { "label": "^heavy$" } } },
+    { "name": "gcc", "inherits": "test-base", "configurePreset": "gcc" },
+    { "name": "msvc", "inherits": "test-base", "configurePreset": "msvc" }
+  ],
+  "workflowPresets": [
+    { "name": "dev", "steps": [ { "type": "configure", "name": "dev" }, { "type": "build", "name": "dev" }, { "type": "test", "name": "dev" } ] },
+    { "name": "release", "steps": [ { "type": "configure", "name": "release" }, { "type": "build", "name": "release" }, { "type": "test", "name": "release" } ] },
+    { "name": "asan", "steps": [ { "type": "configure", "name": "asan" }, { "type": "build", "name": "asan" }, { "type": "test", "name": "asan" } ] },
+    { "name": "ubsan", "steps": [ { "type": "configure", "name": "ubsan" }, { "type": "build", "name": "ubsan" }, { "type": "test", "name": "ubsan" } ] },
+    { "name": "tsan", "steps": [ { "type": "configure", "name": "tsan" }, { "type": "build", "name": "tsan" }, { "type": "test", "name": "tsan" } ] },
+    { "name": "fuzz", "steps": [ { "type": "configure", "name": "fuzz" }, { "type": "build", "name": "fuzz" } ] },
+    { "name": "wasm", "steps": [ { "type": "configure", "name": "wasm" }, { "type": "build", "name": "wasm" } ] },
+    { "name": "gcc", "steps": [ { "type": "configure", "name": "gcc" }, { "type": "build", "name": "gcc" }, { "type": "test", "name": "gcc" } ] },
+    { "name": "msvc", "steps": [ { "type": "configure", "name": "msvc" }, { "type": "build", "name": "msvc" }, { "type": "test", "name": "msvc" } ] },
+    { "name": "ci", "steps": [ { "type": "configure", "name": "ci" }, { "type": "build", "name": "ci" }, { "type": "test", "name": "ci" } ] }
+  ]
+}
