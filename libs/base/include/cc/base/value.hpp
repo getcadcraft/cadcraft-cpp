@@ -240,7 +240,7 @@ void append_number(std::string& out, double d);
 void append_utf16(std::string& out, std::span<const std::uint16_t> units);
 /// Appends one code point (0..0x10FFFF, surrogates allowed as WTF-8).
 void append_code_point(std::string& out, std::uint32_t cp);
-/// Upper-cases ASCII and Latin-1 letters (enough for the name comparisons the readers make).
+/// String#toUpperCase (cc::base::js_to_upper).
 [[nodiscard]] std::string to_upper(std::string_view s);
 /// Hex digits of n, upper case, no leading zeros ("0" for 0) — JS n.toString(16).toUpperCase().
 [[nodiscard]] std::string hex_upper(std::uint64_t n);

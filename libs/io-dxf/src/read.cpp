@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <limits>
 #include <numbers>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -79,6 +80,8 @@ std::string hx(const Value& v) {
     base::append_number(s, v.as_number());
   } else if (v.is_bool()) {
     s = "true";
+  } else if (v.is_object()) {
+    s = "[object Object]";
   }
   s = base::to_upper(s);
   std::size_t z = 0;
@@ -88,11 +91,19 @@ std::string hx(const Value& v) {
   return s.substr(z);
 }
 
+/// A JS TypeError the reference throws on a malformed file: read_dxf_model returns its message, as the JS reader's
+/// caller shows it.
+class JsTypeError : public std::runtime_error {
+ public:
+  using std::runtime_error::runtime_error;
+};
+
 /// String(v ?? fallback)
 std::string str(const Value* v, std::string_view fallback);
 std::string str(const Value& v, std::string_view fallback) {
   return str(&v, fallback);
 }
+// NOLINTNEXTLINE(misc-no-recursion) — an array's elements: as deep as the model's arrays
 std::string str(const Value* v, std::string_view fallback) {
   if (!v || v->is_undefined() || v->is_null()) {
     return std::string(fallback);
@@ -105,14 +116,18 @@ std::string str(const Value* v, std::string_view fallback) {
   }
   std::string s;
   if (v->is_number()) {
-    const double d = v->as_number();
-    if (std::isnan(d)) {
-      return "NaN";
+    base::append_number(s, v->as_number());  // NaN, Infinity as String() writes them
+  } else if (v->is_object()) {
+    s = "[object Object]";  // e.g. a header variable a stray point group turned into a point
+  } else if (v->is_array()) {
+    bool first = true;
+    for (const Value& x : v->as_array()) {  // Array#join(","): null and undefined as ""
+      if (!first) {
+        s += ',';
+      }
+      first = false;
+      s += str(&x, "");
     }
-    if (std::isinf(d)) {
-      return d > 0 ? "Infinity" : "-Infinity";
-    }
-    base::append_number(s, d);
   }
   return s;
 }
@@ -232,7 +247,7 @@ Value sub_point(const Groups& g, std::string_view sub, int code, bool z = false)
 }
 Value color_of(double index, const Value* rgb) {
   if (rgb && !rgb->is_undefined()) {
-    const auto r = static_cast<std::int64_t>(rgb->num_or(0));
+    const auto r = base::js_to_int32(rgb->num_or(0));
     return make_object({{"rgb", static_cast<double>(r & 0xFFFFFF)}, {"index", index}});
   }
   return make_object({{"index", index}});
@@ -455,7 +470,7 @@ class Reader {
       const Value* plot = val(g, 290);
       l.set("plot", !(plot != nullptr) || !plot->is_bool() || plot->as_bool());
       l.set("off", ci < 0);
-      const auto fl = static_cast<std::int64_t>(flags);
+      const auto fl = base::js_to_int32(flags);
       l.set("frozen", (fl & 1) != 0);
       l.set("locked", (fl & 4) != 0);
       table("layers").push_back(std::move(l));
@@ -719,7 +734,7 @@ class Reader {
           vs.back().set("bulge", (*x.v));
         }
       }
-      const auto f = static_cast<std::int64_t>(num(70, 0));
+      const auto f = base::js_to_int32(num(70, 0));
       const double cw = num(43, 0);
       if (cw != 0 && !has(g, 40) && !has(g, 41)) {
         for (Value& v : vs) {
@@ -737,7 +752,7 @@ class Reader {
     }
     if (type == "POLYLINE") {
       const double flags_d = num(70, 0);
-      const auto flags = static_cast<std::int64_t>(flags_d);
+      const auto flags = base::js_to_int32(flags_d);
       struct V {
         const Groups* g;
         std::int64_t f;
@@ -746,7 +761,7 @@ class Reader {
       if (follow != nullptr) {
         for (const Follow& s : *follow) {
           if (s.type == "VERTEX") {
-            vx.push_back(V{&s.g, static_cast<std::int64_t>(num_or(val(s.g, 70), 0))});
+            vx.push_back(V{&s.g, base::js_to_int32(num_or(val(s.g, 70), 0))});
           }
         }
       }
@@ -894,8 +909,14 @@ class Reader {
           "DIMENSION_LINEAR", "DIMENSION_ALIGNED", "DIMENSION_ANG2LN",  "DIMENSION_DIAMETER",
           "DIMENSION_RADIUS", "DIMENSION_ANG3PT",  "DIMENSION_ORDINATE"};
       const double flags = num(70, 0);
-      const auto dim_type = type == "ARC_DIMENSION" ? 8 : static_cast<std::int64_t>(flags) & 7;
-      std::string t = type == "ARC_DIMENSION" ? type : std::string(kDimTypes[static_cast<std::size_t>(dim_type)]);
+      const auto dim_type = type == "ARC_DIMENSION" ? 8 : base::js_to_int32(flags) & 7;
+      // DIM_TYPES[dimType] || 'DIMENSION_LINEAR' (type 7 has no name)
+      std::string t = "DIMENSION_LINEAR";
+      if (type == "ARC_DIMENSION") {
+        t = type;
+      } else if (dim_type < 7) {
+        t = std::string(kDimTypes[static_cast<std::size_t>(dim_type)]);
+      }
       Value d = spread(std::move(e), {{"type", t},
                                       {"dimType", static_cast<double>(dim_type)},
                                       {"flags", flags},
@@ -956,7 +977,7 @@ class Reader {
                                    {"invisibleEdges", num(70, 0)}});
     }
     if (type == "SPLINE") {
-      const auto f = static_cast<std::int64_t>(num(70, 0));
+      const auto f = base::js_to_int32(num(70, 0));
       Array knots;
       Array w;
       for (const Group& x : g) {
@@ -1052,7 +1073,7 @@ class Reader {
       return spread(std::move(e), {{"style", str(val(g, 2), "STANDARD")},
                                    {"scale", nullish(val(g, 40), 1)},
                                    {"justification", num(70, 0)},
-                                   {"closed", (static_cast<std::int64_t>(num(71, 0)) & 2) != 0},
+                                   {"closed", (base::js_to_int32(num(71, 0)) & 2) != 0},
                                    {"base", P(10)},
                                    {"extrusion", ext},
                                    {"vertices", std::move(vs)}});
@@ -1153,7 +1174,7 @@ class Reader {
       if (k >= g.size()) {
         break;
       }
-      const auto flags = static_cast<std::int64_t>(takef());
+      const auto flags = base::js_to_int32(takef());
       Value loop = make_object({{"flags", static_cast<double>(flags)}});
       if ((flags & 2) != 0) {
         const bool has_bulges = at(72) ? takef() == 1 : false;
@@ -1174,7 +1195,10 @@ class Reader {
           while (k < g.size() && !at(72)) {
             ++k;
           }
-          const double et = k < g.size() ? takef() : -1;
+          if (k >= g.size()) {  // HATCH_EDGE[take()] past the last group: the JS throws
+            throw JsTypeError("Cannot read properties of undefined (reading '1')");
+          }
+          const double et = takef();
           if (et == 1) {
             Value s = xy(10);
             edges.push_back(make_object({{"type", "line"}, {"start", std::move(s)}, {"end", xy(11)}}));
@@ -1305,6 +1329,7 @@ class Reader {
                                     {"landingEnabled", !(v290 != nullptr) || !v290->is_bool() || v290->as_bool()},
                                     {"arrowSize", num_or(val(own, 42), 0)}});
     std::ptrdiff_t root = -1;
+    std::ptrdiff_t line_root = -1;  // the JS `line` (a leader line of some root; a new LEADER{ keeps it)
     std::ptrdiff_t line = -1;
     auto roots = [&]() -> Array& { return ctx.find("roots")->as_array(); };
     auto merge = [&](std::string_view key, std::string_view sub, Value v) {
@@ -1336,13 +1361,13 @@ class Reader {
       if (c == 302 && sv && v.as_string() == "LEADER{") {
         roots().push_back(make_object({{"connection", nullptr}, {"direction", nullptr}, {"lines", Array{}}}));
         root = static_cast<std::ptrdiff_t>(roots().size()) - 1;
-        line = -1;
         depth = "leader";
         continue;
       }
       if (c == 304 && sv && v.as_string() == "LEADER_LINE{" && root >= 0) {
         Array& lines = roots()[static_cast<std::size_t>(root)].find("lines")->as_array();
         lines.push_back(make_object({{"points", Array{}}}));
+        line_root = root;
         line = static_cast<std::ptrdiff_t>(lines.size()) - 1;
         depth = "line";
         continue;
@@ -1363,31 +1388,30 @@ class Reader {
         depth.clear();
         continue;
       }
+      // (the JS throws a TypeError on a leader value outside a LEADER{ or a line point outside a LEADER_LINE{: so does
+      // this port, with its words, so such a file is refused the same way)
       if (depth == "line" && c == 10) {
-        if (root >= 0 && line >= 0) {
-          Value p = pt(10);
-          roots()[static_cast<std::size_t>(root)]
-              .find("lines")
-              ->as_array()[static_cast<std::size_t>(line)]
-              .find("points")
-              ->push(std::move(p));
-        } else {
-          (void)pt(10);
+        if (line < 0) {
+          throw JsTypeError("Cannot read properties of null (reading 'points')");
         }
-      } else if (depth == "leader" && c == 10) {
-        if (root >= 0) {
-          Value p = pt(10);
-          roots()[static_cast<std::size_t>(root)].set("connection", std::move(p));
+        Value p = pt(10);
+        roots()[static_cast<std::size_t>(line_root)]
+            .find("lines")
+            ->as_array()[static_cast<std::size_t>(line)]
+            .find("points")
+            ->push(std::move(p));
+      } else if (depth == "leader" && (c == 10 || c == 11 || c == 40)) {
+        std::string_view field = "doglegLength";
+        if (c == 10) {
+          field = "connection";
+        } else if (c == 11) {
+          field = "direction";
         }
-      } else if (depth == "leader" && c == 11) {
-        if (root >= 0) {
-          Value p = pt(11);
-          roots()[static_cast<std::size_t>(root)].set("direction", std::move(p));
+        Value p = c == 40 ? v : pt(c);
+        if (root < 0) {
+          throw JsTypeError("Cannot set properties of null (setting '" + std::string(field) + "')");
         }
-      } else if (depth == "leader" && c == 40) {
-        if (root >= 0) {
-          roots()[static_cast<std::size_t>(root)].set("doglegLength", v);
-        }
+        roots()[static_cast<std::size_t>(root)].set(field, std::move(p));
       } else if (depth == "ctx" && c == 41) {
         ctx.set("textHeight", v);
       } else if (depth == "ctx" && c == 140) {
@@ -1544,7 +1568,11 @@ class Reader {
       }
     };
     auto linkable = [](const Value& e) {
-      const std::string& t = e["type"].as_string();
+      const Value& tv = e["type"];
+      if (!tv.is_string()) {
+        return false;
+      }
+      const std::string& t = tv.as_string();
       return t == "INSERT" || t == "MINSERT" || t == "ACAD_TABLE";
     };
     for (Value& e : loose_) {
@@ -1651,7 +1679,7 @@ class Reader {
         if (!sp.empty()) {
           e.set("space", sp);
         }
-        const std::string t = e["type"].as_string();
+        const std::string t = str(&e["type"], "undefined");  // counts[e.type]
         Value* cnt = rep.find("counts")->find(t);
         if (cnt == nullptr) {
           rep.find("counts")->set(t, 1);
@@ -1659,7 +1687,7 @@ class Reader {
           *cnt = cnt->num_or(0) + 1;
         }
         if (t == "UNKNOWN") {
-          const std::string dn = e["dxfName"].as_string();
+          const std::string dn = str(&e["dxfName"], "undefined");
           Value* u = rep.find("unknown")->find(dn);
           if (u == nullptr) {
             rep.find("unknown")->set(dn, 1);

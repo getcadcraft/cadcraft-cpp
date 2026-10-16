@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-16 · Change: M2.1 io-dwg (the DWG reader), cc::base::Value, the JS reference.
+Last updated 2026-10-16 · Change: M3.1 io-dxf, M3.2 drawing (draw lists), base JS semantics; the viewer plan.
 
 ## Toolchain (pinned)
 
@@ -54,8 +54,10 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 
 | Library | Layer | What |
 |---|---|---|
-| `libs/base` | L0 | `Error`/`Result`, checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form) |
+| `libs/base` | L0 | `Error`/`Result`, checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `env_var`, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form), `js.hpp` (JS semantics the ports need: trim, parseFloat/parseInt, UTF-16 lengths, toUpperCase/toLowerCase and the ICU numeric collation, both from tables generated from Node by `tools/gen/`) |
+| `libs/drawing` | L2 | `cc::drawing::compile_drawing` — BimCraft's dwg-compile.js: a drawing model → typed draw lists (spaces → batches of polylines, fills, texts, in world units), what the 2D view and the renderer read |
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
+| `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module |
 
 ### The JS reference
@@ -71,6 +73,32 @@ The engines build their output as `cc::base::Value` with the JS field names, ord
 a JS number a double, an absent field stays absent), so the parity kit compares them field for field. This costs speed
 (a generic tree of small allocations); the measured numbers are in ROADMAP.md, and the plan to recover it (a typed
 fast path for the viewer, an arena for the model) is in docs/roadmap.md, M3.
+
+### Parity checks beyond the kit
+
+The kit compares DWG models. DXF models and draw lists are checked by this repo's own scripts with the kit's
+`canon`/`diff`: `tools/parity/dxf.mjs` (readDxfModel, DWG tolerance) and `tools/parity/compile.mjs` (compileDrawing;
+abs 1e-9 + rel 1e-9 as the Rust fork's cdiff.mjs, and it reports how many also match at rel 1e-12). Both also run over
+the fuzzers' corpora (differential fuzzing: every input the fuzzer kept, JS against C++), which is how the hostile-input
+behaviour in docs/gaps.md was found and matched.
+
+### The 2D viewer (M3, planned)
+
+```
+Drawing (typed, libs/drawing)  →  libs/render (L3): scene buffers per space and batch — floats relative to a per-batch
+                                   origin (double), so survey coordinates stay steady; polyline segments; fill fans for
+                                   an even-odd stencil fill; text runs; the dwg-view.js colour rules (ink, contrast mix)
+                                   and viewport transforms (vpMatrix)
+libs/text (L2): FreeType       →  glyph metrics and a signed-distance-field atlas (Archivo, OFL, the 0.5 drawing font)
+libs/ui-imgui (L6)             →  WebGPU (Dawn native / emdawnwebgpu): pipelines for segments, stencil fills and SDF
+                                   text; SDL3 window and input; ImGui chrome (spaces, layers, status bar)
+apps/cadcraft (L7) desktop · apps/cadcraft-web (L7) Emscripten · apps/cadcraft-shot (L7) headless PNGs (Vulkan / lavapipe)
+```
+
+Rendering follows BimCraft's dwg-view.js: hairlines on screen (print view: line weights), pattern fills at 18 % alpha,
+text in screen space skipped under 2 px, sheets drawn on paper with each viewport's model clipped, scaled and twisted.
+Colours: the site's tokens (paper: sheet #F3F6F8, ink #17202B; model: sheet #1D232B, ink #E8EEF4), ACI 7 = ink, pale
+colours darkened on paper and dark ones lightened on a dark screen.
 
 ## The import helper (AGENTS.md section 4, out-of-process import)
 

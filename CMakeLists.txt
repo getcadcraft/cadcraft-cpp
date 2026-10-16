@@ -35,6 +35,7 @@ include(CcLibrary)
 option(CC_BUILD_TESTS "Build the Catch2 suites" ON)
 option(CC_BUILD_APPS "Build the apps (layer 7)" ON)
 option(CC_GATE "Register the quality-gate checks as tests (the ci preset)" OFF)
+
 if(EMSCRIPTEN)
   set(CC_BUILD_TESTS OFF)
 endif()
@@ -47,6 +48,7 @@ endif()
 
 # Libraries in layer order (cc_library refuses a dependency that is not defined yet).
 add_subdirectory(libs/base)       # L0
+add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/io-dwg)     # L3
 add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/importer)   # L4

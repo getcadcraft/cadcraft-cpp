@@ -8,6 +8,9 @@
 //                                                dwg, dxf → the model as JSON; other engines → exit 3 (not ported yet)
 //                                                (dxf is this fork's own check against BimCraft's readDxfModel)
 //   cadcraft-cli bench <engine> <file> [--runs N]  {"open_ms":[…],"parse_ms":[…],"first_frame_ms":null,"runtime":"…"}
+//   cadcraft-cli compile <file.dwg|dxf> --json   what the 2D view draws (BimCraft compileDrawing's result as plain
+//                                                JSON: tools/parity/compile.mjs, forks/tools/cdiff.mjs --cli)
+//   cadcraft-cli compile <file> --bench N        best of N in-process compiles (the read is not timed)
 //   cadcraft-cli version | help
 //
 // Exit codes: 0 ok, 1 the file was refused ({"$error":{code,message}} on stdout for parity/bench), 2 usage, 3 an
@@ -32,6 +35,7 @@
 
 #include "cc/base/file.hpp"
 #include "cc/base/value.hpp"
+#include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
 #include "cc/dxf/read.hpp"
 #include "cc/importer/importer.hpp"
@@ -49,6 +53,7 @@ void usage(std::FILE* out) {
              "                                      (--isolated: parse in the sandboxed import helper)\n"
              "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
              "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
+             "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
              "  version                             print the version\n");
 }
 
@@ -250,6 +255,96 @@ int cmd_info(const std::filesystem::path& file, bool isolated) {
   return 0;
 }
 
+bool is_dxf(const std::filesystem::path& f) {
+  std::string ext = f.extension().string();
+  std::ranges::transform(ext, ext.begin(), [](char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c + 32) : c; });
+  return ext == ".dxf";
+}
+
+/// A drawing and the drawings it links (xrefs): "<name>.dwg" beside it, matched without regard to case, as BimCraft's
+/// tests and the Rust fork's CLI find them.
+struct Loaded {
+  cc::base::Value model;
+  std::vector<cc::base::Value> xref_models;
+  cc::drawing::CompileOptions options;
+};
+cc::base::Result<Loaded> load_drawing(const std::filesystem::path& file) {
+  auto bytes = cc::base::read_file(file, kMaxFile);
+  if (!bytes) {
+    return std::unexpected(bytes.error());
+  }
+  Loaded l;
+  if (is_dxf(file)) {
+    auto m = cc::dxf::read_dxf_model(cc::dxf::decode_text(*bytes));
+    if (!m) {
+      return std::unexpected(m.error());
+    }
+    l.model = std::move(*m);
+  } else {
+    l.model = cc::dwg::read_dwg(*bytes);
+    for (std::size_t i = 0; i < 6 && i < bytes->size(); ++i) {
+      l.options.version_tag += static_cast<char>(std::to_integer<unsigned char>((*bytes)[i]));
+    }
+  }
+  auto lower = [](std::string s) {
+    std::ranges::transform(s, s.begin(), [](char c) { return c >= 'A' && c <= 'Z' ? static_cast<char>(c + 32) : c; });
+    return s;
+  };
+  std::vector<std::pair<std::string, std::filesystem::path>> found;
+  std::error_code ec;
+  const std::filesystem::path dir = file.has_parent_path() ? file.parent_path() : std::filesystem::path(".");
+  for (const cc::base::Value& b : l.model["blocks"].is_array() ? l.model["blocks"].as_array() : cc::base::Array{}) {
+    if (!b["name"].is_string() || (static_cast<std::int64_t>(b["flags"].num_or(0)) & 4) == 0) {
+      continue;
+    }
+    const std::string want = lower(b["name"].as_string() + ".dwg");
+    for (const auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+      if (lower(entry.path().filename().string()) == want) {
+        found.emplace_back(lower(b["name"].as_string()), entry.path());
+        break;
+      }
+    }
+  }
+  l.xref_models.reserve(found.size());
+  for (const auto& [key, path] : found) {
+    const auto xb = cc::base::read_file(path, kMaxFile);
+    if (xb) {
+      l.xref_models.push_back(cc::dwg::read_dwg(*xb));
+      l.options.xrefs.push_back(cc::drawing::Xref{key, nullptr});
+    }
+  }
+  for (std::size_t i = 0; i < l.options.xrefs.size(); ++i) {
+    l.options.xrefs[i].model = &l.xref_models[i];  // after the vector stops growing
+  }
+  return l;
+}
+
+int cmd_compile(const std::filesystem::path& file, int bench_runs) {
+  auto loaded = load_drawing(file);
+  if (!loaded) {
+    print_error_json("failed", loaded.error().message);
+    return 1;
+  }
+  if (bench_runs > 0) {
+    using Clock = std::chrono::steady_clock;
+    double best = 1e300;
+    (void)cc::drawing::compile_drawing(loaded->model, loaded->options);
+    for (int i = 0; i < bench_runs; ++i) {
+      const auto t0 = Clock::now();
+      const cc::drawing::Drawing d = cc::drawing::compile_drawing(loaded->model, loaded->options);
+      best = std::min(best, std::chrono::duration<double, std::milli>(Clock::now() - t0).count());
+    }
+    std::println("C++ compile best of {} = {:.2f} ms", bench_runs, best);
+    return 0;
+  }
+  const cc::drawing::Drawing d = cc::drawing::compile_drawing(loaded->model, loaded->options);
+  std::string out;
+  cc::drawing::write_json(d, out);
+  out += '\n';
+  (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
 int run(const std::vector<std::string_view>& args) {
   if (args.size() < 2 || args[1] == "help" || args[1] == "--help") {
     usage(stdout);
@@ -267,6 +362,19 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "convert" && args.size() == a + 2 && args[a] == "--json") {
     return cmd_convert(std::filesystem::path(args[a + 1]), isolated);
+  }
+  if (cmd == "compile" && args.size() == 4 && args[3] == "--json") {
+    return cmd_compile(std::filesystem::path(args[2]), 0);
+  }
+  if (cmd == "compile" && args.size() == 5 && args[3] == "--bench") {
+    int n = 0;
+    const std::span<const char> txt(args[4]);
+    const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), n);
+    if (ec != std::errc{} || ptr != std::to_address(txt.end()) || n < 1 || n > 1000) {
+      usage(stderr);
+      return 2;
+    }
+    return cmd_compile(std::filesystem::path(args[2]), n);
   }
   if (cmd == "parity" && args.size() == 4) {
     return cmd_parity(args[2], std::filesystem::path(args[3]));

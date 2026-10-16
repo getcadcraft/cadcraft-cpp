@@ -14,3 +14,9 @@ fixtures, decoded as BimCraft decodes them (UTF-8, Windows-1252 when that gives 
 parity kit has no DXF engine, so these come from the fork's own script: `node tools/parity/dxf.mjs build/corpus/fixtures
 --golden-out <dir>/dxf`, then the same `tar` line with `dxf`. The test `io-dxf.golden` compares them as above; the full
 DXF check (104 files: the corpus `_truth` exports, apparel patterns, public fixtures) is `tools/parity/dxf.mjs`.
+
+`js-0.5-compile.tar.gz` — BimCraft 0.5's `compileDrawing` (dwg-compile.js) for the seven public DWG/DXF fixtures, in
+the plain form `tools/parity/compile.mjs` compares (Maps as value arrays, typed arrays as arrays, a JSON round trip),
+canonical. Made with `node tools/parity/compile.mjs build/corpus/fixtures --golden-out <dir>/compile`, then the same
+`tar` line with `compile`. The test `drawing.golden` compares them at the DWG tolerance; the full check (202 files) is
+`tools/parity/compile.mjs`.

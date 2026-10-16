@@ -6,9 +6,12 @@
 #include <charconv>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include "cc/base/value.hpp"
 
 namespace cc::base {
 
@@ -197,53 +200,79 @@ std::size_t utf16_length(std::string_view s) noexcept {
   return units;
 }
 
+// ---------------------------------------------------------------- case
+namespace {
+
+struct CaseMap {
+  std::uint32_t cp;
+  std::array<std::uint32_t, 3> to;
+};
+#include "js_case.inc"
+
+std::string map_case(std::string_view s, std::span<const CaseMap> table) {
+  std::string out;
+  out.reserve(s.size());
+  for (std::size_t i = 0; i < s.size();) {
+    std::size_t n = 1;
+    const std::uint32_t cp = code_point_at(s, i, n);
+    const auto it = std::ranges::lower_bound(table, cp, {}, &CaseMap::cp);
+    if (it != table.end() && it->cp == cp) {
+      for (const std::uint32_t c : it->to) {
+        if (c != 0) {
+          append_code_point(out, c);
+        }
+      }
+    } else {
+      out.append(s.substr(i, n));  // as it was (a stray byte stays a stray byte)
+    }
+    i += n;
+  }
+  return out;
+}
+
+}  // namespace
+
+std::string js_to_upper(std::string_view s) {
+  return map_case(s, kUpper);
+}
+std::string js_to_lower(std::string_view s) {
+  return map_case(s, kLower);
+}
+
 // ---------------------------------------------------------------- collation
 namespace {
 
-/// One collation element: a primary weight (or a number for a digit run), an accent and a case weight.
+/// One collation element: a primary weight (or a number for a digit run), an accent and a tertiary (case) weight.
 struct Element {
   std::uint32_t primary = 0;
   std::string number;  // digits without leading zeros, when this is a digit run
-  std::uint8_t accent = 0;
+  std::uint8_t accent = 64;
   std::uint8_t case_ = 0;
 };
 
-constexpr std::uint32_t kDigits = 100;
-constexpr std::uint32_t kLetters = 200;
-constexpr std::uint32_t kOther = 1000;
-
-/// ICU root order of the ASCII punctuation and symbols (measured: they sort before digits, digits before letters).
-constexpr std::string_view kPunct = " _-,;:!?.'\"()[]{}@*/\\&#%`^+<=>|~$";
-
-/// Latin-1 letters → base letter, accent number, upper case; 0 when not a letter we fold.
-struct Fold {
-  char base;
-  char base2;  // second letter of an expansion (ß → ss, æ → ae), or 0
+/// A character's place in ICU's root order, measured from Node (tools/gen/js-collation.mjs).
+struct Collation {
+  std::uint32_t cp;
+  std::uint8_t kind;  // 0 symbol, 1 letter-like, 2 ignorable
+  std::uint16_t rank;
+  std::string_view letters;
   std::uint8_t accent;
-  bool upper;
+  std::uint8_t tertiary;
 };
-Fold fold_latin1(std::uint32_t cp) noexcept {
-  if (cp == 0xDF) {
-    return {'s', 's', 1, false};
-  }
-  if (cp == 0xC6 || cp == 0xE6) {
-    return {'a', 'e', 1, cp == 0xC6};
-  }
-  using namespace std::string_view_literals;
-  static constexpr std::string_view kBase =  // U+00C0..U+00FF, '\0' = not a letter
-      "AAAAAAACEEEEIIII"
-      "DNOOOOO\0OUUUUYTs"
-      "aaaaaaaceeeeiiii"
-      "dnooooo\0ouuuuyty"sv;
-  if (cp < 0xC0 || cp > 0xFF) {
-    return {0, 0, 0, false};
-  }
-  const char b = kBase[cp - 0xC0];
-  if (b == '\0') {
-    return {0, 0, 0, false};
-  }
-  const bool upper = b >= 'A' && b <= 'Z';
-  return {static_cast<char>(upper ? b - 'A' + 'a' : b), 0, static_cast<std::uint8_t>(2 + (cp & 7U)), upper};
+#include "js_collation.inc"
+
+constexpr std::uint32_t kSpace = 1;  // white space sorts first
+constexpr std::uint32_t kSymbols = 2;
+constexpr std::uint32_t kDigits = kSymbols + kSymbolRanks + 1;
+constexpr std::uint32_t kLetters = kDigits + 1;
+constexpr std::uint32_t kOther = kLetters + 26;
+
+/// Unicode's default-ignorable code points and the C1 controls: no weight at all in ICU's root order.
+bool ignorable(std::uint32_t cp) noexcept {
+  return (cp >= 0x80 && cp <= 0x9F) || cp == 0x34F || cp == 0x61C || (cp >= 0x180B && cp <= 0x180F) ||
+         (cp >= 0x200B && cp <= 0x200F) || (cp >= 0x202A && cp <= 0x202E) || (cp >= 0x2060 && cp <= 0x206F) ||
+         (cp >= 0xFE00 && cp <= 0xFE0F) || cp == 0xFEFF || (cp >= 0xFFF0 && cp <= 0xFFF8) ||
+         (cp >= 0xE0000 && cp <= 0xE0FFF);
 }
 
 std::vector<Element> elements(std::string_view s) {
@@ -261,33 +290,35 @@ std::vector<Element> elements(std::string_view s) {
       while (run.size() > 1 && run[0] == '0') {
         run.remove_prefix(1);
       }
-      out.push_back(Element{kDigits, std::string(run), 0, 0});
+      out.push_back(Element{kDigits, std::string(run), 64, 0});
       i = j;
       continue;
     }
     i += n;
-    if (cp >= 'a' && cp <= 'z') {
-      out.push_back(Element{kLetters + (cp - 'a'), {}, 0, 0});
-    } else if (cp >= 'A' && cp <= 'Z') {
-      out.push_back(Element{kLetters + (cp - 'A'), {}, 0, 1});
-    } else if (const Fold f = fold_latin1(cp); f.base != 0) {
-      out.push_back(Element{kLetters + static_cast<std::uint32_t>(f.base - 'a'),
-                            {},
-                            f.accent,
-                            f.upper ? std::uint8_t{1} : std::uint8_t{0}});
-      if (f.base2 != 0) {
-        out.push_back(Element{kLetters + static_cast<std::uint32_t>(f.base2 - 'a'), {}, f.accent, 0});
+    const auto it = std::ranges::lower_bound(std::span(kCollation), cp, {}, &Collation::cp);
+    if (it != std::span(kCollation).end() && it->cp == cp) {
+      if (it->kind == 0) {
+        out.push_back(Element{kSymbols + it->rank, {}, 64, 0});
+      } else if (it->kind == 1) {
+        for (const char c : it->letters) {
+          out.push_back(Element{kLetters + static_cast<std::uint32_t>(c - 'a'), {}, it->accent, it->tertiary});
+        }
       }
-    } else if (cp == '\t' || cp == '\n' || cp == '\v' || cp == '\f' || cp == '\r') {
-      out.push_back(Element{1, {}, 0, 0});
-    } else if (cp < 0x20 || cp == 0x7F) {
-      continue;  // control characters are ignorable
-    } else if (cp < 0x80) {
-      const auto at = kPunct.find(static_cast<char>(cp));
-      out.push_back(
-          Element{2 + static_cast<std::uint32_t>(at == std::string_view::npos ? kPunct.size() : at), {}, 0, 0});
-    } else {
-      out.push_back(Element{kOther + cp, {}, 0, 0});
+      continue;  // kind 2: ignorable
+    }
+    if (ignorable(cp)) {
+      continue;
+    }
+    if (cp >= 0x300 && cp <= 0x36F) {  // a combining mark: an accent on the letter before it (approximate weight)
+      if (!out.empty()) {
+        out.back().accent = static_cast<std::uint8_t>(65 + ((cp - 0x300) % 120));
+      }
+      continue;
+    }
+    if (cp == ' ' || cp == '\t' || cp == '\n' || cp == '\v' || cp == '\f' || cp == '\r') {
+      out.push_back(Element{kSpace, {}, 64, 0});
+    } else if (cp >= 0x20) {                           // (control characters are ignorable)
+      out.push_back(Element{kOther + cp, {}, 64, 0});  // beyond the measured set: code point order, after Latin
     }
   }
   return out;

@@ -12,5 +12,6 @@ if(TARGET test_io-dxf)
   if(NOT EXISTS ${_golden}/dxf)
     file(ARCHIVE_EXTRACT INPUT ${PROJECT_SOURCE_DIR}/tests/golden/js-0.5-dxf.tar.gz DESTINATION ${_golden})
   endif()
-  target_compile_definitions(test_io-dxf PRIVATE CC_GOLDEN_DIR="${_golden}" CC_CORPUS_DIR="${PROJECT_SOURCE_DIR}/build/corpus")
+  target_compile_definitions(test_io-dxf PRIVATE CC_GOLDEN_DIR="${_golden}" CC_CORPUS_DIR="${PROJECT_SOURCE_DIR}/build/corpus"
+                                                CC_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 endif()

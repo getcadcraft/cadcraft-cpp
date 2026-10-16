@@ -28,6 +28,11 @@ namespace cc::base {
 [[nodiscard]] std::vector<std::uint16_t> to_utf16(std::string_view s);
 [[nodiscard]] std::size_t utf16_length(std::string_view s) noexcept;
 
+/// String#toUpperCase / #toLowerCase: the full Unicode mappings (generated from Node: js_case.inc), not
+/// locale-specific; toLowerCase's final-sigma rule (Σ at the end of a word → ς) is not applied (docs/gaps.md).
+[[nodiscard]] std::string js_to_upper(std::string_view s);
+[[nodiscard]] std::string js_to_lower(std::string_view s);
+
 /// `a.localeCompare(b, undefined, { numeric: true })` for the root locale: < 0, 0 or > 0.
 [[nodiscard]] int js_locale_compare_numeric(std::string_view a, std::string_view b);
 

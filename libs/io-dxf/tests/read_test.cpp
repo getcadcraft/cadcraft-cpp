@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -63,4 +64,30 @@ TEST_CASE("text decodes as UTF-8, else as Windows-1252 like BimCraft") {
   CHECK(cc::dxf::decode_text(bytes_of("\xEF\xBB\xBFok")) == "ok");
   CHECK(cc::dxf::decode_text(bytes_of("caf\xC3\xA9")) == "caf\xC3\xA9");
   CHECK(cc::dxf::decode_text(bytes_of("caf\xE9 \x80")) == "caf\xC3\xA9 \xE2\x82\xAC");
+}
+
+#include <filesystem>
+
+#include "cc/base/file.hpp"
+
+TEST_CASE("inputs the fuzzer once broke the reader with still read (regression corpus)") {
+  // e.g. regress-6138c338d51f: a group 70 of 7.8e74 (a double → int64 cast; now JS's ToInt32)
+  int n = 0;
+  for (const auto& e : std::filesystem::directory_iterator(std::filesystem::path(CC_SOURCE_DIR) / "fuzz/corpus/dxf")) {
+    if (!e.path().filename().string().starts_with("regress-")) {
+      continue;
+    }
+    const auto bytes = cc::base::read_file(e.path(), std::uint64_t{1} << 26U);
+    REQUIRE(bytes.has_value());
+    const auto model = cc::dxf::read_dxf_model(cc::dxf::decode_text(*bytes));
+    (void)model;  // read or refused: either way no crash
+    ++n;
+  }
+  CHECK(n >= 1);
+}
+
+TEST_CASE("a DIMENSION of type 7 is linear, as DIM_TYPES[7] || 'DIMENSION_LINEAR' in the JS") {
+  const auto m = cc::dxf::read_dxf_model("0\nSECTION\n2\nENTITIES\n0\nDIMENSION\n70\n7\n0\nENDSEC\n0\nEOF\n");
+  REQUIRE(m.has_value());
+  CHECK((*m)["report"]["counts"]["DIMENSION_LINEAR"].as_number() == 1);
 }

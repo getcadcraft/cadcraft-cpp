@@ -53,3 +53,15 @@ TEST_CASE("localeCompare with numeric collation orders as Node's ICU does") {
   }
   CHECK(back == punct);
 }
+
+TEST_CASE("ignorable characters and combining marks collate as in ICU") {
+  CHECK(js_locale_compare_numeric("\xC2\x9D\xC2\x9D"
+                                  "0",
+                                  "0") == 0);  // C1 controls
+  CHECK(js_locale_compare_numeric("\xE2\x80\x8B"
+                                  "0",
+                                  "0") == 0);                  // zero-width space
+  CHECK(js_locale_compare_numeric("a\xCC\x81", "a") > 0);      // a + combining acute
+  CHECK(js_locale_compare_numeric("\xE2\x84\xA2", "tm") > 0);  // ™ sorts as "tm", after it
+  CHECK(js_locale_compare_numeric("\xE2\x84\xA2", "tn") < 0);
+}

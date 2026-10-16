@@ -12,6 +12,8 @@
 #include <string>
 #include <system_error>
 
+#include "cc/base/js.hpp"
+
 namespace cc::base {
 
 bool Value::truthy() const noexcept {
@@ -232,26 +234,7 @@ void append_utf16(std::string& out, std::span<const std::uint16_t> u) {
 }
 
 std::string to_upper(std::string_view s) {
-  std::string out;
-  out.reserve(s.size());
-  for (std::size_t i = 0; i < s.size(); ++i) {
-    const auto c = static_cast<unsigned char>(s[i]);
-    if (c >= 'a' && c <= 'z') {
-      out += static_cast<char>(c - 32U);
-    } else if (c == 0xC3 && i + 1 < s.size()) {
-      // Latin-1 lower-case letters à..þ (except ÷) are U+00E0..U+00FE: C3 A0..C3 BE → C3 80..C3 9E.
-      auto d = static_cast<unsigned char>(s[i + 1]);
-      if (d >= 0xA0 && d <= 0xBE && d != 0xB7) {
-        d = static_cast<unsigned char>(d - 0x20U);
-      }
-      out += static_cast<char>(c);
-      out += static_cast<char>(d);
-      ++i;
-    } else {
-      out += static_cast<char>(c);
-    }
-  }
-  return out;
+  return js_to_upper(s);
 }
 
 std::string hex_upper(std::uint64_t n) {

@@ -38,3 +38,13 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
   (C4996) → `base::env_var` (`_dupenv_s` there); GCC 14 flagged an int → size_t conversion clang let through; ASan:
   the importer's NPROC 0 cap binds non-root users and LeakSanitizer clones a thread at exit, so sanitizer builds skip
   it as they skip the memory cap and seccomp (reproduced locally as `nobody`).
+- M3.2: libs/drawing, BimCraft's dwg-compile.js (draw lists: spaces → batches of polylines, fills, texts; xrefs,
+  multileaders, images, viewports) as typed C++. `tools/parity/compile.mjs` (the Rust fork's cdiff.mjs serialisation
+  and tolerance): **202 of 202 corpus files match, all also at rel 1e-12**; golden test on the public fixtures;
+  `cadcraft-cli compile <file> --json | --bench N`. Compile is 1.3–1.8× the JS (a few ms; the read dominates).
+- Differential fuzzing: every input the DXF/compile fuzzers kept is run through the JS and the C++ (2728 inputs).
+  It found what the corpus never shows: casts where the JS does ToInt32, the JS's `|| 'DIMENSION_LINEAR'`, TypeErrors
+  the JS throws (mirrored with its words), `String(object)`, full-Unicode toUpperCase (tables generated from Node:
+  tools/gen/js-case.mjs) and ICU's collation for every Windows-1252 character (tools/gen/js-collation.mjs). All 2728
+  match now. Compile fuzz: a spline degree its control points cannot carry (JS throws; C++ draws the polygon) and a
+  MINSERT of 10⁹ cells (the JS runs out of memory; C++ stops at `max_coords` and marks it truncated).
