@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.osv: known vulnerabilities in the dependencies. osv-scanner cannot read vcpkg manifests or vcpkg's SBOM
 # (its purls are pkg:vcpkg, which OSV does not index), so this asks the same database, api.osv.dev, by each port's
 # upstream repository and tag (ecosystem GIT). A hit fails the gate unless docs/security-waivers.md names the id.

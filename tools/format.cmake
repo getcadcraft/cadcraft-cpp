@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.format: clang-format --dry-run --Werror on every C++ source (cmake -DSRC=<repo> -P tools/format.cmake).
 include(${CMAKE_CURRENT_LIST_DIR}/_sources.cmake)
 find_program(CLANG_FORMAT NAMES clang-format-22 clang-format REQUIRED)

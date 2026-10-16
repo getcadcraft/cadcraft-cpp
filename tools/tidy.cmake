@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.tidy: clang-tidy (config in .clang-tidy) on the files changed against origin/main, or on every file when
 # CC_TIDY_ALL is set or there is no base to compare with (nightly runs the whole tree).
 # cmake -DSRC=<repo> -DBUILD=<build dir with compile_commands.json> -P tools/tidy.cmake

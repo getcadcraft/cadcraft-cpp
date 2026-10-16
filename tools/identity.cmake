@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.identity: every commit is authored and committed as CadCraft and carries no assistant attribution
 # (AGENTS.md section 15, Identity).
 find_package(Git QUIET)

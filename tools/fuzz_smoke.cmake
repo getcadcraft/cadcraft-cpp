@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.fuzz-smoke: each libFuzzer target runs on a copy of its corpus for CC_FUZZ_SECONDS (default 30) seconds.
 # cmake -DSRC=<repo> -DFUZZ_BUILD=<fuzz preset build dir> -P tools/fuzz_smoke.cmake
 if(DEFINED ENV{CC_FUZZ_SECONDS})

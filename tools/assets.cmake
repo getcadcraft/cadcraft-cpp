@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.assets: every file under assets/ has a row in ASSETS.md naming its path (AGENTS.md section 4, Assets).
 file(GLOB_RECURSE files RELATIVE ${SRC} ${SRC}/assets/*)
 file(READ ${SRC}/ASSETS.md table)

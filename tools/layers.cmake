@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.layers: no library below layer 6 includes a UI toolkit header (SDL, ImGui, WebGPU/Dawn). The dependency
 # order itself is checked by cc_library() at configure time. (cmake -DSRC=<repo> -P tools/layers.cmake)
 file(GLOB lib_lists ${SRC}/libs/*/CMakeLists.txt)

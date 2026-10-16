@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # Test files never live in this repo (AGENTS.md section 4, Assets).
 #
 #   cmake -DDEST=<dir> -P tools/corpus.cmake

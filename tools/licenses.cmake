@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.28)
 # gate.licenses: every installed port's licence is on the allowlist (AGENTS.md section 3). The licence comes from
 # vcpkg's SBOM (the port's declared SPDX expression); a port without one fails until it is checked by hand and
 # added to KNOWN below with the reason.  cmake -DINSTALLED=<vcpkg_installed/<triplet>> -P tools/licenses.cmake
