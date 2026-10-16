@@ -1,0 +1,345 @@
+// SPDX-License-Identifier: Apache-2.0
+#include "cc/base/value.hpp"
+
+#include <algorithm>
+#include <array>
+#include <charconv>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <memory>
+#include <span>
+#include <string>
+#include <system_error>
+
+namespace cc::base {
+
+bool Value::truthy() const noexcept {
+  switch (kind()) {
+    case Kind::undefined:
+    case Kind::null: return false;
+    case Kind::boolean: return *std::get_if<bool>(&v_);
+    case Kind::number: {
+      const double d = *std::get_if<double>(&v_);
+      return d != 0.0 && !std::isnan(d);
+    }
+    case Kind::string: return !std::get_if<std::string>(&v_)->empty();
+    default: return true;
+  }
+}
+
+Value& Value::set(std::string_view key, Value v) {
+  Object& o = as_object();
+  for (Member& m : o) {
+    if (m.key == key) {
+      m.value = std::move(v);
+      return m.value;
+    }
+  }
+  o.push_back(Member{std::string(key), std::move(v)});
+  return o.back().value;
+}
+
+const Value* Value::find(std::string_view key) const {
+  for (const Member& m : as_object()) {
+    if (m.key == key) {
+      return &m.value;
+    }
+  }
+  return nullptr;
+}
+
+Value* Value::find(std::string_view key) {
+  for (Member& m : as_object()) {
+    if (m.key == key) {
+      return &m.value;
+    }
+  }
+  return nullptr;
+}
+
+const Value& Value::operator[](std::string_view key) const {
+  static const Value kUndefined;
+  if (!is_object()) {
+    return kUndefined;
+  }
+  const Value* v = find(key);
+  return v != nullptr ? *v : kUndefined;
+}
+
+void Value::erase(std::string_view key) {
+  Object& o = as_object();
+  std::erase_if(o, [&](const Member& m) { return m.key == key; });
+}
+
+Value make_object(std::initializer_list<std::pair<std::string_view, Value>> members) {
+  Object o;
+  o.reserve(members.size());
+  for (const auto& [k, v] : members) {
+    o.push_back(Member{std::string(k), v});
+  }
+  return {std::move(o)};
+}
+
+// ---------------------------------------------------------------- numbers
+void append_number(std::string& out, double d) {
+  if (d == 0.0) {
+    out += '0';
+    return;
+  }
+  std::array<char, 32> buf{};
+  // Shortest round-trip digits in scientific form: d.ddddde±x.
+  const std::span<char> room(buf);
+  const auto res = std::to_chars(room.data(), std::to_address(room.end()), d, std::chars_format::scientific);
+  const std::string_view sci(room.data(), static_cast<std::size_t>(std::distance(room.data(), res.ptr)));
+  std::size_t i = 0;
+  const bool neg = sci[0] == '-';
+  if (neg) {
+    i = 1;
+  }
+  const std::size_t e = sci.find('e');
+  std::string digits;
+  for (std::size_t k = i; k < e; ++k) {
+    if (sci[k] != '.') {
+      digits += sci[k];
+    }
+  }
+  int exp10 = 0;
+  std::string_view tail = sci.substr(e + 1);
+  if (!tail.empty() && tail.front() == '+') {
+    tail.remove_prefix(1);
+  }
+  const std::span<const char> tail_chars(tail);
+  std::from_chars(tail_chars.data(), std::to_address(tail_chars.end()), exp10);
+  // JS Number#toString: n = exponent + 1 (position of the decimal point), k = digit count.
+  const int k = static_cast<int>(digits.size());
+  const int n = exp10 + 1;
+  if (neg) {
+    out += '-';
+  }
+  if (k <= n && n <= 21) {
+    out += digits;
+    out.append(static_cast<std::size_t>(n - k), '0');
+  } else if (0 < n && n <= 21) {
+    out.append(digits, 0, static_cast<std::size_t>(n));
+    out += '.';
+    out.append(digits, static_cast<std::size_t>(n));
+  } else if (-6 < n && n <= 0) {
+    out += "0.";
+    out.append(static_cast<std::size_t>(-n), '0');
+    out += digits;
+  } else {
+    out += digits[0];
+    if (k > 1) {
+      out += '.';
+      out.append(digits, 1);
+    }
+    out += 'e';
+    out += n - 1 >= 0 ? '+' : '-';
+    out += std::to_string(std::abs(n - 1));
+  }
+}
+
+// ---------------------------------------------------------------- text
+std::string base64(std::span<const std::uint8_t> b) {
+  static constexpr std::string_view kAlpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  std::string out;
+  out.reserve((b.size() + 2) / 3 * 4);
+  std::size_t i = 0;
+  for (; i + 3 <= b.size(); i += 3) {
+    const std::uint32_t v = (std::uint32_t{b[i]} << 16U) | (std::uint32_t{b[i + 1]} << 8U) | b[i + 2];
+    out += kAlpha[(v >> 18U) & 63U];
+    out += kAlpha[(v >> 12U) & 63U];
+    out += kAlpha[(v >> 6U) & 63U];
+    out += kAlpha[v & 63U];
+  }
+  if (i < b.size()) {
+    std::uint32_t v = std::uint32_t{b[i]} << 16U;
+    if (i + 1 < b.size()) {
+      v |= std::uint32_t{b[i + 1]} << 8U;
+    }
+    out += kAlpha[(v >> 18U) & 63U];
+    out += kAlpha[(v >> 12U) & 63U];
+    out += i + 1 < b.size() ? kAlpha[(v >> 6U) & 63U] : '=';
+    out += '=';
+  }
+  return out;
+}
+
+void append_code_point(std::string& out, std::uint32_t cp) {
+  if (cp < 0x80U) {
+    out += static_cast<char>(cp);
+  } else if (cp < 0x800U) {
+    out += static_cast<char>(0xC0U | (cp >> 6U));
+    out += static_cast<char>(0x80U | (cp & 0x3FU));
+  } else if (cp < 0x10000U) {
+    out += static_cast<char>(0xE0U | (cp >> 12U));
+    out += static_cast<char>(0x80U | ((cp >> 6U) & 0x3FU));
+    out += static_cast<char>(0x80U | (cp & 0x3FU));
+  } else {
+    out += static_cast<char>(0xF0U | (cp >> 18U));
+    out += static_cast<char>(0x80U | ((cp >> 12U) & 0x3FU));
+    out += static_cast<char>(0x80U | ((cp >> 6U) & 0x3FU));
+    out += static_cast<char>(0x80U | (cp & 0x3FU));
+  }
+}
+
+void append_utf16(std::string& out, std::span<const std::uint16_t> u) {
+  for (std::size_t i = 0; i < u.size(); ++i) {
+    const std::uint32_t c = u[i];
+    if (c >= 0xD800U && c <= 0xDBFFU && i + 1 < u.size() && u[i + 1] >= 0xDC00U && u[i + 1] <= 0xDFFFU) {
+      append_code_point(out, 0x10000U + ((c - 0xD800U) << 10U) + (u[i + 1] - 0xDC00U));
+      ++i;
+    } else {
+      append_code_point(out, c);
+    }
+  }
+}
+
+std::string to_upper(std::string_view s) {
+  std::string out;
+  out.reserve(s.size());
+  for (std::size_t i = 0; i < s.size(); ++i) {
+    const auto c = static_cast<unsigned char>(s[i]);
+    if (c >= 'a' && c <= 'z') {
+      out += static_cast<char>(c - 32U);
+    } else if (c == 0xC3 && i + 1 < s.size()) {
+      // Latin-1 lower-case letters à..þ (except ÷) are U+00E0..U+00FE: C3 A0..C3 BE → C3 80..C3 9E.
+      auto d = static_cast<unsigned char>(s[i + 1]);
+      if (d >= 0xA0 && d <= 0xBE && d != 0xB7) {
+        d = static_cast<unsigned char>(d - 0x20U);
+      }
+      out += static_cast<char>(c);
+      out += static_cast<char>(d);
+      ++i;
+    } else {
+      out += static_cast<char>(c);
+    }
+  }
+  return out;
+}
+
+std::string hex_upper(std::uint64_t n) {
+  if (n == 0) {
+    return "0";
+  }
+  std::array<char, 16> b{};
+  std::size_t k = b.size();
+  while (n != 0) {
+    b[--k] = "0123456789ABCDEF"[n & 15U];
+    n >>= 4U;
+  }
+  return std::string(std::string_view(b.data(), b.size()).substr(k));
+}
+
+// ---------------------------------------------------------------- JSON
+namespace {
+
+void write_string(std::string& out, std::string_view s) {
+  out += '"';
+  for (std::size_t i = 0; i < s.size(); ++i) {
+    const auto c = static_cast<unsigned char>(s[i]);
+    switch (c) {
+      case '"': out += "\\\""; continue;
+      case '\\': out += "\\\\"; continue;
+      case '\b': out += "\\b"; continue;
+      case '\f': out += "\\f"; continue;
+      case '\n': out += "\\n"; continue;
+      case '\r': out += "\\r"; continue;
+      case '\t': out += "\\t"; continue;
+      default: break;
+    }
+    if (c < 0x20U) {
+      static constexpr std::string_view kHex = "0123456789abcdef";
+      out += "\\u00";
+      out += kHex[c >> 4U];
+      out += kHex[c & 15U];
+    } else if (c == 0xED && i + 2 < s.size() && (static_cast<unsigned char>(s[i + 1]) & 0xE0U) == 0xA0U) {
+      // A lone surrogate kept as WTF-8 (ED A0..BF xx): JSON.stringify writes it as an escape.
+      const std::uint32_t cp =
+          0xD000U | ((static_cast<unsigned>(s[i + 1]) & 0x3FU) << 6U) | (static_cast<unsigned>(s[i + 2]) & 0x3FU);
+      static constexpr std::string_view kHex = "0123456789abcdef";
+      out += "\\u";
+      out += kHex[(cp >> 12U) & 15U];
+      out += kHex[(cp >> 8U) & 15U];
+      out += kHex[(cp >> 4U) & 15U];
+      out += kHex[cp & 15U];
+      i += 2;
+    } else {
+      out += static_cast<char>(c);
+    }
+  }
+  out += '"';
+}
+
+// Recursion depth = the value's depth; the readers build models of bounded depth (their own limits).
+// NOLINTNEXTLINE(misc-no-recursion)
+void write_value(const Value& v, std::string& out) {
+  switch (v.kind()) {
+    case Value::Kind::undefined:
+    case Value::Kind::null: out += "null"; return;
+    case Value::Kind::boolean: out += v.as_bool() ? "true" : "false"; return;
+    case Value::Kind::number: {
+      const double d = v.as_number();
+      if (std::isnan(d)) {
+        out += "\"$NaN\"";
+      } else if (std::isinf(d)) {
+        out += d > 0 ? "\"$Inf\"" : "\"$-Inf\"";
+      } else {
+        append_number(out, d);
+      }
+      return;
+    }
+    case Value::Kind::string: write_string(out, v.as_string()); return;
+    case Value::Kind::array: {
+      out += '[';
+      bool first = true;
+      for (const Value& x : v.as_array()) {
+        if (!first) {
+          out += ',';
+        }
+        first = false;
+        write_value(x, out);
+      }
+      out += ']';
+      return;
+    }
+    case Value::Kind::object: {
+      out += '{';
+      bool first = true;
+      for (const Member& m : v.as_object()) {
+        if (m.value.is_undefined()) {
+          continue;
+        }
+        if (!first) {
+          out += ',';
+        }
+        first = false;
+        write_string(out, m.key);
+        out += ':';
+        write_value(m.value, out);
+      }
+      out += '}';
+      return;
+    }
+    case Value::Kind::bytes:
+      out += R"({"$base64":")";
+      out += base64(v.as_bytes());
+      out += "\"}";
+      return;
+  }
+}
+
+}  // namespace
+
+void write_json(const Value& v, std::string& out) {
+  write_value(v, out);
+}
+
+std::string to_json(const Value& v) {
+  std::string s;
+  write_value(v, s);
+  return s;
+}
+
+}  // namespace cc::base

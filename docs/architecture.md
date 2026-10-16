@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-16 · Change: first version (M1: toolchain, build, gate).
+Last updated 2026-10-16 · Change: M2.1 io-dwg (the DWG reader), cc::base::Value, the JS reference.
 
 ## Toolchain (pinned)
 
@@ -49,6 +49,27 @@ Last updated 2026-10-16 · Change: first version (M1: toolchain, build, gate).
 | gate.fuzz-smoke (heavy) | `tools/fuzz_smoke.cmake` — each libFuzzer target 30 s on a copy of its corpus |
 
 CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC and MSVC builds.
+
+## Libraries
+
+| Library | Layer | What |
+|---|---|---|
+| `libs/base` | L0 | `Error`/`Result`, checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form) |
+| `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module |
+
+### The JS reference
+
+The engines port the CadCraft 0.5 JavaScript build, frozen for the forks at
+`/var/www/CADCRAFT/testfiles/fork-parity/js-0.5/` (site commit 594ab3e; `PIN.json` says what it is): `lib/{dwg,ifc,skp,shapes}`
+for the engines, `site/` for the app code of M3+. Never read them from the moving site repo, and never copy anything from
+`testfiles/` into this repo. The parity kit (`tools/fork-parity` in the site repo) loads the same copy.
+
+### Engine models as `Value`
+
+The engines build their output as `cc::base::Value` with the JS field names, order and types (a JS boolean is a bool,
+a JS number a double, an absent field stays absent), so the parity kit compares them field for field. This costs speed
+(a generic tree of small allocations); the measured numbers are in ROADMAP.md, and the plan to recover it (a typed
+fast path for the viewer, an arena for the model) is in docs/roadmap.md, M3.
 
 ## Errors
 

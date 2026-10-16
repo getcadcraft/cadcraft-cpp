@@ -10,21 +10,23 @@ benchmark table format below so the numbers compare.
 | # | Milestone | Ends with | Status |
 |---|---|---|---|
 | M1 | Source tree + gate | `cmake/` (cc_library with layer check, hardening, sanitizer/fuzz presets), CMakePresets.json, vcpkg.json, .clang-tidy, .clang-format, `tools/*.cmake` (format, layers, tidy, assets, licenses, osv, identity, corpus, fuzz smoke), CI workflow incl. ASan/UBSan, TSan, MSVC + GCC jobs, wasm preset; CI green on the empty skeleton | in progress |
-| M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | planned |
+| M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | in progress: reader at parity 78/78 (M2.1) |
 | M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | planned |
 | M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | planned |
 | M5+ | The rest | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M3.** | planned |
 
 ## Benchmark table format (shared with the Rust fork)
 
-Timings are warm, best of 5, on the same machine, wall clock of the engine call only (no process start, no file
-read): JS = `readDwg(bytes)` in Node 24; C++ = the same call through `cadcraft-cli bench`. Speed-up = JS ÷ fork.
+The table comes from the parity kit, `node tools/fork-parity/bench.mjs --engine dwg --forks js,rust,cpp` in the site
+repo (forks-infra; README § Benchmark table). Timings are in-process after one warm-up: open = reading the file into
+memory, parse = the engine call on those bytes; the table shows the best run, the detail table the median.
+Speed-up = JS ÷ fork. Parity = the kit's verdict with its per-engine tolerance (dwg: abs 1e-9 + rel 1e-12):
+"same" or "<n> paths".
 
-| File | Version | Size (MB) | 0.5 JS (ms) | C++ (ms) | Speed-up | Parity |
-|---|---|---|---|---|---|---|
+| File | Version | Size (MB) | 0.5 JS (ms) | Rust (ms) | Speed-up | Parity | C++ (ms) | Speed-up | Parity |
+|---|---|---|---|---|---|---|---|---|---|
 
-Parity = the fork's model equals the JS model after canonical JSON (sorted keys, numbers compared to 1e-9
-relative), counted per file as "same" or the number of differing paths.
+CLI contract: `cadcraft-cli parity dwg <file>` (the model as JSON) and `cadcraft-cli bench dwg <file> --runs N`.
 
 ## Tablets (AGENTS.md section 10, Mobile)
 

@@ -19,6 +19,18 @@ foreach(t IN LISTS targets)
   if(EXISTS ${SRC}/fuzz/corpus/${short})
     file(COPY ${SRC}/fuzz/corpus/${short}/ DESTINATION ${work}/corpus)
   endif()
+  # Seeds fetched by tools/corpus.cmake (public fixtures, never committed): fuzz/corpus/<name>.seeds lists them.
+  if(EXISTS ${SRC}/fuzz/corpus/${short}.seeds)
+    if(NOT EXISTS ${SRC}/build/corpus)
+      execute_process(COMMAND ${CMAKE_COMMAND} -DDEST=${SRC}/build/corpus -P ${SRC}/tools/corpus.cmake)
+    endif()
+    file(STRINGS ${SRC}/fuzz/corpus/${short}.seeds seeds REGEX "^[^#]")
+    foreach(sd IN LISTS seeds)
+      if(EXISTS ${SRC}/build/corpus/${sd})
+        file(COPY ${SRC}/build/corpus/${sd} DESTINATION ${work}/corpus)
+      endif()
+    endforeach()
+  endif()
   message(STATUS "fuzz-smoke: ${short} for ${secs} s")
   execute_process(COMMAND ${t} ${work}/corpus -max_total_time=${secs} -timeout=10 -rss_limit_mb=2048
                           -artifact_prefix=${work}/artifacts/ -print_final_stats=1

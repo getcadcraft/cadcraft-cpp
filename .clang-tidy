@@ -27,7 +27,8 @@ Checks: >
   -readability-math-missing-parentheses,
   -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
   -cppcoreguidelines-pro-bounds-constant-array-index,
-  -readability-use-concise-preprocessor-directives
+  -readability-use-concise-preprocessor-directives,
+  -clang-analyzer-optin.performance.Padding
 # Why each one is off:
 #  easily-swappable-parameters  every (x, y) / (offset, size) pair trips it; the types are what they are
 #  magic-numbers (both)         format specs are full of bit widths, codes and offsets named by the spec chapter
@@ -47,6 +48,7 @@ Checks: >
 #                               the hardened standard library traps on an out-of-bounds operator[] in every build
 #                               (section 4); .at() would turn the same bug into a catchable exception instead
 #  use-concise-preprocessor-directives  #elifdef is too new for every compiler we build with
+#  optin.performance.Padding    model structs keep a readable field order; their padding is not on a hot path
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(libs|apps|fuzz)/.*'
 CheckOptions:

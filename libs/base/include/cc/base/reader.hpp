@@ -20,6 +20,13 @@ namespace cc::base {
 
 using Bytes = std::span<const std::byte>;
 
+/// The bytes as unsigned chars — the one sanctioned view change between std::byte and unsigned char storage (both
+/// may alias any object; the readers index octets as numbers).
+[[nodiscard]] inline std::span<const std::uint8_t> as_u8(Bytes b) noexcept {
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+  return {reinterpret_cast<const std::uint8_t*>(b.data()), b.size()};
+}
+
 [[nodiscard]] inline Result<std::uint8_t> byte_at(Bytes b, std::size_t i) {
   if (i >= b.size()) {
     return fail(Errc::out_of_range, "read past the end");

@@ -1,3 +1,3 @@
 cc_executable(cadcraft-cli
   SOURCES main.cpp
-  DEPS cc::base)
+  DEPS cc::base cc::io-dwg)
