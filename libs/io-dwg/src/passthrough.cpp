@@ -4,6 +4,7 @@
 // 20.2, 20.4.90). The writer half arrives with the DWG writer (M4).
 #include <algorithm>
 
+#include "cc/base/checked.hpp"
 #include "parts.hpp"
 #include "record.hpp"
 
@@ -32,7 +33,8 @@ std::optional<Value> capture_raw(const Rec& rec, int ver) {
   raw.set("h", std::move(hs));
   if (rec.gfx_pos && rec.graphics > 0) {
     const std::uint64_t from = *rec.gfx_pos;
-    raw.set("gfx", base::base64(slice_bits_of(rec.buf, from, from + static_cast<std::uint64_t>(rec.graphics * 8))));
+    raw.set("gfx",
+            base::base64(slice_bits_of(rec.buf, from, from + base::clamp_cast<std::uint64_t>(rec.graphics * 8))));
   }
   if (rec.ds != 0) {
     raw.set("ds", 1);

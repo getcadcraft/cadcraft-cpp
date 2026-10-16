@@ -123,9 +123,10 @@ class Bits {
   const Codepage* cp_ = nullptr;
 };
 
-/// Byte-level modular numbers (2.6, 2.7). `pos` advances; reads past `b` throw DecodeError.
-[[nodiscard]] std::int64_t read_mc(Bytes b, std::size_t& pos);
-[[nodiscard]] std::uint64_t read_mcu(Bytes b, std::size_t& pos);
-[[nodiscard]] std::uint64_t read_ms(Bytes b, std::size_t& pos);
+/// Byte-level modular numbers (2.6, 2.7) as the JS computes them (doubles: no overflow on hostile input; precision
+/// beyond 2^53 is lost exactly as in the reference). `pos` advances; reads past `b` throw DecodeError.
+[[nodiscard]] double read_mc(Bytes b, std::size_t& pos);
+[[nodiscard]] double read_mcu(Bytes b, std::size_t& pos);
+[[nodiscard]] double read_ms(Bytes b, std::size_t& pos);
 
 }  // namespace cc::dwg

@@ -11,6 +11,7 @@
 #include <string_view>
 #include <utility>
 
+#include "cc/base/checked.hpp"
 #include "messages.hpp"
 
 namespace cc::dwg {
@@ -971,9 +972,9 @@ std::vector<std::uint8_t> load_sys_page(Bytes b, double at, double csize, double
 }
 
 struct Page21 {
-  std::int64_t offset = 0;
-  std::int64_t size = 0;
-  std::int64_t id = 0;
+  double offset = 0;  // JS numbers: the sum of hostile sizes must not overflow
+  double size = 0;
+  double id = 0;
 };
 struct PageRef21 {
   double offset = 0;
@@ -983,14 +984,14 @@ struct PageRef21 {
   double csize = 0;
 };
 
-std::vector<std::uint8_t> read_data_section21(Bytes b, const std::map<std::int64_t, Page21>& pages,
+std::vector<std::uint8_t> read_data_section21(Bytes b, const std::map<double, Page21>& pages,
                                               const std::vector<PageRef21>& list, double size, double encoding,
                                               const std::string& name, Container& c) {
   plausible(size, b.size());
   std::vector<std::uint8_t> out(static_cast<std::size_t>(size));
   int bad = 0;
   for (const PageRef21& pg : list) {
-    const auto it = pages.find(static_cast<std::int64_t>(pg.id));
+    const auto it = pages.find(pg.id);
     if (it == pages.end()) {
       ++bad;
       continue;
@@ -1018,7 +1019,7 @@ std::vector<std::uint8_t> read_data_section21(Bytes b, const std::map<std::int64
       page.assign(data.begin(), data.begin() + static_cast<std::ptrdiff_t>(
                                                    std::min(data.size(), static_cast<std::size_t>(pg.usize))));
     }
-    const auto start = static_cast<std::size_t>(pg.offset);
+    const auto start = base::clamp_cast<std::size_t>(pg.offset);
     if (start < out.size()) {
       const std::size_t n = std::min(page.size(), out.size() - start);
       std::copy_n(page.begin(), n, out.begin() + static_cast<std::ptrdiff_t>(start));
@@ -1070,21 +1071,21 @@ Container read_r2007(Bytes b, const std::string& version, int ver) {
   const std::vector<std::uint8_t> pm =
       load_sys_page(b, 0x480 + pages_map_offset, pages_map_size_comp, pages_map_size_uncomp, pages_map_correction, c,
                     msg("ccdwg.part.page_map"));
-  std::map<std::int64_t, Page21> pages;
-  std::int64_t offset = 0;
+  std::map<double, Page21> pages;  // keyed by Math.abs(id), a JS number
+  double offset = 0;
   for (std::size_t p = 0; p + 16 <= pm.size(); p += 16) {
-    const std::int64_t size = i64(pm, p);
-    const std::int64_t id = i64(pm, p + 8);
-    pages[id < 0 ? -id : id] = Page21{offset, size, id};
+    const auto size = static_cast<double>(i64(pm, p));
+    const auto id = static_cast<double>(i64(pm, p + 8));
+    pages[std::abs(id)] = Page21{offset, size, id};
     offset += size;
   }
-  const auto smp = pages.find(static_cast<std::int64_t>(sections_map_id));
+  const auto smp = pages.find(sections_map_id);
   if (smp == pages.end()) {
     throw Unsupported(msg("ccdwg.open.r2007_no_section_map"));
   }
   const std::vector<std::uint8_t> sm =
-      load_sys_page(b, 0x480 + static_cast<double>(smp->second.offset), sections_map_size_comp,
-                    sections_map_size_uncomp, sections_map_correction, c, msg("ccdwg.part.section_map"));
+      load_sys_page(b, 0x480 + smp->second.offset, sections_map_size_comp, sections_map_size_uncomp,
+                    sections_map_correction, c, msg("ccdwg.part.section_map"));
   std::size_t p = 0;
   while (p + 0x40 <= sm.size()) {
     const auto data_size = static_cast<double>(u64(sm, p));

@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "cc/base/checked.hpp"
 #include "container.hpp"
 #include "messages.hpp"
 #include "parts.hpp"
@@ -227,11 +228,13 @@ std::vector<std::pair<std::int64_t, std::int64_t>> read_object_map(const Section
       ++bad;
     }
     std::size_t q = p + 2;
-    std::int64_t h = 0;
-    std::int64_t loc = 0;
+    double hd = 0;  // JS numbers: deltas never overflow, they lose precision past 2^53 as in the reference
+    double locd = 0;
     while (q < end) {
-      h += static_cast<std::int64_t>(read_mcu(sec, q));
-      loc += read_mc(sec, q);
+      hd += read_mcu(sec, q);
+      locd += read_mc(sec, q);
+      const auto h = base::clamp_cast<std::int64_t>(hd);
+      const auto loc = base::clamp_cast<std::int64_t>(locd);
       if (auto it = at.find(h); it != at.end()) {
         map[it->second].second = loc;
       } else {
@@ -815,7 +818,7 @@ Value Builder::convert(Rec& rec, std::int64_t owner_handle) {
         if (it.at(0).num_or(-1) == 1000 && it.at(1).is_string() && it.at(1).as_string() == "RTLwPs") {
           if (k + 1 < a.size()) {
             const Array& nx = a[k + 1].as_array();
-            const auto v = static_cast<std::int64_t>(nx.at(1).num_or(0));
+            const auto v = base::clamp_cast<std::int64_t>(nx.at(1).num_or(0));
             if (nx.at(0).num_or(-1) == 1070 && (v & 128) != 0) {
               e.set("lineweight", lineweight_from_index(static_cast<double>(v & 0x7F)));
             }
@@ -1051,7 +1054,7 @@ Value Builder::type_fields(Rec& rec) {
         Array b;
         if (const Value* lb = l.find("_boundary"); lb != nullptr && lb->is_array()) {
           for (const Value& x : lb->as_array()) {
-            b.emplace_back(handle_hex(static_cast<std::int64_t>(x.num_or(0))));
+            b.emplace_back(handle_hex(base::clamp_cast<std::int64_t>(x.num_or(0))));
           }
         }
         l.set("boundary", std::move(b));
@@ -1076,10 +1079,10 @@ Value Builder::type_fields(Rec& rec) {
     f.set("style", name_or_hex(rec.ref("style")));
     const Value& ctxv = rec.get("context");
     if (ctxv.is_object() && truthy(ctxv["block"])) {
-      f.set("contentBlock", name_or_hex(static_cast<std::int64_t>(ctxv["block"]["_block"].num_or(0))));
+      f.set("contentBlock", name_or_hex(base::clamp_cast<std::int64_t>(ctxv["block"]["_block"].num_or(0))));
     }
     if (ctxv.is_object() && truthy(ctxv["text"])) {
-      auto n = name_of(static_cast<std::int64_t>(ctxv["text"]["_style"].num_or(0)));
+      auto n = name_of(base::clamp_cast<std::int64_t>(ctxv["text"]["_style"].num_or(0)));
       f.set("textStyle", n ? *n : Value());
     }
     std::optional<Value> m;
@@ -1160,7 +1163,7 @@ Value Builder::object_fields(const Rec& r) {
     Array sh;
     if (r.get("_sort").is_array()) {
       for (const Value& x : r.get("_sort").as_array()) {
-        sh.emplace_back(handle_hex(static_cast<std::int64_t>(x.num_or(0))));
+        sh.emplace_back(handle_hex(base::clamp_cast<std::int64_t>(x.num_or(0))));
       }
     }
     f.set("sortHandles", std::move(sh));
@@ -1297,7 +1300,7 @@ void Builder::run() {
         const Array& gi = data[i].as_array();
         if (gi.at(0).num_or(-1) == 102 && gi.at(1).is_string() && gi.at(1).as_string() == "LINEWEIGHT") {
           if (const Array* g1 = g(i + 1)) {
-            r.set("_lwIndex", static_cast<double>(static_cast<std::int64_t>(g1->at(1).num_or(0)) & 0x1F));
+            r.set("_lwIndex", static_cast<double>(base::clamp_cast<std::int64_t>(g1->at(1).num_or(0)) & 0x1F));
           }
           break;
         }

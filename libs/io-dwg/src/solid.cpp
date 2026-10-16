@@ -7,6 +7,7 @@
 #include <map>
 #include <string_view>
 
+#include "cc/base/checked.hpp"
 #include "messages.hpp"
 #include "parts.hpp"
 #include "record.hpp"
@@ -538,7 +539,7 @@ Acds read_acds(Bytes sec) {
       if (i < 0 || static_cast<std::size_t>(i) >= segs.size() || segs[static_cast<std::size_t>(i)].offset == 0) {
         throw DecodeError(msg("ccdwg.err.acds_segment", {{"n", static_cast<double>(i)}}));
       }
-      return seg_at(static_cast<std::int64_t>(segs[static_cast<std::size_t>(i)].offset));
+      return seg_at(base::clamp_cast<std::int64_t>(segs[static_cast<std::size_t>(i)].offset));
     };
     const Seg di = seg(dat_idx);
     const std::int32_t n = sle32(sec, di.data);
@@ -597,12 +598,18 @@ Acds read_acds(Bytes sec) {
         }
         const std::int64_t max = next_at - at;
         const std::uint32_t size = le32(sec, at);
-        const auto handle = static_cast<std::int64_t>(hd.handle);
+        const auto handle = base::clamp_cast<std::int64_t>(hd.handle);
         if (size == kBlobRef) {
           // 24.2.2.3.1 a blob reference: the pages live in blob01 segments
           const std::int64_t p = at + 4;
           const double total = le64(sec, p);
           const std::uint32_t pages = le32(sec, p + 8);
+          // JS: new Uint8Array(total) refuses absurd lengths; a blob cannot be larger than the section holding it.
+          if (!(total >= 0) || total > static_cast<double>(sec.size())) {
+            std::string len;
+            base::append_number(len, total);
+            throw DecodeError("Invalid typed array length: " + len);
+          }
           std::vector<std::uint8_t> blob(static_cast<std::size_t>(total));
           std::int64_t q = p + 32;
           for (std::uint32_t k = 0; k < pages; ++k, q += 8) {
@@ -610,9 +617,9 @@ Acds read_acds(Bytes sec) {
             const double bstart = le64(sec, bs.data + 8);
             const double bsize = le64(sec, bs.data + 24);
             const auto from = static_cast<std::size_t>(bs.data + 32);
-            const auto cnt = static_cast<std::size_t>(std::min(bsize, total - bstart));
+            const auto cnt = base::clamp_cast<std::size_t>(std::min(bsize, total - bstart));
             const std::size_t avail = from < sec.size() ? std::min(cnt, sec.size() - from) : 0;
-            const auto dst = static_cast<std::size_t>(bstart);
+            const auto dst = base::clamp_cast<std::size_t>(bstart);
             if (dst + avail <= blob.size()) {
               std::copy_n(sec.begin() + static_cast<std::ptrdiff_t>(from), avail,
                           blob.begin() + static_cast<std::ptrdiff_t>(dst));

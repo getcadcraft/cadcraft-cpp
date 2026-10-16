@@ -440,50 +440,42 @@ std::uint8_t at(Bytes b, std::size_t& pos) {
 }
 }  // namespace
 
-std::int64_t read_mc(Bytes b, std::size_t& pos) {
-  std::int64_t v = 0;
-  unsigned shift = 0;
+double read_mc(Bytes b, std::size_t& pos) {
+  double v = 0;
+  double scale = 1;  // 2 ** shift
   for (;;) {
     const std::uint8_t byte = at(b, pos);
     if ((byte & 0x80U) != 0) {
-      if (shift < 56) {
-        v += static_cast<std::int64_t>(byte & 0x7FU) << shift;
-      }
-      shift += 7;
+      v += (byte & 0x7FU) * scale;
+      scale *= 128;
       continue;
     }
-    if (shift < 57) {
-      v += static_cast<std::int64_t>(byte & 0x3FU) << shift;
-    }
+    v += (byte & 0x3FU) * scale;
     return (byte & 0x40U) != 0 ? -v : v;
   }
 }
 
-std::uint64_t read_mcu(Bytes b, std::size_t& pos) {
-  std::uint64_t v = 0;
-  unsigned shift = 0;
+double read_mcu(Bytes b, std::size_t& pos) {
+  double v = 0;
+  double scale = 1;
   std::uint8_t byte = 0;
   do {
     byte = at(b, pos);
-    if (shift < 57) {
-      v += static_cast<std::uint64_t>(byte & 0x7FU) << shift;
-    }
-    shift += 7;
+    v += (byte & 0x7FU) * scale;
+    scale *= 128;
   } while ((byte & 0x80U) != 0);
   return v;
 }
 
-std::uint64_t read_ms(Bytes b, std::size_t& pos) {
-  std::uint64_t v = 0;
-  unsigned shift = 0;
+double read_ms(Bytes b, std::size_t& pos) {
+  double v = 0;
+  double scale = 1;
   std::uint32_t w = 0;
   do {
     const std::uint32_t lo = at(b, pos);
     w = lo | (static_cast<std::uint32_t>(at(b, pos)) << 8U);
-    if (shift < 49) {
-      v += static_cast<std::uint64_t>(w & 0x7FFFU) << shift;
-    }
-    shift += 15;
+    v += (w & 0x7FFFU) * scale;
+    scale *= 32768;
   } while ((w & 0x8000U) != 0);
   return v;
 }

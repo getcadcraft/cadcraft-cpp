@@ -19,6 +19,7 @@
 #include <optional>
 #include <string>
 
+#include "cc/base/checked.hpp"
 #include "parts.hpp"
 
 namespace cc::dwg {
@@ -323,7 +324,7 @@ std::optional<Value> read_mleader(const Rec& rec, const Ctx& ctx, const Resolver
   // the proxy graphics (ch. 29) programs without multileaders draw; kept for the writer
   if (rec.gfx_pos && rec.graphics > 0 && std::isfinite(rec.graphics)) {
     const std::uint64_t from = *rec.gfx_pos;
-    const auto len = static_cast<std::uint64_t>(rec.graphics * 8);
+    const auto len = base::clamp_cast<std::uint64_t>(rec.graphics * 8);
     f.set("proxyGraphics", base::base64(slice_bits_of(rec.buf, from, from + len)));
   }
   return f;

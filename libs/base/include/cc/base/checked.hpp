@@ -56,4 +56,25 @@ template <std::integral To>
   return static_cast<To>(t);
 }
 
+/// A double to an integer type without undefined behaviour: truncated toward zero, NaN → 0, values beyond the type's
+/// range clamp to its min/max. For numbers read from files (JS numbers in the reference) used as counts or offsets;
+/// callers that need to refuse out-of-range values use to_int() instead.
+template <std::integral To>
+[[nodiscard]] constexpr To clamp_cast(double v) noexcept {
+  if (!(v == v)) {  // NaN (no <cmath> in constexpr)
+    return 0;
+  }
+  constexpr auto lo = static_cast<double>(std::numeric_limits<To>::min());
+  constexpr double hi = std::numeric_limits<To>::digits >= 53
+                            ? static_cast<double>(std::numeric_limits<To>::max())
+                            : static_cast<double>(std::numeric_limits<To>::max()) + 1.0;
+  if (v <= lo) {
+    return std::numeric_limits<To>::min();
+  }
+  if (v >= hi) {
+    return std::numeric_limits<To>::max();
+  }
+  return static_cast<To>(v);
+}
+
 }  // namespace cc::base

@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "cc/base/checked.hpp"
 #include "container.hpp"
 #include "messages.hpp"
 #include "record.hpp"
@@ -119,6 +120,15 @@ std::vector<std::int64_t> rest_handles(Bits& h, std::int64_t ref) {
 
 Value bool_v(std::uint32_t b) {
   return {b != 0};
+}
+
+/// JS v.toString(16).toUpperCase() for a non-negative integer-valued double of at most 2^64 (8 bytes read as a
+/// JS number: the sum rounds to 2^64 when every byte is 0xFF).
+std::string js_hex(double v) {
+  if (v >= 18446744073709551616.0) {
+    return "10000000000000000";
+  }
+  return base::hex_upper(base::clamp_cast<std::uint64_t>(v));
 }
 
 }  // namespace
@@ -386,7 +396,7 @@ void read_eed(Bits& r, Rec& rec, const Ctx& ctx) {
             for (const std::uint8_t x : b) {
               v = v * 256 + x;
             }
-            item = {static_cast<int>(1000 + code), base::hex_upper(static_cast<std::uint64_t>(v))};
+            item = {static_cast<int>(1000 + code), js_hex(v)};
             break;
           }
           case 4: {
@@ -427,7 +437,7 @@ void common_entity(Bits& r, Rec& rec, const Ctx& ctx) {
   if (r.B() != 0) {  // graphic present
     const double n = ver >= 24 ? r.BLL() : static_cast<double>(r.RL());
     rec.gfx_pos = r.pos();
-    r.set_pos(r.pos() + static_cast<std::uint64_t>(n * 8));
+    r.set_pos(r.pos() + base::clamp_cast<std::uint64_t>(n * 8));
     rec.graphics = n;
   }
   if (ver < 15) {
@@ -1550,11 +1560,11 @@ void dec_ltype(Bits& r, Bits& h, Rec& rec, const Ctx& ctx) {
   }
   if (has_area) {
     for (Value& e : rec.f.find("elements")->as_array()) {
-      const auto flags = static_cast<std::int32_t>(e["flags"].num_or(0));
+      const auto flags = base::clamp_cast<std::int32_t>(e["flags"].num_or(0));
       if ((flags & 2) == 0) {
         continue;
       }
-      const auto shape = static_cast<std::int64_t>(e["shape"].num_or(0));
+      const auto shape = base::clamp_cast<std::int64_t>(e["shape"].num_or(0));
       U16 s;
       if (ctx.ver <= 18) {
         // text dashes keep their string in the area at the 75-group index
@@ -2025,7 +2035,7 @@ void dec_hatch(Bits& r, Bits& h, Rec& rec, const Ctx& ctx) {
   std::vector<std::int64_t> boundary = hrefs(h, rec.handle, total_bound);
   std::size_t bi = 0;
   for (Value& l : rec.f.find("loops")->as_array()) {
-    const auto n = static_cast<std::size_t>(std::max(0.0, l["_nbound"].num_or(0)));
+    const auto n = base::clamp_cast<std::size_t>(l["_nbound"].num_or(0));
     Array part;
     for (std::size_t k = 0; k < n && bi + k < boundary.size(); ++k) {
       part.emplace_back(static_cast<double>(boundary[bi + k]));
@@ -2372,7 +2382,7 @@ Value xrecord_value(Bits& r, int code, const Ctx& ctx) {
     for (std::size_t i = 8; i-- > 0;) {
       v = v * 256 + b[i];
     }
-    return base::hex_upper(static_cast<std::uint64_t>(v));
+    return js_hex(v);
   }
   if (t == "bin") {
     const std::uint32_t n = r.RC();
@@ -2776,15 +2786,16 @@ Rec decode_object(Bytes buf, std::size_t offset, const Ctx& ctx) {
     throw DecodeError(msg("ccdwg.err.offset_outside"));
   }
   std::size_t p = offset;
-  const std::uint64_t size64 = read_ms(buf, p);
-  if (size64 > buf.size()) {
-    throw DecodeError(msg("ccdwg.err.object_past_end", {{"n", static_cast<double>(size64)}}));
-  }
-  const auto size = static_cast<std::size_t>(size64);
-  std::uint64_t hsize = 0;
+  const double size_d = read_ms(buf, p);
+  double hsize_d = 0;
   if (ver >= 24) {
-    hsize = read_mcu(buf, p);
+    hsize_d = read_mcu(buf, p);
   }
+  if (!(size_d <= static_cast<double>(buf.size() - p))) {
+    throw DecodeError(msg("ccdwg.err.object_past_end", {{"n", size_d}}));
+  }
+  const auto size = static_cast<std::size_t>(size_d);
+  const std::uint64_t hsize = base::clamp_cast<std::uint64_t>(hsize_d);
   if (p + size > buf.size()) {
     throw DecodeError(msg("ccdwg.err.object_past_end", {{"n", static_cast<double>(size)}}));
   }
@@ -2794,7 +2805,7 @@ Rec decode_object(Bytes buf, std::size_t offset, const Ctx& ctx) {
   const std::int32_t type_num = r.OT();
   std::optional<std::int64_t> endbit;
   if (ver >= 24) {
-    endbit = static_cast<std::int64_t>(obj_end) - static_cast<std::int64_t>(hsize);
+    endbit = hsize > obj_end ? std::int64_t{-1} : static_cast<std::int64_t>(obj_end - hsize);
   } else if (ver >= 15) {
     endbit = static_cast<std::int64_t>(obj_start) + r.RL();
   }

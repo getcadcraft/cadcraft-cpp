@@ -4,6 +4,7 @@
 #include <array>
 #include <string_view>
 
+#include "cc/base/checked.hpp"
 #include "messages.hpp"
 #include "record.hpp"
 
@@ -442,7 +443,7 @@ HeaderResult decode_header_vars(Bits& r, int ver, Bits* handles) {
     out.error = error_text(err);
   }
   if (const Value* fl = vars.find("FLAGS"); fl != nullptr && !fl->is_undefined()) {
-    const auto f = static_cast<std::uint32_t>(static_cast<std::int32_t>(fl->num_or(0)));
+    const auto f = static_cast<std::uint32_t>(base::clamp_cast<std::int32_t>(fl->num_or(0)));
     vars.set("CELWEIGHT", f & 0x1FU);
     vars.set("ENDCAPS", (f & 0x60U) >> 5U);
     vars.set("JOINSTYLE", (f & 0x180U) >> 7U);
