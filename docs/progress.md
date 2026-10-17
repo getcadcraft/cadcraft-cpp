@@ -75,3 +75,9 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
   6–8 %): the cost is the model's shape, not the allocator.
   The gate's ASan run caught a use-after-scope in the first version (a worker read a local that the block destroyed
   before joining the threads); fixed by capturing by value. Hardware never hit the window: the sanitizer did.
+- M3.5 (measured, dropped): converting the builder's entities on threads (fields copied, or moved) gave nothing
+  (29–36 ms vs 30 ms, load 10–14): the conversion is allocation-bound and threads contend in the allocator. Parallel
+  decode (M3.5a) stays. The next lever is the model's shape (fewer, smaller allocations), not more threads.
+- M3.5b: web deploy folder with content-hashed names (`cmake --build --preset wasm --target web-dist` →
+  build/wasm/web-dist via tools/web-dist.cmake): cadcraft-web-<12 hex>.js/.wasm/.data and cadcraft-<hex>.css, served
+  `immutable` for a year by the test host; index.html stays `no-cache`. Deployed 2026-10-16 and checked live.

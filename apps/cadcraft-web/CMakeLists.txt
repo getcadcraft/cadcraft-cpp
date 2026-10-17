@@ -13,3 +13,9 @@ target_link_options(cadcraft-web PRIVATE
 foreach(f index.html cadcraft.css)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${f} ${CMAKE_CURRENT_BINARY_DIR}/${f} COPYONLY)
 endforeach()
+# The deploy folder (content-hashed names): cmake --build --preset wasm --target web-dist → build/wasm/web-dist
+add_custom_target(web-dist
+  COMMAND ${CMAKE_COMMAND} -DBUILD=${CMAKE_CURRENT_BINARY_DIR} -DOUT=${PROJECT_BINARY_DIR}/web-dist
+          -DSAMPLE=${PROJECT_SOURCE_DIR}/build/corpus/fixtures/dwg/kitchen-equipment.dxf -P ${PROJECT_SOURCE_DIR}/tools/web-dist.cmake
+  DEPENDS cadcraft-web
+  COMMENT "web-dist: hashed names for the test host")
