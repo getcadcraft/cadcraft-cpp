@@ -671,21 +671,21 @@ class Reader {
   Value entity(const std::string& type, Groups g, const std::vector<Follow>* follow) {
     const Value* lw = val(g, 370);
     // room for the common members and the largest type's (TEXT/ATTRIB ≈ 29): an empty object grew 1→2→…→32, six
-    // allocations and five moves of every member per entity
+    // allocations and five moves of every member per entity. The common members are new keys: appended, not searched.
     Value e = base::object_with_capacity(32);
-    e.set("handle", handle_of(g));
-    e.set("type", type);
-    e.set("owner", val(g, 330) ? hx(*val(g, 330)) : std::string());
-    e.set("layer", str(val(g, 8), "0"));
-    e.set("linetype", str(val(g, 6), "ByLayer"));
-    e.set("color", color_of(nullish(val(g, 62), 256).num_or(0), val(g, 420)));
-    e.set("lineweight", nullish(lw, -1));
-    e.set("ltscale", nullish(val(g, 48), 1));
+    e.append("handle", handle_of(g));
+    e.append("type", type);
+    e.append("owner", val(g, 330) ? hx(*val(g, 330)) : std::string());
+    e.append("layer", str(val(g, 8), "0"));
+    e.append("linetype", str(val(g, 6), "ByLayer"));
+    e.append("color", color_of(nullish(val(g, 62), 256).num_or(0), val(g, 420)));
+    e.append("lineweight", nullish(lw, -1));
+    e.append("ltscale", nullish(val(g, 48), 1));
     const Value* v60 = val(g, 60);
-    e.set("invisible", (v60 != nullptr) && v60->num_or(0) == 1);
+    e.append("invisible", (v60 != nullptr) && v60->num_or(0) == 1);
     Value xd = xdata(g);
     if (!xd.is_undefined()) {
-      e.set("xdata", std::move(xd));
+      e.append("xdata", std::move(xd));
     }
     const Value def_ext = base::pt3(0, 0, 1);
     const Value ext = point(g, 210, true, &def_ext);

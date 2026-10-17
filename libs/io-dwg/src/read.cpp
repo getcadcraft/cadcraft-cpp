@@ -786,33 +786,34 @@ Value Builder::convert(Rec& rec, std::int64_t owner_handle) {
   e.append("handle", handle_hex(rec.handle));
   e.append("type", rec.type);
   e.append("owner", handle_hex(owner_handle != 0 ? owner_handle : owner_of(rec)));
-  e.set("layer", layer_name(rec.ref("layer")));
+  // up to "colorBook" every key is new to `e`: appended, not searched
+  e.append("layer", layer_name(rec.ref("layer")));
   const auto lt_name = [&]() -> Value { return name_or_hex(rec.ref("ltype")); };
   if (ver < 15) {
-    e.set("linetype", rec.bylayerlt != 0 ? Value("ByLayer") : lt_name());
+    e.append("linetype", rec.bylayerlt != 0 ? Value("ByLayer") : lt_name());
   } else {
     switch (rec.ltflags.value_or(0xFFFFFFFFU)) {
-      case 0: e.set("linetype", "ByLayer"); break;
-      case 1: e.set("linetype", "ByBlock"); break;
-      case 2: e.set("linetype", "Continuous"); break;
-      default: e.set("linetype", lt_name()); break;
+      case 0: e.append("linetype", "ByLayer"); break;
+      case 1: e.append("linetype", "ByBlock"); break;
+      case 2: e.append("linetype", "Continuous"); break;
+      default: e.append("linetype", lt_name()); break;
     }
   }
-  e.set("color", rec.color && rec.color->truthy() ? *rec.color : make_object({{"index", 256}}));
-  e.set("lineweight", rec.lw ? lineweight_from_index(*rec.lw) : -1);
-  e.set("ltscale", rec.ltscale ? Value(*rec.ltscale) : Value());
-  e.set("invisible", rec.invisible ? Value(*rec.invisible) : Value());
+  e.append("color", rec.color && rec.color->truthy() ? *rec.color : make_object({{"index", 256}}));
+  e.append("lineweight", rec.lw ? lineweight_from_index(*rec.lw) : -1);
+  e.append("ltscale", rec.ltscale ? Value(*rec.ltscale) : Value());
+  e.append("invisible", rec.invisible ? Value(*rec.invisible) : Value());
   if (rec.transparency) {
-    e.set("transparency", transparency_from_word(*rec.transparency));
+    e.append("transparency", transparency_from_word(*rec.transparency));
   }
   if (const std::int64_t m = rec.ref("material"); m != 0) {
-    e.set("material", handle_hex(m));
+    e.append("material", handle_hex(m));
   }
   if (const std::int64_t p = rec.ref("plotstyle"); p != 0) {
-    e.set("plotStyle", handle_hex(p));
+    e.append("plotStyle", handle_hex(p));
   }
   if (const std::int64_t b = rec.ref("colorBook"); b != 0) {
-    e.set("colorBook", handle_hex(b));
+    e.append("colorBook", handle_hex(b));
   }
   Value xd = xdata_of(rec);
   if (!xd.is_undefined()) {

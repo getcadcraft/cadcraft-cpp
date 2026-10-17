@@ -116,3 +116,11 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   Allocations per read: DXF 219k → 132k (−40 %), DWG 244k → 194k (−20 %). Time, interleaved A/B (12 × 7 runs, kitchen):
   best −10 % (DXF) / −16 % (DWG), medians within noise (±3 %). Models and draw lists byte-identical on the corpus
   (104 DXF, 110 DWG).
+- M3.5g: the members a fresh entity object gets first (DXF `entity`, DWG `convert` up to colorBook) are appended, not
+  searched with `set` (the keys are new and distinct). Kitchen A/B (12 × 7): DXF −3.3 % best / −3.8 % median, DWG −3.0 % /
+  −5.5 %. Models and draw lists byte-identical on the corpus.
+- M3.5 keys: interned or compact (< 24-byte) member keys are not done. File data become keys (dictionary entry names,
+  xdata app names, class names), so a process-wide intern table grows without bound on hostile files (AGENTS.md §4: cap
+  every allocation derived from input), and every sub-24-byte key layout needs a tagged pointer, a union or an owning raw
+  pointer, all ruled out by §4. The saving would be bytes (Member 56 → 40–48), and 24 MB fewer bytes per read measured
+  0 % (M3.5e); the time cost of keys was the `set` search, done in M3.5g.
