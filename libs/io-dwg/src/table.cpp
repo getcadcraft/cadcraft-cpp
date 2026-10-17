@@ -1006,7 +1006,7 @@ Value field_model(std::int64_t handle, const Resolver& res) {
   return field_model(handle, res, 0, budget);
 }
 
-std::string js_string(const Value& v) {
+std::string field_string(const Value& v) {
   if (v.is_string()) {
     return v.as_string();
   }
@@ -1029,10 +1029,10 @@ std::string field_text(const Value& f) {
     return {};
   }
   if (at(f, "valueString").truthy()) {
-    return js_string(at(f, "valueString"));
+    return field_string(at(f, "valueString"));
   }
   const Array& kids = arr(at(f, "children"));
-  const std::string code = at(f, "code").truthy() ? js_string(at(f, "code")) : std::string();
+  const std::string code = at(f, "code").truthy() ? field_string(at(f, "code")) : std::string();
   static constexpr std::string_view kOpen = "%<\\_FldIdx ";
   std::string out;
   std::size_t p = 0;
@@ -1528,7 +1528,7 @@ Value new_table_model(const Value& t, const Resolver& res) {
       return d;
     }
     if (id.truthy()) {
-      return "id" + js_string(id);
+      return "id" + field_string(id);
     }
     return {};
   };

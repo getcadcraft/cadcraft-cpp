@@ -124,3 +124,14 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   every allocation derived from input), and every sub-24-byte key layout needs a tagged pointer, a union or an owning raw
   pointer, all ruled out by §4. The saving would be bytes (Member 56 → 40–48), and 24 MB fewer bytes per read measured
   0 % (M3.5e); the time cost of keys was the `set` search, done in M3.5g.
+- M4.1: `libs/cad` (L2): `cc::cad::import_dwg`, CadCraft 0.5's dwg-import.js and the pieces of eight other modules it
+  calls, ported function for function on base::Value; `cadcraft-cli import <file.dwg>` prints the drawing.
+  **Parity: 110 / 110 corpus DWGs give the JS importDwg's drawing** (tools/parity/import.mjs; golden test on the four
+  public fixtures, tests/golden/js-0.5-import.tar.gz). On the way: (1) Math.atan2 is V8's fdlibm code, which differs from
+  the C library's in the last bit on 15 % of inputs — here a dimension angle became 2π in the JS and 0 in C++, so
+  `base::js_atan2` is V8's algorithm (bit-identical with Node on 2,000,000 pairs; THIRD_PARTY.md); (2) JS objects list
+  array-index keys ("0", "1"…) first in ascending order — `base::js_members` gives that order wherever a port iterates
+  keys from a file (dictionary entries decided the order of dynSrc.objects); (3) a dynamic block's `dyn.all` shares its
+  objects with `entities` in the JS, so attribute resolution shows in both — mirrored after resolveAttribs; (4) `at()` /
+  `item()` of a temporary return by value (a reference into g()'s copy dangled). The import does not cap anything the
+  JS does not, except MINSERT copies (docs/gaps.md).

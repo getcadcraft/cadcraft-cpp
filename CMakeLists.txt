@@ -70,6 +70,7 @@ endif()
 add_subdirectory(libs/base)       # L0
 add_subdirectory(libs/i18n)       # L1
 add_subdirectory(libs/drawing)    # L2
+add_subdirectory(libs/cad)        # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()

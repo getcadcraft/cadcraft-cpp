@@ -1,6 +1,6 @@
 # Third-party code
 
-Last updated 2026-10-16 · Change: the viewer stack (M3).
+Last updated 2026-10-17 · Change: V8's atan / atan2 (fdlibm) in libs/base (M4.1).
 
 Every dependency, why it is here, its licence and how its CVE history was checked (AGENTS.md section 3). Versions
 are pinned by the vcpkg baseline in `vcpkg.json` (docs/architecture.md, "Toolchain"). `tools/licenses.cmake` checks
@@ -16,3 +16,4 @@ the licence of every installed port; `tools/osv.cmake` asks api.osv.dev about ea
 | brotli, zlib | 1.2.0, 1.3.2 (vcpkg) | MIT, Zlib | FreeType (WOFF2), image (PNG) | | gate.osv |
 | glm | 1.0.3 (vcpkg) | MIT | (3D, M5) | | gate.osv |
 | Dear ImGui | v1.92.8-docking, commit b61e56346a92cfcaf1f43a545ca37b0b32239654, sha256 100c1e0a…414a4 (cmake/ImGui.cmake, FetchContent) | MIT | ui-imgui | the UI; fetched, not from vcpkg (its sdl3/webgpu bindings depend on SDL3 and Dawn with default features: the LGPL/NCSA code above) | osv.dev query by hand for github.com/ocornut/imgui: no known vulnerabilities (2026-10-16); not covered by gate.licenses/osv (not a vcpkg port) |
+| V8 `src/base/ieee754.cc` (atan, atan2 only), adapted from fdlibm | V8 12.4.254.21 (the algorithm has not changed since 2016) | BSD-3-Clause (V8) + the fdlibm notice (SunPro: "Permission to use, copy, modify, and distribute this software is freely granted, provided that this notice is preserved") | base (`js_math.cpp`, notices kept in the file) | Math.atan2 to JavaScript's last bit: the C library's differs in the last bit on 15 % of inputs, and a port that folds the result into a range (normAngle) then differs by 2π; checked bit for bit against Node on 2,000,000 pairs | source copied by hand, not a package: no CVEs apply to two pure functions |

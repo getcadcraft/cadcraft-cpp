@@ -11,6 +11,8 @@
 //   cadcraft-cli compile <file.dwg|dxf> --json   what the 2D view draws (BimCraft compileDrawing's result as plain
 //                                                JSON: tools/parity/compile.mjs, forks/tools/cdiff.mjs --cli)
 //   cadcraft-cli compile <file> --bench N        best of N in-process compiles (the read is not timed)
+//   cadcraft-cli import <file.dwg>               CadCraft's drawing (dwg-import.js importDwg) as JSON: what the 0.5
+//                                                app's doc.load() takes (tools/parity/import.mjs); notes in English
 //   cadcraft-cli version | help
 //
 // Exit codes: 0 ok, 1 the file was refused ({"$error":{code,message}} on stdout for parity/bench), 2 usage, 3 an
@@ -34,10 +36,13 @@
 #include <vector>
 
 #include "cc/base/file.hpp"
+#include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
+#include "cc/cad/import.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
 #include "cc/dxf/read.hpp"
+#include "cc/i18n/i18n.hpp"
 #include "cc/importer/importer.hpp"
 
 namespace {
@@ -54,6 +59,7 @@ void usage(std::FILE* out) {
              "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
              "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
              "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
+             "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
              "  version                             print the version\n");
 }
 
@@ -121,6 +127,50 @@ int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
   std::string out;
   out.reserve(bytes->size() * 8);
   cc::base::write_json(model, out);
+  out += '\n';
+  (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
+/// assets/ (lang/): APP_ASSETS_DIR, else beside this program, else the source tree.
+std::filesystem::path assets_dir(std::string_view argv0) {
+  if (const auto env = cc::base::env_var("APP_ASSETS_DIR"); env && !env->empty()) {
+    return *env;
+  }
+  std::error_code ec;
+  auto beside = std::filesystem::canonical(std::filesystem::path(argv0), ec).parent_path() / "assets";
+  if (!ec && std::filesystem::exists(beside / "lang/en.json", ec)) {
+    return beside;
+  }
+  return CC_ASSETS_DIR;
+}
+
+int cmd_import(const std::filesystem::path& file, std::string_view argv0) {
+  const auto bytes = cc::base::read_file(file, kMaxFile);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+  if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
+    print_error_json("invalid", "unreadable");
+    return 1;
+  }
+  const std::span<const std::byte> head =
+      std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
+  const cc::base::Value drawing = cc::cad::import_dwg(model, cc::base::as_text(head), *words);
+  std::string out;
+  cc::base::write_json(drawing, out);
   out += '\n';
   (void)std::fwrite(out.data(), 1, out.size(), stdout);
   return 0;
@@ -375,6 +425,9 @@ int run(const std::vector<std::string_view>& args) {
       return 2;
     }
     return cmd_compile(std::filesystem::path(args[2]), n);
+  }
+  if (cmd == "import" && args.size() == 3) {
+    return cmd_import(std::filesystem::path(args[2]), args[0]);
   }
   if (cmd == "parity" && args.size() == 4) {
     return cmd_parity(args[2], std::filesystem::path(args[3]));

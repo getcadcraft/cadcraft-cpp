@@ -1,6 +1,6 @@
 # Gaps
 
-Last updated 2026-10-16 · Change: draw lists, collation.
+Last updated 2026-10-17 · Change: import (M4.1): the MINSERT cap, last-bit trig.
 
 What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it matters.
 
@@ -16,4 +16,6 @@ What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it 
 | 8 | `localeCompare` (layer order) is measured for ASCII and every Windows-1252 character (tools/gen/js-collation.mjs); other scripts sort by code point after Latin, where ICU interleaves scripts and applies compatibility mappings. `toLowerCase`'s final-sigma rule is not applied | 2026-10-16 | Only the order of the layer list; no corpus file has such names |
 | 9 | The 2D view: thick (print view) lines have butt ends and no round joins; text has no kerning (FreeType advances only, HarfBuzz later); raster images show their frame only (no image decoding until wuffs); fills draw one stencil pass each (many hatches = many draws: measure before batching) | 2026-10-16 | dwg-view.js draws joins round and the browser kerns |
 | 10 | Linux file dialogs need zenity (SDL3 is built without D-Bus: its dbus/ibus features pull in LGPL code) and there is no IME on Linux yet; Windows has no D3D12 backend (DXC is NCSA-licensed): D3D11 and Vulkan | 2026-10-16 | Licence allowlist; drop a file or pass it on the command line |
+| 11 | Hostile input only, import: a MINSERT's copies stop at 100,000 (`ImportLimits::minsert_copies`); the JS importDwg makes rows × columns objects and runs out of memory first | 2026-10-17 | Never on the corpus |
+| 12 | `sin`, `cos` (and `exp`, `log`, …) are the C library's: they differ from Node's Math in the last bit on 3–4 % of inputs (atan / atan2 are V8's own, `base::js_atan2`). Within every parity tolerance; a result folded into a range would need V8's (fdlibm) versions too. The readers and the draw-list compiler still call `std::atan2` (1-ulp differences, within tolerance; no folding found) | 2026-10-17 | Port fdlibm's sin / cos when a parity difference asks for it (Node's build: check which trig V8 uses) |
 | known issue | Screen readers: Dear ImGui has no accessibility tree | 2026-10-15 | Owner, 2026-10-15: known issue, skipped for now. Never claim screen-reader support. |

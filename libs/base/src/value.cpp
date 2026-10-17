@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iterator>
+#include <limits>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -404,6 +405,85 @@ std::string hex_upper(std::uint64_t n) {
     n >>= 4U;
   }
   return std::string(std::string_view(b.data(), b.size()).substr(k));
+}
+
+std::string hex_lower(std::uint64_t n) {
+  return js_to_lower(hex_upper(n));
+}
+
+// Recursion depth = the value's depth (array items only); models are of bounded depth.
+// NOLINTNEXTLINE(misc-no-recursion)
+std::string js_string(const Value& v) {
+  switch (v.kind()) {
+    case Value::Kind::undefined: return "undefined";
+    case Value::Kind::null: return "null";
+    case Value::Kind::boolean: return v.as_bool() ? "true" : "false";
+    case Value::Kind::number: {
+      std::string s;
+      append_number(s, v.as_number());
+      return s;
+    }
+    case Value::Kind::string: return v.as_string();
+    case Value::Kind::array: {
+      std::string s;
+      bool first = true;
+      for (const Value& x : v.as_array()) {
+        if (!first) {
+          s += ',';
+        }
+        first = false;
+        if (!x.is_undefined() && !x.is_null()) {
+          s += js_string(x);
+        }
+      }
+      return s;
+    }
+    case Value::Kind::object: return "[object Object]";
+    case Value::Kind::bytes: return "";
+  }
+  return "";
+}
+
+double js_to_number(const Value& v) {
+  switch (v.kind()) {
+    case Value::Kind::undefined: return std::numeric_limits<double>::quiet_NaN();
+    case Value::Kind::null: return 0;
+    case Value::Kind::boolean: return v.as_bool() ? 1 : 0;
+    case Value::Kind::number: return v.as_number();
+    case Value::Kind::string: return js_number(v.as_string());
+    case Value::Kind::array: return js_number(js_string(v));
+    default: return std::numeric_limits<double>::quiet_NaN();
+  }
+}
+
+bool js_index_key(std::string_view k) noexcept {
+  if (k.empty() || k.size() > 10 || (k.size() > 1 && k[0] == '0')) {
+    return false;
+  }
+  std::uint64_t v = 0;
+  for (const char c : k) {
+    if (c < '0' || c > '9') {
+      return false;
+    }
+    v = v * 10 + static_cast<std::uint64_t>(c - '0');
+  }
+  return v < 4294967295ULL;
+}
+
+std::vector<const Member*> js_members(const Object& o) {
+  std::vector<const Member*> idx;
+  std::vector<const Member*> rest;
+  for (const Member& m : o) {
+    (js_index_key(m.key) ? idx : rest).push_back(&m);
+  }
+  if (idx.empty()) {
+    return rest;
+  }
+  std::ranges::stable_sort(idx, [](const Member* a, const Member* b) {
+    return a->key.size() != b->key.size() ? a->key.size() < b->key.size() : a->key < b->key;
+  });
+  idx.insert(idx.end(), rest.begin(), rest.end());
+  return idx;
 }
 
 // ---------------------------------------------------------------- JSON

@@ -12,8 +12,8 @@ benchmark table format below so the numbers compare.
 | M1 | Source tree + gate | `cmake/` (cc_library with layer check, hardening, sanitizer/fuzz presets), CMakePresets.json, vcpkg.json, .clang-tidy, .clang-format, `tools/*.cmake` (format, layers, tidy, assets, licenses, osv, identity, corpus, fuzz smoke), CI workflow incl. ASan/UBSan, TSan, MSVC + GCC jobs, wasm preset; CI green on the empty skeleton | done |
 | M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | done: 78/78; also DXF 104/104 (M3.1) |
 | M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | done: draw lists 202/202; live on cpp.getcadcraft.com (?sample, ?bench) |
-| M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (today 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (today on par) | next |
-| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | after M3.5 |
+| M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (was 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (was on par) | done (a–h): 1.66–3.95×, browser cold ~1.4×; targets not met yet, levers in docs/perf-postmortem.md |
+| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | next (plan below) |
 | M5+ | The rest | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M3.** | planned |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
@@ -71,3 +71,21 @@ browser first** (WebGPU: Chrome on Android, Safari 26+ on iPad): a touch layout 
 done in M3.5d; long press = Enter comes with the drafting commands in M4), the browser file picker and downloads, recovery in OPFS. SDL3 builds for Android and iOS exist,
 but Dear ImGui is not touch-first; a packaged tablet app is decided with measured numbers at the M3 re-plan, not
 before.
+
+## M4 plan (2026-10-17)
+
+The reference is CadCraft 0.5's own pipeline: a file is read (cc-dwg / dxf.js), turned into a **drawing** (plain data:
+entities, layers, blocks, layouts, meta: `dwg-import.js` `importDwg`), loaded into the **document** (`doc.js`: one undo
+step per change), edited by **commands** (`commands.js`), and saved by `dwg-save.js` through cc-dwg's writer
+(`lib/dwg/*-write.js`, six versions) or as DXF. Every stage has a JSON or byte form, so each step below is gated by
+parity on the corpus with no new test files: corpus DWG → read (M2) → import → save → bytes, JS against C++.
+
+| Step | Ends with | Parity gate |
+|---|---|---|
+| M4.1 | `libs/cad` (L2): the drawing type and `import_dwg` (dwg-import.js) | the drawing's JSON = JS importDwg's on the 110 corpus DWGs — **done 2026-10-17: 110/110** |
+| M4.2 | `libs/doc` (L1 model + L5 session parts): Doc with spaces, layers, blocks, change/undo/redo, op records | the JS doc tests ported (bin/test-cadcraft.mjs doc cases) |
+| M4.3 | `libs/io-dwg` writer (bits, CRC, container R2000…R2018, objects, tables, R2004 LZ, R2007) | bytes = JS writeDwg's for the same writer model, six versions |
+| M4.4 | `dwg-save.js` port (document → writer model) | corpus DWG → import → save: bytes = JS, six versions; and the saved files read back by our reader |
+| M4.5 | DXF save (dxf.js write) | bytes = JS on the corpus |
+| M4.6 | Commands as coroutines (LINE, PLINE, CIRCLE, ARC, TEXT, MOVE, COPY, ROTATE, SCALE, ERASE, OFFSET, TRIM, EXTEND, UNDO/REDO) through `Session::execute`, scripted input; the CLI runs them headless | the JS command tests ported; command scripts give the same drawing JSON |
+| M4.7 | Drafting in the viewer: command line, prompts in the status bar, snaps, grips; Save / Save as (desktop picker, web download) | screenshots against the 0.5 app; save → reopen |

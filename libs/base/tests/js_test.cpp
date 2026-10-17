@@ -4,10 +4,15 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <numbers>
 #include <string>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "cc/base/checked.hpp"
+#include "cc/base/js_math.hpp"
+#include "cc/base/value.hpp"
 
 using namespace cc::base;
 
@@ -64,4 +69,39 @@ TEST_CASE("ignorable characters and combining marks collate as in ICU") {
   CHECK(js_locale_compare_numeric("a\xCC\x81", "a") > 0);      // a + combining acute
   CHECK(js_locale_compare_numeric("\xE2\x84\xA2", "tm") > 0);  // ™ sorts as "tm", after it
   CHECK(js_locale_compare_numeric("\xE2\x84\xA2", "tn") < 0);
+}
+
+TEST_CASE("Math.atan2 and Math.atan to the last bit, as V8 computes them") {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+  using cc::base::js_atan2;
+  // the case that sent a dimension's angle to 2π in the JS and 0 with the C library (atan2 + π/2 just under zero)
+  CHECK(js_atan2(-1334.9625607030286, -5.684341886080802e-14) + std::numbers::pi / 2 == -2.220446049250313e-16);
+  CHECK(js_atan2(0.0, -1.0) == std::numbers::pi);
+  CHECK(std::signbit(js_atan2(-0.0, 1.0)));
+  CHECK(js_atan2(1.0, 0.0) == std::numbers::pi / 2);
+  CHECK(js_atan2(kInf, -kInf) == 3 * std::numbers::pi / 4);
+  CHECK(std::isnan(js_atan2(kNaN, 1)));
+  CHECK(cc::base::js_atan(1.0) == std::numbers::pi / 4);
+}
+
+TEST_CASE("Number(), Math.round, toString(16) and JS property order") {
+  constexpr double kInf = std::numeric_limits<double>::infinity();
+  CHECK(cc::base::js_number(" 12.5 ") == 12.5);
+  CHECK(cc::base::js_number("") == 0);
+  CHECK(cc::base::js_number("0x1F") == 31);
+  CHECK(std::isnan(cc::base::js_number("12px")));
+  CHECK(cc::base::js_number("-Infinity") == -kInf);
+  CHECK(cc::base::js_round(2.5) == 3);
+  CHECK(cc::base::js_round(-2.5) == -2);
+  CHECK(std::signbit(cc::base::js_round(-0.4)));
+  CHECK(cc::base::hex_lower(0xABCDEF) == "abcdef");
+  CHECK(cc::base::js_string(cc::base::Value(cc::base::Array{1, cc::base::Value(), "a"})) == "1,,a");
+  const cc::base::Value o =
+      cc::base::make_object({{"b", 1}, {"10", 2}, {"a", 3}, {"2", 4}, {"01", 5}, {"4294967295", 6}});
+  std::string order;
+  for (const cc::base::Member* m : cc::base::js_members(o.as_object())) {
+    order += m->key + " ";
+  }
+  CHECK(order == "2 10 b a 01 4294967295 ");  // array indices first, ascending; the rest as inserted
 }

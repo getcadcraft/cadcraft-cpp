@@ -275,5 +275,21 @@ void append_code_point(std::string& out, std::uint32_t cp);
 [[nodiscard]] std::string to_upper(std::string_view s);
 /// Hex digits of n, upper case, no leading zeros ("0" for 0) — JS n.toString(16).toUpperCase().
 [[nodiscard]] std::string hex_upper(std::uint64_t n);
+/// JS n.toString(16) for a non-negative integer: lower case, no leading zeros.
+[[nodiscard]] std::string hex_lower(std::uint64_t n);
+
+// ---- JS conversions of a whole value
+/// String(v): numbers as Number#toString, arrays joined with "," (null / undefined items empty), objects
+/// "[object Object]", bytes "" (not a JS value; never asked of the ports).
+[[nodiscard]] std::string js_string(const Value& v);
+/// Number(v): undefined NaN, null 0, booleans 0 / 1, strings through js_number, arrays through their String,
+/// objects NaN.
+[[nodiscard]] double js_to_number(const Value& v);
+/// An object's members in JavaScript's property order (what Object.keys / values / entries and for…in give): keys
+/// that are array indices ("0" … "4294967294", no leading zeros) first, ascending; then the others as inserted.
+/// A Value object keeps insertion order only; ports iterate through this where the JS iterates an object.
+[[nodiscard]] std::vector<const Member*> js_members(const Object& o);
+/// True for a canonical array-index key.
+[[nodiscard]] bool js_index_key(std::string_view k) noexcept;
 
 }  // namespace cc::base

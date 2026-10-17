@@ -104,39 +104,7 @@ std::string clean_name(const U16& s) {
   return utf8(out);
 }
 
-/// String(x) for the values a handle can be (JS String conversion of the common kinds). Recursion only into arrays
-/// of the file's own values, whose depth the reader bounds.
-// NOLINTNEXTLINE(misc-no-recursion)
-std::string js_string(const Value& v) {
-  switch (v.kind()) {
-    case Value::Kind::undefined: return "undefined";
-    case Value::Kind::null: return "null";
-    case Value::Kind::boolean: return v.as_bool() ? "true" : "false";
-    case Value::Kind::number: {
-      std::string s;
-      base::append_number(s, v.as_number());
-      return s;
-    }
-    case Value::Kind::string: return v.as_string();
-    case Value::Kind::array: {
-      std::string s;
-      bool first = true;
-      for (const Value& x : v.as_array()) {
-        if (!first) {
-          s += ',';
-        }
-        first = false;
-        if (!x.is_undefined() && !x.is_null()) {
-          s += js_string(x);
-        }
-      }
-      return s;
-    }
-    case Value::Kind::object: return "[object Object]";
-    case Value::Kind::bytes: return "";
-  }
-  return "";
-}
+using base::js_string;  // String(x)
 
 /// hexKey: upper case, leading zeros dropped (one digit kept); "" for undefined/null.
 std::string hex_key(const Value& h) {

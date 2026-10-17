@@ -23,6 +23,9 @@ namespace cc::base {
 [[nodiscard]] double js_parse_float(std::string_view s);
 /// parseInt(s, 10): sign and decimal digits after white space; NaN when there is none.
 [[nodiscard]] double js_parse_int(std::string_view s) noexcept;
+/// Number(s) (StringToNumber): the whole string, trimmed, must be a number — decimal, Infinity, or 0x / 0o / 0b
+/// digits; "" → 0; anything else → NaN.
+[[nodiscard]] double js_number(std::string_view s);
 
 /// UTF-8 → UTF-16 code units (what JS indexes), and the count of them (`s.length`).
 [[nodiscard]] std::vector<std::uint16_t> to_utf16(std::string_view s);

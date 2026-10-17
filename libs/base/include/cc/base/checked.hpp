@@ -93,4 +93,21 @@ template <std::integral To>
   return std::bit_cast<std::int32_t>(u);
 }
 
+/// ToUint32 (the operand conversion of `>>>`): ToInt32's bits read unsigned.
+[[nodiscard]] inline std::uint32_t js_to_uint32(double v) noexcept {
+  return std::bit_cast<std::uint32_t>(js_to_int32(v));
+}
+
+/// Math.round: the nearest integer, halves toward +Infinity; -0 for (-0.5, -0]; NaN and ±Infinity unchanged.
+[[nodiscard]] inline double js_round(double v) noexcept {
+  if (!std::isfinite(v) || v == 0) {
+    return v;
+  }
+  double r = std::floor(v);
+  if (v - r >= 0.5) {
+    r += 1;
+  }
+  return r == 0 && v < 0 ? -0.0 : r;
+}
+
 }  // namespace cc::base

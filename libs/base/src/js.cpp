@@ -93,6 +93,77 @@ bool js_blank(std::string_view s) noexcept {
   return js_trim_start(s).empty();
 }
 
+double js_number(std::string_view s) {
+  s = js_trim(s);
+  if (s.empty()) {
+    return 0;
+  }
+  if (s.size() > 2 && s[0] == '0' &&
+      (s[1] == 'x' || s[1] == 'X' || s[1] == 'o' || s[1] == 'O' || s[1] == 'b' || s[1] == 'B')) {
+    double radix = 2;  // 0b
+    if (s[1] == 'x' || s[1] == 'X') {
+      radix = 16;
+    } else if (s[1] == 'o' || s[1] == 'O') {
+      radix = 8;
+    }
+    double v = 0;
+    for (const char c : s.substr(2)) {
+      int d = -1;
+      if (c >= '0' && c <= '9') {
+        d = c - '0';
+      } else if (c >= 'a' && c <= 'f') {
+        d = c - 'a' + 10;
+      } else if (c >= 'A' && c <= 'F') {
+        d = c - 'A' + 10;
+      }
+      if (d < 0 || d >= static_cast<int>(radix)) {
+        return kNaN;
+      }
+      v = v * radix + d;
+    }
+    return v;
+  }
+  // StrDecimalLiteral: [+-] (Infinity | digits [. digits] | . digits) [e [+-] digits], nothing after it
+  std::size_t i = 0;
+  if (s[i] == '+' || s[i] == '-') {
+    ++i;
+  }
+  if (s.substr(i) == "Infinity") {
+    return s[0] == '-' ? -kInf : kInf;
+  }
+  const std::size_t d0 = i;
+  while (i < s.size() && s[i] >= '0' && s[i] <= '9') {
+    ++i;
+  }
+  bool any = i > d0;
+  if (i < s.size() && s[i] == '.') {
+    ++i;
+    const std::size_t f0 = i;
+    while (i < s.size() && s[i] >= '0' && s[i] <= '9') {
+      ++i;
+    }
+    any = any || i > f0;
+  }
+  if (!any) {
+    return kNaN;
+  }
+  if (i < s.size() && (s[i] == 'e' || s[i] == 'E')) {
+    std::size_t j = i + 1;
+    if (j < s.size() && (s[j] == '+' || s[j] == '-')) {
+      ++j;
+    }
+    const std::size_t e0 = j;
+    while (j < s.size() && s[j] >= '0' && s[j] <= '9') {
+      ++j;
+    }
+    if (j == e0) {
+      return kNaN;
+    }
+    i = j;
+  }
+  return i == s.size() ? js_parse_float(s) : kNaN;
+}
+
 double js_parse_float(std::string_view s) {
   s = js_trim_start(s);
   std::size_t i = 0;
