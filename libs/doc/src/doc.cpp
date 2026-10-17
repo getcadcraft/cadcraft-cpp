@@ -612,10 +612,10 @@ void Doc::each_entity(const std::function<void(const Value&)>& f) const {
 std::size_t Doc::block_uses(std::string_view name) const {
   std::size_t n = 0;
   const Value want(std::string{name});
-  each_entity([&](const Value& e) { n += e.get("block") == want ? 1 : 0; });
+  each_entity([&](const Value& e) { n += e.get("block") == want ? std::size_t{1} : std::size_t{0}; });
   blocks_.each([&](const std::string&, const Value& b) {
     for (const Value& e : member(b, "entities").as_array()) {
-      n += e.get("block") == want ? 1 : 0;
+      n += e.get("block") == want ? std::size_t{1} : std::size_t{0};
     }
   });
   return n;
