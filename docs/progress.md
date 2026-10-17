@@ -92,3 +92,20 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   touch layout on (40 px rows from the font size, wider panel and scroll bars, 48 px tabs, 40 px menu rows); a real
   mouse moving switches it off. The canvas has `touch-action: none`. Test: libs/ui-imgui/tests/viewer_touch_test.cpp
   (Dawn null adapter, ImGui without a window, SDL finger events by hand); checked in headless Chromium with CDP touch.
+- M3.5c measured (2026-10-17, quiet machine, headless Chromium + SwiftShader, kitchen DXF): open → first frame cold
+  148–217 ms (before 192–201), warm 64–109 ms (before 58–87); the scene step is ~1 ms now (glyphs made at start); the
+  DXF parse (50–165 ms in the browser vs ~26 ms native) is what is left.
+- M3.5e: fewer copies and allocations in the readers, measured before the typed-model redesign.
+  Profile (perf, frame-pointer build; cmd_bench's own model teardown is outside the timer and was excluded): inside the
+  read, `Value` copies and the destruction of their originals were ~15–20 %; DWG spends ~13 % freeing its decoded records.
+  Kept: `make_object` / the DXF `spread` take `base::Init` (a mutable value, moved out of the initializer_list instead of
+  copied); a DXF entity object is created with room for 32 members (it grew 1→2→…→32: six allocations per entity);
+  the DXF line list is reserved. Kitchen files, interleaved A/B (14 rounds × 7 runs): DXF −6.5 % median (−6.4 % best),
+  allocations 320k → 219k, bytes 136 → 85 MB per read; DWG −7.9 % median (−9.2 % best). Models byte-identical to
+  before on the whole corpus (104 DXF, 110 DWG).
+  Dropped after measuring: freeing the DWG records later (leaking them as the upper bound made the read 1.6× *slower*:
+  the allocator reuses what was just freed), `spread` reserving per call (+10 %: most spreads overwrite keys),
+  records' field objects starting at 24 members (noise).
+  What the numbers say about the typed-model redesign: points (112/168-byte objects) are 21 % (DWG) / 35 % (DXF) of
+  the remaining allocations; removing 22 % of allocations above bought ~6 %, and 24 MB fewer bytes bought nothing. Inline
+  points would be worth roughly 4–10 %, against changing ~1,700 `set` call sites under the parity gate.

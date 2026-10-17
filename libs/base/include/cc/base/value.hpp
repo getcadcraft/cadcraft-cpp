@@ -197,8 +197,17 @@ inline double Value::num_or(double def) const noexcept {
   return d != nullptr ? *d : def;
 }
 
-/// Builds an object from {key, value} pairs in order.
-Value make_object(std::initializer_list<std::pair<std::string_view, Value>> members);
+/// One {key, value} of a braced member list. An initializer_list's items are const, so a plain pair could only be
+/// copied out; the value is `mutable` so make_object (and the readers' spreads) move it out instead: a temporary
+/// argument is then moved twice and never copied (whole point and entity objects otherwise were, per member).
+struct Init {
+  Init(std::string_view k, Value v) noexcept : key(k), value(std::move(v)) {}  // NOLINT(google-explicit-constructor)
+  std::string_view key;
+  mutable Value value;
+};
+
+/// Builds an object from {key, value} pairs in order (each value moved out of the list).
+Value make_object(std::initializer_list<Init> members);
 
 /// A point {x, y} or {x, y, z} (built in place: points are the most common values of a drawing model).
 inline Value pt2(double x, double y) {

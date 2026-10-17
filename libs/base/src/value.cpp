@@ -101,11 +101,11 @@ void Value::erase(std::string_view key) {
   std::erase_if(o, [&](const Member& m) { return m.key == key; });
 }
 
-Value make_object(std::initializer_list<std::pair<std::string_view, Value>> members) {
+Value make_object(std::initializer_list<Init> members) {
   Object o;
   o.reserve(members.size());
-  for (const auto& [k, v] : members) {
-    o.push_back(Member{std::string(k), v});
+  for (const Init& m : members) {
+    o.push_back(Member{std::string(m.key), std::move(m.value)});
   }
   return {std::move(o)};
 }

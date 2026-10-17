@@ -291,9 +291,9 @@ Value xdata(const Groups& g) {
 
 /// A JS object spread {...e, more}: a copy of e, then the extra members.
 /// The entity is consumed: no argument list in this file reads `e` beside the spread.
-Value spread(Value o, std::initializer_list<std::pair<std::string_view, Value>> more) {
-  for (const auto& [k, v] : more) {
-    o.set(k, v);
+Value spread(Value o, std::initializer_list<base::Init> more) {
+  for (const base::Init& m : more) {
+    o.set(m.key, std::move(m.value));
   }
   return o;
 }
@@ -670,7 +670,9 @@ class Reader {
   // NOLINTNEXTLINE(misc-no-recursion)
   Value entity(const std::string& type, Groups g, const std::vector<Follow>* follow) {
     const Value* lw = val(g, 370);
-    Value e = Value::object();
+    // room for the common members and the largest type's (TEXT/ATTRIB ≈ 29): an empty object grew 1→2→…→32, six
+    // allocations and five moves of every member per entity
+    Value e = base::object_with_capacity(32);
     e.set("handle", handle_of(g));
     e.set("type", type);
     e.set("owner", val(g, 330) ? hx(*val(g, 330)) : std::string());
@@ -1717,6 +1719,8 @@ base::Result<Value> read_dxf_model(std::string_view text) {
   }
   // text.split(/\r?\n/)
   std::vector<std::string_view> lines;
+  lines.reserve(static_cast<std::size_t>(std::ranges::count(text, '\n')) +
+                1);  // grown by doubling it was half the bytes
   std::size_t s = 0;
   for (std::size_t k = 0; k < text.size(); ++k) {
     if (text[k] == '\n') {
