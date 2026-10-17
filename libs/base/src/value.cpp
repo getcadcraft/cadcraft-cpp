@@ -482,7 +482,10 @@ std::vector<const Member*> js_members(const Object& o) {
   std::ranges::stable_sort(idx, [](const Member* a, const Member* b) {
     return a->key.size() != b->key.size() ? a->key.size() < b->key.size() : a->key < b->key;
   });
-  idx.insert(idx.end(), rest.begin(), rest.end());
+  idx.reserve(idx.size() + rest.size());
+  for (const Member* m : rest) {  // (not vector::insert: GCC 14's -Wstringop-overflow misreads it)
+    idx.push_back(m);
+  }
   return idx;
 }
 
