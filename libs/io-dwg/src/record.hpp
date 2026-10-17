@@ -167,6 +167,8 @@ struct HeaderResult {
 };
 [[nodiscard]] HeaderResult decode_header_vars(Bits& r, int ver, Bits* handles);
 
+/// table-read.js canonicalBorders (also used by the writer).
+void table_canonical_borders(base::Array& cells);
 /// DXF group code → value kind (objects-read.js groupType); "" when unknown.
 [[nodiscard]] std::string_view group_type(int c);
 

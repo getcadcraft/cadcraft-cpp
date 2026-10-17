@@ -117,6 +117,55 @@ constexpr auto kMessages = std::to_array<Message>({
     {"ccdwg.err.wire_large", "wire of {n} points is larger than the data", nullptr},
     {"ccdwg.err.wires_large", "{n} wires are more than the data holds", nullptr},
     {"ccdwg.err.silhouettes_large", "{n} silhouettes are more than the data holds", nullptr},
+    {"ccdwg.write.eed_dropped",
+     "{n} extended-data blocks referring to objects this writer does not copy (materials, groups, …) were left out.",
+     "{n} extended-data block referring to objects this writer does not copy (materials, groups, …) was left out."},
+    {"ccdwg.write.true_colours",
+     "{n} true colours became the nearest AutoCAD colour index (R2000 stores colour indexes only).",
+     "{n} true colour became the nearest AutoCAD colour index (R2000 stores colour indexes only)."},
+    {"ccdwg.write.chars_lost", "{n} characters outside the Basic Multilingual Plane (emoji and the like) became \"?\".",
+     "{n} character outside the Basic Multilingual Plane (emoji and the like) became \"?\"."},
+    {"ccdwg.write.nongraphic",
+     "{n} non-graphical objects were copied from the source ({raw} bit for bit in the drawing's own version, {fields} "
+     "from their fields).",
+     "{n} non-graphical object was copied from the source ({raw} bit for bit in the drawing's own version, {fields} "
+     "from their fields)."},
+    {"ccdwg.write.not_copied", "Not copied (cc-dwg cannot write them in this version, or they depend on them): {list}.",
+     nullptr},
+    {"ccdwg.write.entities_dropped",
+     "{n} {type} entities were left out: undecoded data can only be written back in the drawing's own version.",
+     "{n} {type} entity was left out: undecoded data can only be written back in the drawing's own version."},
+    {"ccdwg.write.proxied",
+     "Written as proxies of their own class (undecoded data in another version, as AutoCAD saves them down): {list}.",
+     nullptr},
+    {"ccdwg.write.raw", "Copied bit for bit (custom or proxy entities): {list}.", nullptr},
+    {"ccdwg.write.acis_empty", "{n} ACIS entities have no ACIS data (written empty).",
+     "{n} ACIS entity has no ACIS data (written empty)."},
+    {"ccdwg.write.acis_sat",
+     "{n} ACIS entities keep their SAT text (as the data storage record; R2013+ files normally hold SAB there — SAT is "
+     "not converted).",
+     "{n} ACIS entity keeps its SAT text (as the data storage record; R2013+ files normally hold SAB there — SAT is "
+     "not converted)."},
+    {"ccdwg.write.acis_sab",
+     "{n} ACIS entities keep their SAB data as ACIS version 2 in an R2000 file (AutoCAD 2000 itself writes SAT).",
+     "{n} ACIS entity keeps its SAB data as ACIS version 2 in an R2000 file (AutoCAD 2000 itself writes SAT)."},
+    {"ccdwg.write.nurbs_down",
+     "{n} NURBS surfaces were written as plain SURFACE ({version} has no NURBSURFACE; as AutoCAD and the ODA File "
+     "Converter save it down, with the ACAD_XREC_ROUNDTRIP marker that turns it back into a NURBS surface in R2013+).",
+     "{n} NURBS surface was written as plain SURFACE ({version} has no NURBSURFACE; as AutoCAD and the ODA File "
+     "Converter save it down, with the ACAD_XREC_ROUNDTRIP marker that turns it back into a NURBS surface in R2013+)."},
+    {"ccdwg.write.nurbs_up",
+     "{n} surfaces saved down from NURBSURFACE were written as NURBSURFACE again (its NURBS fields were not kept by "
+     "the save-down).",
+     "{n} surface saved down from NURBSURFACE was written as NURBSURFACE again (its NURBS fields were not kept by the "
+     "save-down)."},
+    {"ccdwg.write.embedded",
+     "{n} embedded profile/path entities of a surface (an encoding cc-dwg does not know) were left out: it is kept "
+     "only in the drawing's own version.",
+     "{n} embedded profile/path entity of a surface (an encoding cc-dwg does not know) was left out: it is kept only "
+     "in the drawing's own version."},
+    {"ccdwg.write.table_fields", "{n} table cell fields could not be written and kept their text.",
+     "{n} table cell field could not be written and kept its text."},
 });
 
 std::string fill_text(const base::Value& v) {

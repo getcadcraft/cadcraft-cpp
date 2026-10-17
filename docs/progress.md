@@ -142,3 +142,11 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   prints the loaded document. **Parity: 110 / 110 corpus DWGs load into the JS Doc's document** (tools/parity/doc.mjs;
   golden on the public fixtures). Not ported yet: constraints (the file's payload is kept as text), the 3D model (its
   faces and JSON are kept), Studio Live's hook, add-on edit hooks (docs/gaps.md).
+- M4.3: the DWG writer, `cc::dwg::write_dwg` (libs/io-dwg/src/w*.cpp, ~13k lines): cc-dwg's write.js and its modules
+  (bits-write, crc, lz-r2004-write, r2007-write with Reed–Solomon, container-write, objects-write, nongraphic-write with
+  the raw passthrough and proxies, mleader-write, table-write, solid-write, surface-write, acis, acds). **Parity: 648 /
+  648 writes byte-identical** to the JS writer (the 108 readable corpus DWGs × R2000, 2004, 2007, 2010, 2013, 2018; same
+  date and the same seeded random bytes for the GUIDs: tools/parity/dwg-write.mjs), the reports equal too. Golden: the
+  JS sizes, CRC-32s and reports for the public fixtures × six versions; tests for the compressors against the reader's
+  decompressors, read-back of written files, an empty model; fuzz target `dwg_write` (read hostile bytes → write → read).
+  `cadcraft-cli dwg-write <in> <version> <out>`.

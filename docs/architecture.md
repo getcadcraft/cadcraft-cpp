@@ -60,7 +60,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/doc` | L3 | `cc::doc::Doc` — CadCraft 0.5's doc.js: the drawing a session edits (spaces, layers, blocks, layouts), one undo step per `change()`, `load()` of a drawing; equal to the JS document on the corpus (tools/parity/doc.mjs) |
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
 | `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
-| `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module |
+| `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module. `cc::dwg::write_dwg` — the port of `writeDwg` (src/w*.cpp: bits, CRCs, R2004/R2007 compressors and file layouts, the object encoders, the source's objects copied, tables, solids, surfaces, data storage), byte for byte the JS writer's output (tools/parity/dwg-write.mjs) |
 
 ### The JS reference
 

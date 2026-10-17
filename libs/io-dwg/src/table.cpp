@@ -1821,6 +1821,10 @@ Value deep(const Value& v, int depth = 0) {
 
 }  // namespace
 
+void table_canonical_borders(Array& cells) {
+  canonical_borders(cells);
+}
+
 Decoder table_decoder(std::string_view type) {
   if (type == "ACAD_TABLE") {
     return dec_acad_table;

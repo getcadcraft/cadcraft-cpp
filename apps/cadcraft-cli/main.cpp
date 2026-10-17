@@ -14,6 +14,11 @@
 //   cadcraft-cli import <file.dwg>               CadCraft's drawing (dwg-import.js importDwg) as JSON: what the 0.5
 //                                                app's doc.load() takes (tools/parity/import.mjs); notes in English
 //   cadcraft-cli doc <file.dwg>                  the document after load (doc.js) as tools/parity/doc.mjs compares it
+//   cadcraft-cli dwg-write <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--bench <runs>]
+//                                                read a DWG and write it in a version (cc-dwg writeDwg); prints the
+//                                                report. --created fixes the date, --seeded the GUIDs' random bytes
+//                                                (the parity harness gives the JS writer the same:
+//                                                tools/parity/dwg-write.mjs)
 //   cadcraft-cli version | help
 //
 // Exit codes: 0 ok, 1 the file was refused ({"$error":{code,message}} on stdout for parity/bench), 2 usage, 3 an
@@ -29,6 +34,7 @@
 #include <filesystem>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <print>
 #include <span>
 #include <string>
@@ -43,6 +49,7 @@
 #include "cc/doc/doc.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
+#include "cc/dwg/write.hpp"
 #include "cc/dxf/read.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/importer/importer.hpp"
@@ -63,6 +70,8 @@ void usage(std::FILE* out) {
              "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
              "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
              "  doc <file.dwg>                      the document after loading that drawing, as JSON\n"
+             "  dwg-write <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--bench <runs>]\n"
+             "                                      write the drawing as a DWG of that version; prints the report\n"
              "  version                             print the version\n");
 }
 
@@ -182,6 +191,50 @@ int cmd_import(const std::filesystem::path& file, std::string_view argv0, bool a
   }
   out += '\n';
   (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
+int cmd_dwg_write(const std::filesystem::path& in, const std::string& version, const std::filesystem::path& out,
+                  std::optional<double> created, bool seeded, int bench) {
+  const auto bytes = cc::base::read_file(in, kMaxFile);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+  cc::dwg::WriteOptions o;
+  o.version = version;
+  o.created_ms = created;
+  if (seeded) {
+    // the harness's generator: s = s * 1103515245 + 12345 (32 bits), byte = s >> 24, s = 1 at the start of a write
+    auto s = std::make_shared<std::uint32_t>(1);
+    o.random = [s](std::span<std::uint8_t> b) {
+      for (std::uint8_t& x : b) {
+        *s = *s * 1103515245U + 12345U;
+        x = static_cast<std::uint8_t>(*s >> 24U);
+      }
+    };
+  }
+  cc::dwg::WriteResult r;
+  cc::base::Array write_ms;
+  try {
+    for (int i = 0; i < std::max(1, bench); ++i) {
+      const auto t0 = std::chrono::steady_clock::now();
+      r = cc::dwg::write_dwg(model, o);
+      write_ms.emplace_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+    }
+  } catch (const std::exception& e) {
+    print_error_json("invalid", e.what());
+    return 1;
+  }
+  if (const auto ok = cc::base::write_file_atomic(out, std::as_bytes(std::span(r.bytes))); !ok) {
+    print_error_json("io", ok.error().message);
+    return 1;
+  }
+  std::string js;
+  cc::base::write_json(bench > 0 ? cc::base::make_object({{"write_ms", write_ms}}) : r.report, js);
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
   return 0;
 }
 
@@ -434,6 +487,39 @@ int run(const std::vector<std::string_view>& args) {
       return 2;
     }
     return cmd_compile(std::filesystem::path(args[2]), n);
+  }
+  if (cmd == "dwg-write" && args.size() >= 5) {
+    std::optional<double> created;
+    bool seeded = false;
+    int bench = 0;
+    for (std::size_t i = 5; i < args.size(); ++i) {
+      if (args[i] == "--seeded") {
+        seeded = true;
+      } else if (args[i] == "--bench" && i + 1 < args.size()) {
+        const std::span<const char> txt(args[i + 1]);
+        const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), bench);
+        if (ec != std::errc{} || ptr != std::to_address(txt.end()) || bench < 1 || bench > 1000) {
+          usage(stderr);
+          return 2;
+        }
+        ++i;
+      } else if (args[i] == "--created" && i + 1 < args.size()) {
+        double ms = 0;
+        const std::span<const char> txt(args[i + 1]);
+        const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), ms);
+        if (ec != std::errc{} || ptr != std::to_address(txt.end())) {
+          usage(stderr);
+          return 2;
+        }
+        created = ms;
+        ++i;
+      } else {
+        usage(stderr);
+        return 2;
+      }
+    }
+    return cmd_dwg_write(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), created,
+                         seeded, bench);
   }
   if (cmd == "doc" && args.size() == 3) {
     return cmd_import(std::filesystem::path(args[2]), args[0], true);
