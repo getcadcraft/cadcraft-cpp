@@ -27,10 +27,6 @@ namespace cc::ui {
 
 namespace {
 
-constexpr float kLayersWidth = 240;
-constexpr float kStatusHeight = 24;
-constexpr float kTabsHeight = 30;
-
 ImVec4 im(const render::Rgba& c) {
   return {c.r, c.g, c.b, c.a};
 }
@@ -91,6 +87,11 @@ Viewer::Viewer(const Gpu& gpu, wgpu::TextureFormat target, Services services, co
   font_ = load_font(assets, static_cast<int>(gpu.max_texture));
   if (!font_) {
     message_ = "the drawing font is missing (" + assets + "/fonts)";
+  } else {
+    // the glyphs most drawings use, made now (while a file is on its way) rather than inside the first open
+    (void)font_->layout(
+        " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~°±⌀");
+    renderer_.upload_atlas(font_->atlas());
   }
   apply_theme();
 }
@@ -113,8 +114,19 @@ void Viewer::apply_theme() const {
   st.WindowBorderSize = 1;
   st.FrameBorderSize = 1;
   st.WindowPadding = {8, 6};
-  st.FramePadding = {6, 3};
-  st.ItemSpacing = {6, 4};
+  // touch: every control 40 px tall (the font + twice the padding), more room between them, wider scroll bars
+  const ImGuiIO& io = ImGui::GetIO();
+  float font_px = 13.0F;  // ImGui's own font, before the app's is in
+  if (st.FontSizeBase > 0) {
+    font_px = st.FontSizeBase;
+  } else if (!io.Fonts->Fonts.empty() && io.Fonts->Fonts[0]->LegacySize > 0) {
+    font_px = io.Fonts->Fonts[0]->LegacySize;
+  }
+  st.FramePadding = touch_ ? ImVec2{12, std::max(3.0F, (40.0F - font_px) / 2)} : ImVec2{6, 3};
+  st.ItemSpacing = touch_ ? ImVec2{10, 6} : ImVec2{6, 4};
+  st.ScrollbarSize = touch_ ? 24 : 14;
+  st.GrabMinSize = touch_ ? 24 : 12;
+  st.TouchExtraPadding = touch_ ? ImVec2{2, 2} : ImVec2{0, 0};
   ImVec4* c = st.Colors;  // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
   const std::span<ImVec4> colors(c, ImGuiCol_COUNT);
   colors[ImGuiCol_Text] = im(ink);
@@ -203,6 +215,11 @@ void Viewer::set_space(std::size_t s) {
 
 void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
   redraw_ = std::max(redraw_, 4);  // ImGui feeds a click over two frames and settles it (a tab, a menu) on the next
+  if (e.type == SDL_EVENT_FINGER_DOWN || e.type == SDL_EVENT_FINGER_MOTION || e.type == SDL_EVENT_FINGER_UP ||
+      e.type == SDL_EVENT_FINGER_CANCELED) {
+    finger(e);  // also with no drawing open: the touch layout
+    return;
+  }
   if (!doc_ || space_ >= views_.size()) {
     return;
   }
@@ -210,6 +227,9 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
   auto inside = [&](double x, double y) { return x >= cx_ && y >= cy_ && x < cx_ + cw_ && y < cy_ + ch_; };
   switch (e.type) {
     case SDL_EVENT_MOUSE_BUTTON_DOWN:
+      if (fingers_.size() >= 2 && e.button.which == SDL_TOUCH_MOUSEID) {
+        break;  // the first finger of a pinch, as a mouse: the pinch has it
+      }
       if (!imgui_wants_mouse && inside(static_cast<double>(e.button.x), static_cast<double>(e.button.y))) {
         if (e.button.clicks >= 2 && e.button.button == SDL_BUTTON_LEFT) {
           v = render::fit(doc_->drawing.spaces[space_], v);
@@ -223,6 +243,12 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
       break;
     case SDL_EVENT_MOUSE_BUTTON_UP: dragging_ = false; break;
     case SDL_EVENT_MOUSE_MOTION:
+      if (e.motion.which != SDL_TOUCH_MOUSEID && touch_) {
+        set_touch(false);  // a real mouse again: back to the dense layout
+      }
+      if (fingers_.size() >= 2 && e.motion.which == SDL_TOUCH_MOUSEID) {
+        break;
+      }
       mouse_x_ = static_cast<double>(e.motion.x);
       mouse_y_ = static_cast<double>(e.motion.y);
       if (dragging_) {
@@ -247,15 +273,99 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
   }
 }
 
+void Viewer::set_touch(bool on) {
+  if (touch_ != on) {
+    touch_ = on;
+    apply_theme();
+    redraw_ = std::max(redraw_, 2);
+  }
+}
+
+// Fingers: one finger pans through the mouse SDL makes of it (drag, double tap = fit); two pinch about their midpoint
+// and pan with it. SDL gives finger positions as 0–1 of the window.
+void Viewer::finger(const SDL_Event& e) {
+  set_touch(true);
+  const ImVec2 size = ImGui::GetIO().DisplaySize;
+  const double x = static_cast<double>(e.tfinger.x) * static_cast<double>(size.x);
+  const double y = static_cast<double>(e.tfinger.y) * static_cast<double>(size.y);
+  const auto it = std::ranges::find(fingers_, e.tfinger.fingerID, &Finger::id);
+  if (e.type == SDL_EVENT_FINGER_UP || e.type == SDL_EVENT_FINGER_CANCELED) {
+    if (it != fingers_.end()) {
+      fingers_.erase(it);
+    }
+    const bool tap = e.type == SDL_EVENT_FINGER_UP && fingers_.empty() && tap_.alone &&
+                     e.tfinger.timestamp - tap_.down_ns < 300'000'000U && std::hypot(x - tap_.x, y - tap_.y) < 12;
+    if (tap) {
+      tap_.up_ns = e.tfinger.timestamp;
+      const bool second = last_tap_.up_ns != 0 && tap_.down_ns - last_tap_.up_ns < 400'000'000U &&
+                          std::hypot(tap_.x - last_tap_.x, tap_.y - last_tap_.y) < 30;
+      if (second && doc_ && space_ < views_.size() && x >= cx_ && y >= cy_ && x < cx_ + cw_ && y < cy_ + ch_ &&
+          !ImGui::GetIO().WantCaptureMouse) {
+        views_[space_] = render::fit(doc_->drawing.spaces[space_], views_[space_]);
+        redraw_ = 2;
+        last_tap_ = {};
+      } else {
+        last_tap_ = tap_;
+      }
+    }
+    return;
+  }
+  if (e.type == SDL_EVENT_FINGER_DOWN) {
+    if (it == fingers_.end() && fingers_.size() < 10) {
+      fingers_.push_back({.id = e.tfinger.fingerID, .x = x, .y = y});
+    }
+    if (fingers_.size() == 1) {
+      tap_ = {.down_ns = e.tfinger.timestamp, .up_ns = 0, .x = x, .y = y, .alone = true};
+    } else {
+      tap_.alone = false;
+      dragging_ = false;  // the pinch takes over from the one-finger pan
+    }
+    return;
+  }
+  if (it == fingers_.end()) {
+    return;
+  }
+  if (fingers_.size() < 2 || it - fingers_.begin() >= 2 || space_ >= views_.size()) {
+    it->x = x;
+    it->y = y;
+    return;
+  }
+  // the first two fingers: zoom by the change of their distance about their midpoint, pan by the midpoint's move
+  const Finger a = fingers_[0];
+  const Finger b = fingers_[1];
+  const double d0 = std::hypot(a.x - b.x, a.y - b.y);
+  const double mx0 = (a.x + b.x) / 2;
+  const double my0 = (a.y + b.y) / 2;
+  it->x = x;
+  it->y = y;
+  const Finger& a1 = fingers_[0];
+  const Finger& b1 = fingers_[1];
+  const double d1 = std::hypot(a1.x - b1.x, a1.y - b1.y);
+  const double mx1 = (a1.x + b1.x) / 2;
+  const double my1 = (a1.y + b1.y) / 2;
+  if (mx0 < cx_ || my0 < cy_ || mx0 >= cx_ + cw_ || my0 >= cy_ + ch_) {
+    return;  // a pinch over the panels is not the canvas's
+  }
+  render::View& v = views_[space_];
+  if (d0 > 1 && d1 > 1) {
+    const double f = std::clamp(d1 / d0, 0.5, 2.0);  // one event never jumps more than 2×
+    v = render::zoom_at(v, mx0 - cx_, my0 - cy_, f);
+  }
+  v = render::pan_by(v, mx1 - mx0, my1 - my0);
+  redraw_ = 2;
+}
+
 void Viewer::layers_panel() {
   const ImGuiViewport* vp = ImGui::GetMainViewport();
   const float top = vp->WorkPos.y;
   ImGui::SetNextWindowPos({vp->WorkPos.x, top});
-  ImGui::SetNextWindowSize({kLayersWidth, vp->WorkSize.y - kStatusHeight});
+  ImGui::SetNextWindowSize({layers_width(), vp->WorkSize.y - status_height()});
   ImGui::Begin(words_->t("ui.layers").c_str(), nullptr,
                ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
   if (doc_) {
-    if (ImGui::SmallButton(words_->t("input.cmd.layers.on").c_str())) {
+    const std::string all_on = words_->t("input.cmd.layers.on");
+    if (touch_ ? ImGui::Button(all_on.c_str())
+               : ImGui::SmallButton(all_on.c_str())) {  // a small button is 40 px on touch
       std::ranges::fill(hidden_, false);
       redraw_ = 2;
     }
@@ -287,8 +397,8 @@ void Viewer::layers_panel() {
 
 void Viewer::status_bar() {
   const ImGuiViewport* vp = ImGui::GetMainViewport();
-  ImGui::SetNextWindowPos({vp->WorkPos.x, vp->WorkPos.y + vp->WorkSize.y - kStatusHeight});
-  ImGui::SetNextWindowSize({vp->WorkSize.x, kStatusHeight});
+  ImGui::SetNextWindowPos({vp->WorkPos.x, vp->WorkPos.y + vp->WorkSize.y - status_height()});
+  ImGui::SetNextWindowSize({vp->WorkSize.x, status_height()});
   ImGui::Begin("##status", nullptr,
                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
                    ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav);
@@ -313,6 +423,10 @@ void Viewer::ui(float dpr) {
   take_inbox();
   dpr_ = static_cast<double>(dpr);
   frame_start_ = SDL_GetTicksNS();
+  if (touch_) {
+    // menu rows (the popups too): the text + the spacing = 40 px
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10, std::max(4.0F, 40.0F - ImGui::GetFontSize())});
+  }
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu(words_->t("toolbar.group.file").c_str())) {
       if (ImGui::MenuItem(words_->t("ui.open").c_str(), "Ctrl+O") && services_.pick_open) {
@@ -343,14 +457,17 @@ void Viewer::ui(float dpr) {
     ImGui::EndMainMenuBar();
     redraw_ = std::max(redraw_, 1);
   }
+  if (touch_) {
+    ImGui::PopStyleVar();
+  }
   if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && ImGui::IsKeyPressed(ImGuiKey_O) && services_.pick_open) {
     services_.pick_open();
   }
   layers_panel();
   // the space tabs, above the canvas
   const ImGuiViewport* vp = ImGui::GetMainViewport();
-  ImGui::SetNextWindowPos({vp->WorkPos.x + kLayersWidth, vp->WorkPos.y});
-  ImGui::SetNextWindowSize({vp->WorkSize.x - kLayersWidth, kTabsHeight});
+  ImGui::SetNextWindowPos({vp->WorkPos.x + layers_width(), vp->WorkPos.y});
+  ImGui::SetNextWindowSize({vp->WorkSize.x - layers_width(), tabs_height()});
   ImGui::Begin("##spaces", nullptr,
                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
   if (doc_ && ImGui::BeginTabBar("spaces", ImGuiTabBarFlags_FittingPolicyScroll)) {
@@ -367,10 +484,10 @@ void Viewer::ui(float dpr) {
   ImGui::End();
   status_bar();
   // the canvas: what is left
-  cx_ = static_cast<double>(vp->WorkPos.x + kLayersWidth);
-  cy_ = static_cast<double>(vp->WorkPos.y + kTabsHeight);
-  cw_ = std::max(1.0, static_cast<double>(vp->WorkSize.x - kLayersWidth));
-  ch_ = std::max(1.0, static_cast<double>(vp->WorkSize.y - kTabsHeight - kStatusHeight));
+  cx_ = static_cast<double>(vp->WorkPos.x + layers_width());
+  cy_ = static_cast<double>(vp->WorkPos.y + tabs_height());
+  cw_ = std::max(1.0, static_cast<double>(vp->WorkSize.x - layers_width()));
+  ch_ = std::max(1.0, static_cast<double>(vp->WorkSize.y - tabs_height() - status_height()));
   for (render::View& v : views_) {
     v.width = cw_;  // keep the centre and the zoom when the window changes size
     v.height = ch_;

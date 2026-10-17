@@ -68,6 +68,8 @@ class Viewer {
   void ui(float dpr);
   /// The drawing into `pass` (target `width` × `height` device px); ImGui is drawn after it by the host.
   void render(const wgpu::RenderPassEncoder& pass, std::uint32_t width, std::uint32_t height);
+  /// True once the GPU pipelines exist (the web compiles them in the background); before, frames show no drawing.
+  [[nodiscard]] bool ready() const noexcept { return renderer_.ready(); }
   /// True while something on screen still has to change (the host may sleep otherwise).
   [[nodiscard]] bool busy() const noexcept { return redraw_ > 0; }
   /// The last frame's numbers, for the status bar and ?bench.
@@ -80,6 +82,10 @@ class Viewer {
   };
   [[nodiscard]] Stats stats() const noexcept { return stats_; }
   [[nodiscard]] const i18n::Catalog& words() const noexcept { return *words_; }
+  /// The current space's view (tests, the status bar); a default view with no drawing open.
+  [[nodiscard]] render::View view() const { return space_ < views_.size() ? views_[space_] : render::View{}; }
+  /// True while the touch layout (40 px hit areas) is on: from the first finger until a real mouse moves.
+  [[nodiscard]] bool touch_layout() const noexcept { return touch_; }
   /// The canvas colour (the host clears to it).
   [[nodiscard]] render::Rgba background() const;
 
@@ -90,6 +96,12 @@ class Viewer {
   void apply_theme() const;
   void layers_panel();
   void status_bar();
+  void finger(const SDL_Event& e);
+  void set_touch(bool on);
+  // the chrome's sizes (window points): larger in the touch layout
+  [[nodiscard]] float layers_width() const noexcept { return touch_ ? 280.0F : 240.0F; }
+  [[nodiscard]] float tabs_height() const noexcept { return touch_ ? 48.0F : 30.0F; }
+  [[nodiscard]] float status_height() const noexcept { return touch_ ? 32.0F : 24.0F; }
 
   Services services_;
   Inbox inbox_;
@@ -113,6 +125,20 @@ class Viewer {
   double mouse_x_ = -1, mouse_y_ = -1;
   int redraw_ = 2;
   bool fit_pending_ = false;  // fit every space once the canvas has its size
+  // touch: the layout with 40 px hit areas while fingers are in use; the fingers down (window points) for pinch / pan
+  bool touch_ = false;
+  struct Finger {
+    SDL_FingerID id = 0;
+    double x = 0, y = 0;
+  };
+  std::vector<Finger> fingers_;
+  // a tap: one finger down and up again in place, quickly; two in a row = fit (double-click's touch twin)
+  struct Tap {
+    std::uint64_t down_ns = 0, up_ns = 0;
+    double x = 0, y = 0;
+    bool alone = false;  // no second finger joined
+  };
+  Tap tap_, last_tap_;
   Stats stats_;
   std::uint64_t frame_start_ = 0;
 };

@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-16 · Change: M1–M3 done; re-planned with measured numbers (M3.5 speed before M4).
+Last updated 2026-10-17 · Change: M3.5b–d (hashed names, first frame, touch) done; the typed model next.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -32,8 +32,11 @@ linear key search), and on the web that runs on one thread. M3.5 therefore comes
    entries), measured per change; then the viewer reads a typed drawing straight from the reader where it pays.
 2. **Threads on the web**: the read in a worker (pthreads are on; COOP/COEP are sent), so a big file never blocks a
    frame and a trap costs only the worker.
-3. **First frame**: pipelines created asynchronously at start, the ASCII glyphs of the atlas built ahead.
-4. Touch input for the web build (pinch, two-finger pan; the tablet route below).
+3. **First frame** (done, M3.5c): pipelines compiled in the background at start (web), the ASCII glyphs of the atlas
+   built ahead, the `?sample` file fetched while the device is still being set up. Not yet measured on a quiet machine.
+4. **Touch input** for the web build (done, M3.5d): pinch zoom about the fingers, two-finger pan, one-finger drag,
+   double tap = fit; a touch layout with 40 px hit areas from the first finger until a real mouse moves.
+5. **Hashed file names** for the test host (done, M3.5b): `web-dist` target, immutable caching.
 
 Then M4 as planned; M5+ order unchanged.
 
@@ -63,7 +66,7 @@ CLI contract: `cadcraft-cli parity dwg <file>` (the model as JSON) and `cadcraft
 ## Tablets (AGENTS.md section 10, Mobile)
 
 CadCraft 0.5 Studio runs on Android and iPad. The fork covers tablets **through the web build in the tablet's
-browser first** (WebGPU: Chrome on Android, Safari 26+ on iPad): a touch layout (pinch/pan, long press = Enter,
-40 px hit areas), the browser file picker and downloads, recovery in OPFS. SDL3 builds for Android and iOS exist,
+browser first** (WebGPU: Chrome on Android, Safari 26+ on iPad): a touch layout (pinch/pan and 40 px hit areas:
+done in M3.5d; long press = Enter comes with the drafting commands in M4), the browser file picker and downloads, recovery in OPFS. SDL3 builds for Android and iOS exist,
 but Dear ImGui is not touch-first; a packaged tablet app is decided with measured numbers at the M3 re-plan, not
 before.

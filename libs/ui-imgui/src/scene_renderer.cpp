@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <webgpu/webgpu_cpp.h>
@@ -211,8 +212,10 @@ SceneRenderer::SceneRenderer(wgpu::Device device, wgpu::TextureFormat color) : d
                  .srcFactor = wgpu::BlendFactor::One,
                  .dstFactor = wgpu::BlendFactor::OneMinusSrcAlpha};
 
-  auto pipeline = [&](const char* vs, const char* fs, const wgpu::VertexBufferLayout& vbl, wgpu::DepthStencilState ds,
-                      bool write_color) {
+  // the pipelines start compiling now; on the web in the background (the first frame that needs them waits for
+  // nothing: draw() is empty until they are there), natively at once (Dawn compiles them here)
+  auto pipeline = [&](wgpu::RenderPipeline Pipelines::* slot, const char* vs, const char* fs,
+                      const wgpu::VertexBufferLayout& vbl, wgpu::DepthStencilState ds, bool write_color) {
     wgpu::ColorTargetState target;
     target.format = color;
     target.blend = &blend;
@@ -233,7 +236,17 @@ SceneRenderer::SceneRenderer(wgpu::Device device, wgpu::TextureFormat color) : d
     rpd.primitive.cullMode = wgpu::CullMode::None;
     rpd.depthStencil = &ds;
     rpd.multisample.count = kSamples;
-    return device_.CreateRenderPipeline(&rpd);
+#if defined(__EMSCRIPTEN__)
+    (void)device_.CreateRenderPipelineAsync(
+        &rpd, wgpu::CallbackMode::AllowSpontaneous,
+        [pipes = pipes_, slot](wgpu::CreatePipelineAsyncStatus status, wgpu::RenderPipeline p, wgpu::StringView) {
+          if (status == wgpu::CreatePipelineAsyncStatus::Success) {
+            (*pipes).*slot = std::move(p);
+          }
+        });
+#else
+    (*pipes_).*slot = device_.CreateRenderPipeline(&rpd);
+#endif
   };
 
   const std::array<wgpu::VertexAttribute, 1> seg_attr{
@@ -264,10 +277,10 @@ SceneRenderer::SceneRenderer(wgpu::Device device, wgpu::TextureFormat color) : d
 
   using C = wgpu::CompareFunction;
   using S = wgpu::StencilOperation;
-  segments_ = pipeline("seg_vs", "seg_fs", seg_l, depth_stencil(C::Always, S::Keep), true);
-  stencil_ = pipeline("fan_vs", "fan_fs", fan_l, depth_stencil(C::Always, S::Invert), false);
-  cover_ = pipeline("cover_vs", "cover_fs", cover_l, depth_stencil(C::NotEqual, S::Zero), true);
-  text_ = pipeline("text_vs", "text_fs", glyph_l, depth_stencil(C::Always, S::Keep), true);
+  pipeline(&Pipelines::segments, "seg_vs", "seg_fs", seg_l, depth_stencil(C::Always, S::Keep), true);
+  pipeline(&Pipelines::stencil, "fan_vs", "fan_fs", fan_l, depth_stencil(C::Always, S::Invert), false);
+  pipeline(&Pipelines::cover, "cover_vs", "cover_fs", cover_l, depth_stencil(C::NotEqual, S::Zero), true);
+  pipeline(&Pipelines::text, "text_vs", "text_fs", glyph_l, depth_stencil(C::Always, S::Keep), true);
 
   wgpu::SamplerDescriptor sd;
   sd.magFilter = wgpu::FilterMode::Linear;
@@ -376,7 +389,7 @@ void SceneRenderer::upload(const render::Scene& scene) {
 void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const render::DrawBatch> draws,
                          std::uint32_t width, std::uint32_t height, std::array<float, 4> canvas) {
   draw_calls_ = 0;
-  if (draws.empty() || width == 0 || height == 0) {
+  if (draws.empty() || width == 0 || height == 0 || !ready()) {
     return;
   }
   ensure_uniforms(draws.size());
@@ -434,7 +447,7 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
     const std::array<std::uint32_t, 1> offset{static_cast<std::uint32_t>(i * kSlot)};
     if (db.text) {
       if (r.glyph_count > 0) {
-        pass.SetPipeline(text_);
+        pass.SetPipeline(pipes_->text);
         pass.SetBindGroup(0, bind_, offset.size(), offset.data());
         pass.SetVertexBuffer(0, glyph_buf_);
         pass.Draw(6, r.glyph_count, 0, r.glyph_first);
@@ -444,18 +457,18 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
     }
     for (std::uint32_t f = 0; f < r.fill_count; ++f) {
       const FillRange& fr = fills_[r.fill_first + f];
-      pass.SetPipeline(stencil_);
+      pass.SetPipeline(pipes_->stencil);
       pass.SetBindGroup(0, bind_, offset.size(), offset.data());
       pass.SetVertexBuffer(0, fan_buf_);
       pass.Draw(fr.fan_count, 1, fr.fan_first, 0);
-      pass.SetPipeline(cover_);
+      pass.SetPipeline(pipes_->cover);
       pass.SetBindGroup(0, bind_, offset.size(), offset.data());
       pass.SetVertexBuffer(0, cover_buf_);
       pass.Draw(6, 1, fr.cover_first, 0);
       draw_calls_ += 2;
     }
     if (r.seg_count > 0) {
-      pass.SetPipeline(segments_);
+      pass.SetPipeline(pipes_->segments);
       pass.SetBindGroup(0, bind_, offset.size(), offset.data());
       pass.SetVertexBuffer(0, seg_buf_);
       pass.Draw(6, r.seg_count, 0, r.seg_first);

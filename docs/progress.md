@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-16 · Change: M2.3–M2.4.
+Last updated 2026-10-17 · Change: M3.5b–d.
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -81,3 +81,14 @@ Last updated 2026-10-16 · Change: M2.3–M2.4.
 - M3.5b: web deploy folder with content-hashed names (`cmake --build --preset wasm --target web-dist` →
   build/wasm/web-dist via tools/web-dist.cmake): cadcraft-web-<12 hex>.js/.wasm/.data and cadcraft-<hex>.css, served
   `immutable` for a year by the test host; index.html stays `no-cache`. Deployed 2026-10-16 and checked live.
+- M3.5c: first frame. The web build compiles the four render pipelines in the background
+  (`CreateRenderPipelineAsync`; files wait in the page until they exist, so a first frame never draws nothing), the
+  viewer makes the printable ASCII glyphs (+ ° ± ⌀) when it starts, and `?sample` fetches the drawing while the WebGPU
+  device is still on its way. `?bench` now reports open → first frame as soon as the six opens are done (a software
+  GPU can take minutes for the 240 zoom frames after). Timing not taken: load 21–37 from other sessions' builds made
+  SwiftShader frames 1–4 s; re-measure on a quiet machine.
+- M3.5d: touch. Pinch zooms about the fingers' midpoint (≤ 2× per event), two fingers pan, one finger drags through
+  the mouse SDL makes of it, a double tap (≤ 300 ms taps, ≤ 400 ms apart, ≤ 30 px) fits. The first finger switches a
+  touch layout on (40 px rows from the font size, wider panel and scroll bars, 48 px tabs, 40 px menu rows); a real
+  mouse moving switches it off. The canvas has `touch-action: none`. Test: libs/ui-imgui/tests/viewer_touch_test.cpp
+  (Dawn null adapter, ImGui without a window, SDL finger events by hand); checked in headless Chromium with CDP touch.

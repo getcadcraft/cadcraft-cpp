@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <unordered_map>
 
@@ -34,6 +35,11 @@ class SceneRenderer {
   void draw(const wgpu::RenderPassEncoder& pass, std::span<const render::DrawBatch> draws, std::uint32_t width,
             std::uint32_t height, std::array<float, 4> canvas = {});
 
+  /// True once the pipelines exist (on the web they are compiled in the background, started by the constructor);
+  /// draw() draws nothing before.
+  [[nodiscard]] bool ready() const noexcept {
+    return pipes_->segments && pipes_->stencil && pipes_->cover && pipes_->text;
+  }
   /// The draws of the last frame, for the status bar and the benchmark.
   [[nodiscard]] std::size_t last_draw_calls() const noexcept { return draw_calls_; }
 
@@ -50,7 +56,12 @@ class SceneRenderer {
 
   wgpu::Device device_;
   wgpu::Queue queue_;
-  wgpu::RenderPipeline segments_, stencil_, cover_, text_;
+  struct Pipelines {
+    wgpu::RenderPipeline segments, stencil, cover, text;
+  };
+  // filled when the device has compiled them (on the web asynchronously: a callback may outlive this renderer, so it
+  // holds its own reference)
+  std::shared_ptr<Pipelines> pipes_ = std::make_shared<Pipelines>();
   wgpu::BindGroupLayout layout_;
   wgpu::Buffer uniforms_;
   std::size_t uniform_slots_ = 0;

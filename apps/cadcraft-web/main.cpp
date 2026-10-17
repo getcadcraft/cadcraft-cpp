@@ -4,7 +4,8 @@
 // 'self' 'wasm-unsafe-eval'); the little JavaScript a browser needs (file picker, drops, ?sample, ?bench, the
 // "needs WebGPU" screen) is EM_JS glue here, compiled into that file.
 //   ?sample        open the bundled sample drawing
-//   ?bench         …and time 240 frames while zooming; the numbers appear on the page and in the console
+//   ?bench         …time open → first frame (reported at once), then 240 frames while zooming; the numbers appear on
+//                  the page and in the console
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +13,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <SDL3/SDL.h>
@@ -74,10 +76,11 @@ struct App {
   bool bench = false;
   int bench_frame = -1;
   double last = 0;
-  std::vector<double> frame_ms;     // between frames (what the user sees)
-  std::vector<double> cpu_ms;       // inside a frame: input, draw list, encode, submit
-  std::vector<double> open_runs;    // open → first frame, ms
-  std::vector<std::string> phases;  // each run's parse / compile / scene / upload, ms
+  std::vector<double> frame_ms;            // between frames (what the user sees)
+  std::vector<double> cpu_ms;              // inside a frame: input, draw list, encode, submit
+  std::vector<double> open_runs;           // open → first frame, ms
+  std::vector<std::string> phases;         // each run's parse / compile / scene / upload, ms
+  std::vector<cc::ui::Inbox::Item> early;  // files that arrived before the device (the sample is fetched at once)
 };
 App* g_app = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables) — the browser's loop has no context
 
@@ -97,10 +100,51 @@ std::string join(const std::vector<double>& v) {
   return s;
 }
 
+std::string phases_json(const App& a) {
+  std::string j;
+  for (const auto& p : a.phases) {
+    j += (j.empty() ? "" : ",") + p;
+  }
+  return "[" + j + "]";
+}
+
+// open → first frame, six times (the first is cold): the same measurement the JS bench page makes; reported at once
+// (a slow software GPU may take minutes for the 240 frames that follow)
+void bench_open(App& a, const cc::ui::Inbox::Item& item) {
+  for (int run = 0; run < 6; ++run) {
+    const double t0 = cc_web_now();
+    a.host->viewer().inbox().post(item);
+    a.host->frame();
+    a.open_runs.push_back(cc_web_now() - t0);
+    const auto st = a.host->viewer().stats();
+    a.phases.push_back(
+        "{\"parse\":" + std::to_string(st.open.parse_ms) + ",\"compile\":" + std::to_string(st.open.compile_ms) +
+        ",\"scene\":" + std::to_string(st.scene_ms) + ",\"upload\":" + std::to_string(st.upload_ms) + "}");
+  }
+  const std::string r = "{\"open_to_first_frame_ms\":[" + join(a.open_runs) + "],\"phases\":" + phases_json(a) + "}";
+  cc_web_report(r.c_str());
+  a.bench_frame = 0;
+}
+
+void take(App& a, cc::ui::Inbox::Item item) {
+  if (!a.host || !a.host->viewer().ready()) {
+    a.early.push_back(std::move(item));
+  } else if (a.bench) {
+    bench_open(a, item);
+  } else {
+    a.host->viewer().inbox().post(std::move(item));
+  }
+}
+
 void loop() {
   App& a = *g_app;
   if (!a.host) {
     return;  // the device is still on its way
+  }
+  if (!a.early.empty() && a.host->viewer().ready()) {
+    for (auto& item : std::exchange(a.early, {})) {
+      take(a, std::move(item));
+    }
   }
   const double t0 = cc_web_now();
   SDL_Event e;
@@ -132,17 +176,10 @@ void loop() {
     a.last = t0;
     if (++a.bench_frame == 241) {
       const auto s = a.host->viewer().stats();
-      const std::string r =
-          "{\"frames\":240,\"frame_ms_median\":" + median(a.frame_ms) + ",\"cpu_ms_median\":" + median(a.cpu_ms) +
-          ",\"open_to_first_frame_ms\":[" + join(a.open_runs) + "]" + ",\"phases\":[" +
-          [&] {
-            std::string j;
-            for (const auto& p : a.phases) {
-              j += (j.empty() ? "" : ",") + p;
-            }
-            return j;
-          }() +
-          "]" + ",\"draws\":" + std::to_string(s.draws) + ",\"adapter\":\"" + a.gpu->adapter_name + "\"}";
+      const std::string r = "{\"frames\":240,\"frame_ms_median\":" + median(a.frame_ms) +
+                            ",\"cpu_ms_median\":" + median(a.cpu_ms) + ",\"open_to_first_frame_ms\":[" +
+                            join(a.open_runs) + "],\"phases\":" + phases_json(a) +
+                            ",\"draws\":" + std::to_string(s.draws) + ",\"adapter\":\"" + a.gpu->adapter_name + "\"}";
       cc_web_report(r.c_str());
     }
   }
@@ -151,29 +188,14 @@ void loop() {
 }  // namespace
 
 extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_open(const std::uint8_t* data, int size, const char* name) {
-  if (g_app == nullptr || !g_app->host || data == nullptr || size <= 0) {
+  if (g_app == nullptr || data == nullptr || size <= 0) {
     return;
   }
   const std::span<const std::uint8_t> in(data, static_cast<std::size_t>(size));
   std::vector<std::byte> bytes(in.size());
   std::ranges::transform(in, bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
   const std::string file = name != nullptr ? name : "drawing";
-  if (!g_app->bench) {
-    g_app->host->viewer().inbox().post({.name = file, .path = {}, .bytes = std::move(bytes)});
-    return;
-  }
-  // open → first frame, six times (the first is cold): the same measurement the JS bench page makes
-  for (int run = 0; run < 6; ++run) {
-    const double t0 = cc_web_now();
-    g_app->host->viewer().inbox().post({.name = file, .path = {}, .bytes = bytes});
-    g_app->host->frame();
-    g_app->open_runs.push_back(cc_web_now() - t0);
-    const auto st = g_app->host->viewer().stats();
-    g_app->phases.push_back(
-        "{\"parse\":" + std::to_string(st.open.parse_ms) + ",\"compile\":" + std::to_string(st.open.compile_ms) +
-        ",\"scene\":" + std::to_string(st.scene_ms) + ",\"upload\":" + std::to_string(st.upload_ms) + "}");
-  }
-  g_app->bench_frame = 0;
+  take(*g_app, {.name = file, .path = {}, .bytes = std::move(bytes)});
 }
 
 int main(int /*argc*/, char** /*argv*/) {
@@ -195,7 +217,7 @@ int main(int /*argc*/, char** /*argv*/) {
   cc::ui::create_gpu_async(
       {.backend = {},
        .make_surface = [](const wgpu::Instance& i) { return cc::ui::make_window_surface(i, g_app->window); }},
-      [sample](cc::base::Result<cc::ui::Gpu> gpu) {
+      [](cc::base::Result<cc::ui::Gpu> gpu) {
         if (!gpu) {
           std::fprintf(stderr, "cadcraft: %s\n",
                        gpu.error().message.c_str());  // NOLINT(cppcoreguidelines-pro-type-vararg)
@@ -206,10 +228,10 @@ int main(int /*argc*/, char** /*argv*/) {
         cc::ui::Services services;
         services.pick_open = [] { cc_web_pick(); };
         g_app->host = std::make_unique<cc::ui::Host>(g_app->window, *g_app->gpu, services, "/assets", "en");
-        if (sample) {
-          cc_web_fetch_sample("samples/kitchen-equipment.dxf");
-        }
       });
+  if (sample) {  // while the device is on its way
+    cc_web_fetch_sample("samples/kitchen-equipment.dxf");
+  }
   emscripten_set_main_loop(loop, 0, false);
   return 0;
 }
