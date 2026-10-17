@@ -13,6 +13,7 @@
 //   cadcraft-cli compile <file> --bench N        best of N in-process compiles (the read is not timed)
 //   cadcraft-cli import <file.dwg>               CadCraft's drawing (dwg-import.js importDwg) as JSON: what the 0.5
 //                                                app's doc.load() takes (tools/parity/import.mjs); notes in English
+//   cadcraft-cli doc <file.dwg>                  the document after load (doc.js) as tools/parity/doc.mjs compares it
 //   cadcraft-cli version | help
 //
 // Exit codes: 0 ok, 1 the file was refused ({"$error":{code,message}} on stdout for parity/bench), 2 usage, 3 an
@@ -39,6 +40,7 @@
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/doc/doc.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
 #include "cc/dxf/read.hpp"
@@ -60,6 +62,7 @@ void usage(std::FILE* out) {
              "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
              "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
              "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
+             "  doc <file.dwg>                      the document after loading that drawing, as JSON\n"
              "  version                             print the version\n");
 }
 
@@ -145,7 +148,7 @@ std::filesystem::path assets_dir(std::string_view argv0) {
   return CC_ASSETS_DIR;
 }
 
-int cmd_import(const std::filesystem::path& file, std::string_view argv0) {
+int cmd_import(const std::filesystem::path& file, std::string_view argv0, bool as_doc = false) {
   const auto bytes = cc::base::read_file(file, kMaxFile);
   if (!bytes) {
     print_error_json("io", bytes.error().message);
@@ -168,9 +171,15 @@ int cmd_import(const std::filesystem::path& file, std::string_view argv0) {
   }
   const std::span<const std::byte> head =
       std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
-  const cc::base::Value drawing = cc::cad::import_dwg(model, cc::base::as_text(head), *words);
+  cc::base::Value drawing = cc::cad::import_dwg(model, cc::base::as_text(head), *words);
   std::string out;
-  cc::base::write_json(drawing, out);
+  if (as_doc) {
+    cc::doc::Doc d;
+    d.load(std::move(drawing), *words);
+    cc::base::write_json(d.dump(), out);
+  } else {
+    cc::base::write_json(drawing, out);
+  }
   out += '\n';
   (void)std::fwrite(out.data(), 1, out.size(), stdout);
   return 0;
@@ -425,6 +434,9 @@ int run(const std::vector<std::string_view>& args) {
       return 2;
     }
     return cmd_compile(std::filesystem::path(args[2]), n);
+  }
+  if (cmd == "doc" && args.size() == 3) {
+    return cmd_import(std::filesystem::path(args[2]), args[0], true);
   }
   if (cmd == "import" && args.size() == 3) {
     return cmd_import(std::filesystem::path(args[2]), args[0]);

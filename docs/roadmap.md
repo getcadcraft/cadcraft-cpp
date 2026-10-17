@@ -83,7 +83,7 @@ parity on the corpus with no new test files: corpus DWG → read (M2) → import
 | Step | Ends with | Parity gate |
 |---|---|---|
 | M4.1 | `libs/cad` (L2): the drawing type and `import_dwg` (dwg-import.js) | the drawing's JSON = JS importDwg's on the 110 corpus DWGs — **done 2026-10-17: 110/110** |
-| M4.2 | `libs/doc` (L1 model + L5 session parts): Doc with spaces, layers, blocks, change/undo/redo, op records | the JS doc tests ported (bin/test-cadcraft.mjs doc cases) |
+| M4.2 | `libs/doc` (L3): Doc with spaces, layers, blocks, change/undo/redo | the loaded document = the JS Doc's on the corpus — **done 2026-10-17: 110/110**; behaviour tests |
 | M4.3 | `libs/io-dwg` writer (bits, CRC, container R2000…R2018, objects, tables, R2004 LZ, R2007) | bytes = JS writeDwg's for the same writer model, six versions |
 | M4.4 | `dwg-save.js` port (document → writer model) | corpus DWG → import → save: bytes = JS, six versions; and the saved files read back by our reader |
 | M4.5 | DXF save (dxf.js write) | bytes = JS on the corpus |

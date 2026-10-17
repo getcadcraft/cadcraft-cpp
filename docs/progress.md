@@ -135,3 +135,10 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   objects with `entities` in the JS, so attribute resolution shows in both — mirrored after resolveAttribs; (4) `at()` /
   `item()` of a temporary return by value (a reference into g()'s copy dangled). The import does not cap anything the
   JS does not, except MINSERT copies (docs/gaps.md).
+- M4.2: `libs/doc` (L3): `cc::doc::Doc`, CadCraft 0.5's doc.js — spaces as insertion-ordered maps (JS Map semantics:
+  a deleted entry set again goes last), every edit through `change()` as one undo step (nested changes join the outer
+  one; an exception rolls the change back), mark / squash, undo / redo of entities, blocks, layouts, meta, views, the
+  layer table and named styles, a layer renamed with its objects in one step, and `load()`. `cadcraft-cli doc <file>`
+  prints the loaded document. **Parity: 110 / 110 corpus DWGs load into the JS Doc's document** (tools/parity/doc.mjs;
+  golden on the public fixtures). Not ported yet: constraints (the file's payload is kept as text), the 3D model (its
+  faces and JSON are kept), Studio Live's hook, add-on edit hooks (docs/gaps.md).

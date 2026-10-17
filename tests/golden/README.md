@@ -20,3 +20,12 @@ the plain form `tools/parity/compile.mjs` compares (Maps as value arrays, typed 
 canonical. Made with `node tools/parity/compile.mjs build/corpus/fixtures --golden-out <dir>/compile`, then the same
 `tar` line with `compile`. The test `drawing.golden` compares them at the DWG tolerance; the full check (202 files) is
 `tools/parity/compile.mjs`.
+
+`js-0.5-import.tar.gz` — CadCraft 0.5's `importDwg` (dwg-import.js) for the four public DWG fixtures: the drawing the
+app's document loads, canonical. Made with `node tools/parity/import.mjs build/corpus/fixtures --golden-out <dir>/import`,
+then the same `tar` line with `import`. The test `cad.golden` compares them at the DWG tolerance; the full check (110
+files) is `tools/parity/import.mjs`.
+
+`js-0.5-doc.tar.gz` — the 0.5 `Doc` (doc.js) after `load()` of that drawing, dumped by `tools/parity/doc.mjs` (maps as
+[key, value] lists), canonical. Made with `node tools/parity/doc.mjs build/corpus/fixtures --golden-out <dir>/doc`. The
+test `doc.golden` compares them; the full check (110 files) is `tools/parity/doc.mjs`.

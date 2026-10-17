@@ -34,6 +34,8 @@ std::string match_paper(double w, double h, std::string_view unit);
 // ---- panes.js / dwg-vports.js
 /// vportsFrom(records): the *Active VPORT records → panes.js shape, or null.
 Value vports_from(const Array& records);
+/// cleanPanes(v): a file's pane setup made safe, or null.
+Value clean_panes_value(const Value& v);
 
 // ---- pictures.js / xclip.js
 Value picture_block(const std::string& name, const Value& pic, const Value* clip);
@@ -44,6 +46,8 @@ Value face3d_from_dwg(const Value& e, const Value& base);
 /// read3dFromDwg(db, drawing): CadCraft's 3D JSON from block CADCRAFT_3D, then split3d (3D faces out of the 2D
 /// drawing). Notes through `words`.
 void read3d_from_dwg(const Value& db, Value& drawing, const i18n::Catalog& words);
+/// split3d(input): 3D faces out of a drawing (in place) → { text (CadCraft's 3D JSON or null), faces, view }.
+Value split3d(Value& input, const i18n::Catalog& words);
 
 // ---- gcons.js
 /// tagFromXdata(conv, xdata): a converted entity (not a list) tagged with CadCraft's CCREF / CCPARAM xdata.

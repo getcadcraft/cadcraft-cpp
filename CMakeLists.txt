@@ -76,6 +76,7 @@ if(CC_BUILD_RENDER)
 endif()
 add_subdirectory(libs/io-dwg)     # L3
 add_subdirectory(libs/io-dxf)     # L3
+add_subdirectory(libs/doc)        # L3
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/render)   # L3
   add_subdirectory(libs/image)    # L3

@@ -1,5 +1,5 @@
 cc_library(cad LAYER 2
-  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp
+  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp src/files.cpp
   DEPS cc::base cc::i18n)
 
 cc_test(cad

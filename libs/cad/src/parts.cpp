@@ -367,6 +367,20 @@ Value clean_panes(const std::string& layout, double fx, double fy, double active
 
 }  // namespace
 
+Value clean_panes_value(const Value& v) {
+  if (!v.is_object() || v.is_point()) {
+    return {nullptr};
+  }
+  const Value layout = v.get("layout");
+  const Value list = v.get("list");
+  const Value fx = v.get("fx");
+  const Value fy = v.get("fy");
+  const Value active = v.get("active");
+  return clean_panes(layout.is_string() ? layout.as_string() : std::string("?"), finite(fx) ? fx.as_number() : kNaN,
+                     finite(fy) ? fy.as_number() : kNaN, active.is_number() ? active.as_number() : kNaN,
+                     list.is_array() ? list.as_array() : Array{});
+}
+
 Value vports_from(const Array& records) {
   std::vector<const Value*> rs;
   for (const Value& r : records) {
@@ -674,7 +688,9 @@ bool is_face(const Value& e) {
   return e.is_object() && g(e, "type") == Value("face3d");
 }
 
-void split3d(Value& input, const i18n::Catalog& words) {
+}  // namespace
+
+Value split3d(Value& input, const i18n::Catalog& words) {
   Array faces = g(input, "faces3d").is_array() ? at(input, "faces3d").as_array() : Array{};
   // strip(input.entities, kept): face3d entities out, in their order
   if (Value* ents = input.find("entities"); ents != nullptr && ents->is_array()) {
@@ -809,12 +825,15 @@ void split3d(Value& input, const i18n::Catalog& words) {
       }
     }
   }
+  Value faces_out = faces;
   if (!faces.empty()) {
     input.set("faces3d", std::move(faces));
   }
+  const Value m3 = input.get("model3d");
+  return base::make_object({{"text", m3.is_string() ? m3 : Value(nullptr)},
+                            {"faces", std::move(faces_out)},
+                            {"view", clean_view(input.get("view3d"))}});
 }
-
-}  // namespace
 
 void read3d_from_dwg(const Value& db, Value& drawing, const i18n::Catalog& words) {
   if (const Value& blocks = at(db, "blocks"); blocks.is_array()) {
