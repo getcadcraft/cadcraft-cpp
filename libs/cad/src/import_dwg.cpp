@@ -2360,7 +2360,8 @@ Value Importer::run() {
   if (const Value lts = g(H, "LTSCALE"); num(lts) > 0 && lts != Value(1)) {
     meta.set("ltscale", lts);
   }
-  for (const base::Member& m : length_format(H).as_object()) {
+  const Value lf = length_format(H);  // a named value: a range-for over a temporary's member would dangle
+  for (const base::Member& m : lf.as_object()) {
     meta.set(m.key, m.value);
   }
   Value drawing = base::make_object({{"entities", std::move(entities)},
@@ -2379,7 +2380,8 @@ Value Importer::run() {
   drawing.set("meta", std::move(meta));
   drawing.set("views", std::move(views));
   drawing.set("vports", split_screen(at(tables, "vports")));
-  for (const base::Member& m : ucs_from(H, at(tables, "ucs"), at(tables, "vports")).as_object()) {
+  const Value ucs = ucs_from(H, at(tables, "ucs"), at(tables, "vports"));
+  for (const base::Member& m : ucs.as_object()) {
     drawing.set(m.key, m.value);
   }
   drawing.set("textStyles", std::move(text_styles));
