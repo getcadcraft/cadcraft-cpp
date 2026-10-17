@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-17 · Change: M3.5b–d (hashed names, first frame, touch) done; the typed model next.
+Last updated 2026-10-17 · Change: M3.5 done (a–g); post-mortem in docs/perf-postmortem.md; M4 next.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -28,9 +28,9 @@ benchmark table format below so the numbers compare.
 What the numbers say: the reader logic is fast, but the model is a generic JS-shaped `Value` tree (small allocations,
 linear key search), and on the web that runs on one thread. M3.5 therefore comes before M4:
 
-1. **A typed model behind the parity form**: measured first (M3.5e, docs/progress.md): copies and regrowth fixed for
-   6–9 %; the full redesign (inline points, interned keys) is estimated at 4–10 % more for ~1,700 call sites, so it waits
-   for an owner call; the reader's own decode logic and the web parse (5× native) are the larger levers.
+1. **The model's shape** (done, M3.5e–g; review: docs/perf-postmortem.md): copies and regrowth fixed, compact points,
+   append for new members; DXF −13 % best / −24 % median, DWG 0–5.5 %. Interned keys not done (§4 rules; bytes
+   measured free). Next levers: blocks-and-tables-imperial.dwg vs Rust, the DWG decode split, the web parse in a worker.
 2. **Threads on the web**: the read in a worker (pthreads are on; COOP/COEP are sent), so a big file never blocks a
    frame and a trap costs only the worker.
 3. **First frame** (done, M3.5c): pipelines compiled in the background at start (web), the ASCII glyphs of the atlas
