@@ -291,9 +291,9 @@ Value Bits::BD3() {
   return base::pt3(x, y, BD());
 }
 Value Bits::DD3(const Value& d) {
-  const double x = DD(d["x"].num_or(0));
-  const double y = DD(d["y"].num_or(0));
-  return base::pt3(x, y, DD(d["z"].num_or(0)));
+  const double x = DD(d.get("x").num_or(0));
+  const double y = DD(d.get("y").num_or(0));
+  return base::pt3(x, y, DD(d.get("z").num_or(0)));
 }
 
 Value Bits::BE() {

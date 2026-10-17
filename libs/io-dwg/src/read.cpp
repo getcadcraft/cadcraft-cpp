@@ -379,9 +379,9 @@ std::optional<std::pair<Array, Array>> fit_spline_control(const Array& fit, doub
   if (p != 3 || n < 2 || n > 2000) {
     return std::nullopt;
   }
-  auto X = [&](std::size_t i) { return fit[i]["x"].num_or(0); };
-  auto Y = [&](std::size_t i) { return fit[i]["y"].num_or(0); };
-  auto Z = [&](std::size_t i) { return fit[i]["z"].truthy() ? fit[i]["z"].num_or(0) : 0.0; };
+  auto X = [&](std::size_t i) { return fit[i].get("x").num_or(0); };
+  auto Y = [&](std::size_t i) { return fit[i].get("y").num_or(0); };
+  auto Z = [&](std::size_t i) { return fit[i].get("z").truthy() ? fit[i].get("z").num_or(0) : 0.0; };
   std::vector<double> u{0};
   for (std::size_t i = 1; i < n; ++i) {
     double d = std::hypot(X(i) - X(i - 1), Y(i) - Y(i - 1), Z(i) - Z(i - 1));
@@ -426,8 +426,10 @@ std::optional<std::pair<Array, Array>> fit_spline_control(const Array& fit, doub
   };
   std::vector<std::vector<double>> A(m, std::vector<double>(m, 0));
   std::vector<std::array<double, 3>> B(m, {0, 0, 0});
-  auto has = [](const Value& t) { return t.is_object() && (t["x"].truthy() || t["y"].truthy() || t["z"].truthy()); };
-  auto tz = [](const Value& t) { return t["z"].truthy() ? t["z"].num_or(0) : 0.0; };
+  auto has = [](const Value& t) {
+    return t.is_object() && (t.get("x").truthy() || t.get("y").truthy() || t.get("z").truthy());
+  };
+  auto tz = [](const Value& t) { return t.get("z").truthy() ? t.get("z").num_or(0) : 0.0; };
   A[0][0] = 1;
   B[0] = {X(0), Y(0), Z(0)};
   const double u4 = knots[4];
@@ -435,7 +437,7 @@ std::optional<std::pair<Array, Array>> fit_spline_control(const Array& fit, doub
   if (has(t0)) {
     A[1][0] = -1;
     A[1][1] = 1;
-    B[1] = {t0["x"].num_or(0) * u4 / 3, t0["y"].num_or(0) * u4 / 3, tz(t0) * u4 / 3};
+    B[1] = {t0.get("x").num_or(0) * u4 / 3, t0.get("y").num_or(0) * u4 / 3, tz(t0) * u4 / 3};
   } else {
     const double d = (u5 - knots[1]) != 0 ? (u5 - knots[1]) : u5;
     A[1][0] = 1 / u4;
@@ -458,7 +460,7 @@ std::optional<std::pair<Array, Array>> fit_spline_control(const Array& fit, doub
   if (has(t1)) {
     A[m - 2][m - 2] = -1;
     A[m - 2][m - 1] = 1;
-    B[m - 2] = {t1["x"].num_or(0) * e1 / 3, t1["y"].num_or(0) * e1 / 3, tz(t1) * e1 / 3};
+    B[m - 2] = {t1.get("x").num_or(0) * e1 / 3, t1.get("y").num_or(0) * e1 / 3, tz(t1) * e1 / 3};
   } else {
     A[m - 2][m - 1] = 1 / e1;
     A[m - 2][m - 2] = -1 / e1 - 1 / e2;
@@ -991,7 +993,7 @@ Value Builder::type_fields(Rec& rec) {
       if (!truthy(pt)) {
         continue;
       }
-      Value o = make_object({{"x", pt["x"]}, {"y", pt["y"]}, {"z", pt["z"]}, {"flags", v->get("flags")}});
+      Value o = make_object({{"x", pt.get("x")}, {"y", pt.get("y")}, {"z", pt.get("z")}, {"flags", v->get("flags")}});
       if (v->type == "VERTEX_2D") {
         o.set("z", f["elevation"]);
         o.set("startWidth", v->get("startWidth"));

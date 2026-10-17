@@ -1797,7 +1797,7 @@ Value deep(const Value& v, int depth = 0) {
     }
     return o;
   }
-  if (!v.is_object()) {
+  if (!v.is_object() || v.is_point()) {  // a point has no "_" handle members
     return v;
   }
   Value o = Value::object();

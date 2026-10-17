@@ -835,7 +835,7 @@ class Reader {
                                    {"startWidth", num(40, 0)},
                                    {"endWidth", num(41, 0)},
                                    {"thickness", num(39, 0)},
-                                   {"elevation", point(g, 10)["z"]},
+                                   {"elevation", point(g, 10).get("z")},
                                    {"extrusion", ext},
                                    {"closed", (flags & 1) != 0},
                                    {"vertices", std::move(vs)}});
@@ -970,7 +970,7 @@ class Reader {
     }
     if (type == "SOLID" || type == "TRACE") {
       Array pts{P(10), P(11), P(12), has(g, 13) ? P(13) : P(12)};
-      Value elev = pts[0]["z"];
+      Value elev = pts[0].get("z");
       return spread(std::move(e),
                     {{"thickness", num(39, 0)}, {"elevation", elev}, {"points", std::move(pts)}, {"extrusion", ext}});
     }
@@ -1125,7 +1125,7 @@ class Reader {
                                     {"vAlign", num_or(att ? A(74) : T(73), 0)},
                                     {"generation", num_or(T(71), 0)},
                                     {"thickness", num_or(T(39), 0)},
-                                    {"elevation", insert["z"]},
+                                    {"elevation", insert.get("z")},
                                     {"extrusion", ext}});
     if (att) {
       t.set("tag", str(A(2), ""));
@@ -1161,7 +1161,7 @@ class Reader {
     Value h = spread(std::move(e), {{"pattern", str(val(g, 2), "")},
                                     {"solid", (v70 != nullptr) && v70->num_or(0) == 1},
                                     {"associative", (v71 != nullptr) && v71->num_or(0) == 1},
-                                    {"elevation", point(g, 10)["z"]},
+                                    {"elevation", point(g, 10).get("z")},
                                     {"extrusion", ext}});
     h.set("loops", Array{});
     h.set("seeds", Array{});
@@ -1186,7 +1186,7 @@ class Reader {
         for (std::size_t v = 0, v_n = js_count(cnt); v < v_n && k < g.size(); ++v) {
           Value p = xy(10);
           const Value bulge = at(42) ? take() : Value(0);
-          vertices.push_back(make_object({{"x", p["x"]}, {"y", p["y"]}, {"bulge", bulge}}));
+          vertices.push_back(make_object({{"x", p.get("x")}, {"y", p.get("y")}, {"bulge", bulge}}));
         }
         loop.set("polyline",
                  make_object({{"closed", closed}, {"hasBulges", has_bulges}, {"vertices", std::move(vertices)}}));

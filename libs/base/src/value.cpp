@@ -9,6 +9,7 @@
 #include <iterator>
 #include <memory>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <system_error>
 
@@ -30,7 +31,140 @@ bool Value::truthy() const noexcept {
   }
 }
 
+namespace {
+
+[[noreturn]] void point_access(std::string_view what) {
+  throw std::logic_error(std::string(what) + " on a compact point: read it with get()");
+}
+
+/// x → 0, y → 1, z → 2, anything else → -1.
+int axis(std::string_view key) noexcept {
+  if (key.size() != 1) {
+    return -1;
+  }
+  switch (key[0]) {
+    case 'x': return 0;
+    case 'y': return 1;
+    case 'z': return 2;
+    default: return -1;
+  }
+}
+
+}  // namespace
+
+void Value::expand() {
+  if (const Pt2* p = std::get_if<Pt2>(&v_)) {
+    Object o;
+    o.reserve(2);
+    o.push_back(Member{"x", Value(p->x)});
+    o.push_back(Member{"y", Value(p->y)});
+    v_ = std::move(o);
+  } else if (const Pt3* q = std::get_if<Pt3>(&v_)) {
+    Object o;
+    o.reserve(3);
+    o.push_back(Member{"x", Value(q->x)});
+    o.push_back(Member{"y", Value(q->y)});
+    o.push_back(Member{"z", Value(q->z)});
+    v_ = std::move(o);
+  }
+}
+
+bool Value::same_point(const Value& point, const Value& other) {
+  std::array<double, 3> a{};
+  std::size_t n = 0;
+  if (const Pt2* p = std::get_if<Pt2>(&point.v_)) {
+    a = {p->x, p->y, 0};
+    n = 2;
+  } else {
+    const Pt3& q = std::get<Pt3>(point.v_);
+    a = {q.x, q.y, q.z};
+    n = 3;
+  }
+  if (other.is_point()) {
+    const Pt2* p = std::get_if<Pt2>(&other.v_);
+    if ((p != nullptr) != (n == 2)) {
+      return false;
+    }
+    if (p != nullptr) {
+      return a[0] == p->x && a[1] == p->y;
+    }
+    const Pt3& q = std::get<Pt3>(other.v_);
+    return a[0] == q.x && a[1] == q.y && a[2] == q.z;
+  }
+  const Object* o = std::get_if<Object>(&other.v_);
+  if (o == nullptr || o->size() != n) {
+    return false;
+  }
+  static constexpr std::array<std::string_view, 3> kKeys = {"x", "y", "z"};
+  for (std::size_t i = 0; i < n; ++i) {
+    const Member& m = (*o)[i];
+    if (m.key != kKeys[i] || !m.value.is_number() || m.value.as_number() != a[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+const Object& Value::as_object() const {
+  if (is_point()) {
+    point_access("as_object() const");
+  }
+  return std::get<Object>(v_);
+}
+
+Value Value::get(std::string_view key) const {
+  if (const Pt2* p = std::get_if<Pt2>(&v_)) {
+    switch (axis(key)) {
+      case 0: return p->x;
+      case 1: return p->y;
+      default: return {};
+    }
+  }
+  if (const Pt3* q = std::get_if<Pt3>(&v_)) {
+    switch (axis(key)) {
+      case 0: return q->x;
+      case 1: return q->y;
+      case 2: return q->z;
+      default: return {};
+    }
+  }
+  if (!is_object()) {
+    return {};
+  }
+  const Value* v = find(key);
+  return v != nullptr ? *v : Value();
+}
+
+bool Value::has(std::string_view key) const {
+  if (std::holds_alternative<Pt2>(v_)) {
+    const int a = axis(key);
+    return a == 0 || a == 1;
+  }
+  if (std::holds_alternative<Pt3>(v_)) {
+    return axis(key) >= 0;
+  }
+  return find(key) != nullptr;
+}
+
 Value& Value::set(std::string_view key, Value v) {
+  if (is_point() && v.is_number()) {  // x / y / z to a number: stays compact (z turns a 2D point into a 3D one)
+    const double d = v.as_number();
+    if (Pt2* p = std::get_if<Pt2>(&v_)) {
+      switch (axis(key)) {
+        case 0: p->x = d; return *this;
+        case 1: p->y = d; return *this;
+        case 2: v_ = Pt3{p->x, p->y, d}; return *this;
+        default: break;
+      }
+    } else if (Pt3* q = std::get_if<Pt3>(&v_)) {
+      switch (axis(key)) {
+        case 0: q->x = d; return *this;
+        case 1: q->y = d; return *this;
+        case 2: q->z = d; return *this;
+        default: break;
+      }
+    }
+  }
   Object& o = as_object();
   for (Member& m : o) {
     if (m.key == key) {
@@ -43,13 +177,13 @@ Value& Value::set(std::string_view key, Value v) {
 }
 
 Value& Value::append(std::string_view key, Value v) {
-  Object& o = as_object();
+  Object& o = as_object();  // a compact point is expanded
   o.push_back(Member{std::string(key), std::move(v)});
   return o.back().value;
 }
 
 void Value::assign_from(Value other, std::span<const std::string_view> known) {
-  Object& src = other.as_object();
+  Object& src = other.as_object();  // compact points are expanded
   Object& dst = as_object();
   dst.reserve(dst.size() + src.size());
   for (Member& m : src) {
@@ -70,7 +204,10 @@ void Value::assign_from(Value other, std::span<const std::string_view> known) {
 }
 
 const Value* Value::find(std::string_view key) const {
-  for (const Member& m : as_object()) {
+  if (is_point()) {
+    point_access("find()");
+  }
+  for (const Member& m : std::get<Object>(v_)) {
     if (m.key == key) {
       return &m.value;
     }
@@ -79,7 +216,7 @@ const Value* Value::find(std::string_view key) const {
 }
 
 Value* Value::find(std::string_view key) {
-  for (Member& m : as_object()) {
+  for (Member& m : as_object()) {  // a compact point is expanded
     if (m.key == key) {
       return &m.value;
     }
@@ -92,16 +229,35 @@ const Value& Value::operator[](std::string_view key) const {
   if (!is_object()) {
     return kUndefined;
   }
+  if (is_point()) {
+    point_access("operator[]");
+  }
   const Value* v = find(key);
   return v != nullptr ? *v : kUndefined;
 }
 
 void Value::erase(std::string_view key) {
-  Object& o = as_object();
+  Object& o = as_object();  // a compact point is expanded
   std::erase_if(o, [&](const Member& m) { return m.key == key; });
 }
 
 Value make_object(std::initializer_list<Init> members) {
+  // {x, y} / {x, y, z} of numbers: a compact point
+  if (members.size() == 2 || members.size() == 3) {
+    static constexpr std::array<std::string_view, 3> kKeys = {"x", "y", "z"};
+    bool point = true;
+    std::size_t i = 0;
+    for (const Init& m : members) {
+      point = point && m.key == kKeys[i] && m.value.is_number();
+      ++i;
+    }
+    if (point) {
+      const auto* it = members.begin();
+      const double x = it->value.as_number();
+      const double y = std::next(it)->value.as_number();
+      return members.size() == 2 ? pt2(x, y) : pt3(x, y, std::next(it, 2)->value.as_number());
+    }
+  }
   Object o;
   o.reserve(members.size());
   for (const Init& m : members) {
@@ -290,24 +446,36 @@ void write_string(std::string& out, std::string_view s) {
   out += '"';
 }
 
+void write_number(std::string& out, double d) {
+  if (std::isnan(d)) {
+    out += "\"$NaN\"";
+  } else if (std::isinf(d)) {
+    out += d > 0 ? "\"$Inf\"" : "\"$-Inf\"";
+  } else {
+    append_number(out, d);
+  }
+}
+
 // Recursion depth = the value's depth; the readers build models of bounded depth (their own limits).
 // NOLINTNEXTLINE(misc-no-recursion)
 void write_value(const Value& v, std::string& out) {
+  if (v.is_point()) {
+    out += "{\"x\":";
+    write_number(out, v.get("x").as_number());
+    out += ",\"y\":";
+    write_number(out, v.get("y").as_number());
+    if (v.has("z")) {
+      out += ",\"z\":";
+      write_number(out, v.get("z").as_number());
+    }
+    out += '}';
+    return;
+  }
   switch (v.kind()) {
     case Value::Kind::undefined:
     case Value::Kind::null: out += "null"; return;
     case Value::Kind::boolean: out += v.as_bool() ? "true" : "false"; return;
-    case Value::Kind::number: {
-      const double d = v.as_number();
-      if (std::isnan(d)) {
-        out += "\"$NaN\"";
-      } else if (std::isinf(d)) {
-        out += d > 0 ? "\"$Inf\"" : "\"$-Inf\"";
-      } else {
-        append_number(out, d);
-      }
-      return;
-    }
+    case Value::Kind::number: write_number(out, v.as_number()); return;
     case Value::Kind::string: write_string(out, v.as_string()); return;
     case Value::Kind::array: {
       out += '[';

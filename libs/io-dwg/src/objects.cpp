@@ -577,8 +577,8 @@ void text_data(Bits& r, Rec& rec, const Ctx& ctx) {
     rec.set("elevation", elev);
     const Value a = r.RD2();
     const Value b = r.RD2();
-    rec.set("insert", base::pt3(a["x"].as_number(), a["y"].as_number(), elev));
-    rec.set("align", base::pt3(b["x"].as_number(), b["y"].as_number(), elev));
+    rec.set("insert", base::pt3(a.get("x").as_number(), a.get("y").as_number(), elev));
+    rec.set("align", base::pt3(b.get("x").as_number(), b.get("y").as_number(), elev));
     rec.set("extrusion", r.BD3());
     rec.set("thickness", r.BD());
     rec.set("oblique", r.BD());
@@ -595,8 +595,8 @@ void text_data(Bits& r, Rec& rec, const Ctx& ctx) {
   const double elev = (f & 1U) != 0 ? 0 : r.RD();
   rec.set("elevation", elev);
   const Value ins = r.RD2();
-  const double ix = ins["x"].as_number();
-  const double iy = ins["y"].as_number();
+  const double ix = ins.get("x").as_number();
+  const double iy = ins.get("y").as_number();
   rec.set("insert", base::pt3(ix, iy, elev));
   if ((f & 2U) != 0) {
     rec.set("align", base::pt3(ix, iy, elev));
@@ -890,7 +890,7 @@ void dim_common(Bits& r, Rec& rec, const Ctx& ctx) {
   const Value tm = r.RD2();
   const double elev = r.BD();
   rec.set("elevation", elev);
-  rec.set("textMid", base::pt3(tm["x"].as_number(), tm["y"].as_number(), elev));
+  rec.set("textMid", base::pt3(tm.get("x").as_number(), tm.get("y").as_number(), elev));
   rec.set("_flags1", r.RC());
   rec.set("text", r.TV());
   rec.set("textRotation", r.BD());
@@ -909,7 +909,7 @@ void dim_common(Bits& r, Rec& rec, const Ctx& ctx) {
     rec.set("flipArrow2", r.B());
   }
   const Value p12 = r.RD2();
-  rec.set("insert", base::pt3(p12["x"].as_number(), p12["y"].as_number(), elev));
+  rec.set("insert", base::pt3(p12.get("x").as_number(), p12.get("y").as_number(), elev));
 }
 void dim_handles(Bits& h, Rec& rec) {
   rec.set_h("dimstyle", h.H(rec.handle));
@@ -956,7 +956,7 @@ void dec_dim_ang2ln(Bits& r, Bits& h, Rec& rec, const Ctx& ctx) {
   dim_common(r, rec, ctx);
   rec.set("dimType", 2);
   const Value p16 = r.RD2();
-  rec.set("arcPoint", base::pt3(p16["x"].as_number(), p16["y"].as_number(), rec.num("elevation")));
+  rec.set("arcPoint", base::pt3(p16.get("x").as_number(), p16.get("y").as_number(), rec.num("elevation")));
   rec.set("xline1", r.BD3());
   rec.set("xline2", r.BD3());
   rec.set("center", r.BD3());
@@ -1044,7 +1044,7 @@ void dec_solid(Bits& r, Bits& /*h*/, Rec& rec, const Ctx& /*ctx*/) {
   Array pts;
   for (int i = 0; i < 4; ++i) {
     const Value p = r.RD2();
-    pts.push_back(base::pt3(p["x"].as_number(), p["y"].as_number(), elev));
+    pts.push_back(base::pt3(p.get("x").as_number(), p.get("y").as_number(), elev));
   }
   rec.set("points", std::move(pts));
   rec.set("extrusion", r.BE());
@@ -1992,7 +1992,7 @@ void dec_hatch(Bits& r, Bits& h, Rec& rec, const Ctx& ctx) {
       for (std::int32_t k = 0; k < n; ++k) {
         const Value p = r.RD2();
         const double b = bulges != 0 ? r.BD() : 0;
-        vs.push_back(make_object({{"x", p["x"]}, {"y", p["y"]}, {"bulge", b}}));
+        vs.push_back(make_object({{"x", p.get("x")}, {"y", p.get("y")}, {"bulge", b}}));
       }
       loop.set("polyline",
                make_object({{"closed", closed != 0}, {"hasBulges", bulges != 0}, {"vertices", std::move(vs)}}));
@@ -2205,7 +2205,7 @@ void dec_lwpolyline(Bits& r, Bits& /*h*/, Rec& rec, const Ctx& ctx) {
     if (ver < 15) {
       for (std::int64_t i = 0; i < n; ++i) {
         const Value p = r.RD2();
-        vs[static_cast<std::size_t>(i)] = vertex(p["x"].as_number(), p["y"].as_number());
+        vs[static_cast<std::size_t>(i)] = vertex(p.get("x").as_number(), p.get("y").as_number());
       }
     } else {
       double x = r.RD();

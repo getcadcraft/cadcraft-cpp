@@ -52,6 +52,14 @@ inline void compare(const Value& want, const Value& got, const std::string& path
     }
     return;
   }
+  if (want.is_point() || got.is_point()) {  // compact points: compare their plain-object form
+    Value w = want;
+    Value g = got;
+    (void)w.as_object();
+    (void)g.as_object();
+    compare(w, g, path, out);
+    return;
+  }
   if (want.is_object()) {
     for (const auto& m : want.as_object()) {
       const Value* g = got.find(m.key);

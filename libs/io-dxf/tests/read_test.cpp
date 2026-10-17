@@ -35,8 +35,8 @@ TEST_CASE("a minimal DXF gives a model with one line in model space") {
   REQUIRE(ents.size() == 1);
   CHECK(ents[0]["type"].as_string() == "LINE");
   CHECK(ents[0]["layer"].as_string() == "Walls");
-  CHECK(ents[0]["start"]["x"].as_number() == 1.5);
-  CHECK(ents[0]["end"]["y"].as_number() == 6);
+  CHECK(ents[0]["start"].get("x").as_number() == 1.5);
+  CHECK(ents[0]["end"].get("y").as_number() == 6);
   CHECK(ents[0]["space"].as_string() == "model");
   CHECK((*m)["report"]["counts"]["LINE"].as_number() == 1);
 }

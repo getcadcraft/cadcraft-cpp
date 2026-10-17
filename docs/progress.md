@@ -109,3 +109,10 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   What the numbers say about the typed-model redesign: points (112/168-byte objects) are 21 % (DWG) / 35 % (DXF) of
   the remaining allocations; removing 22 % of allocations above bought ~6 %, and 24 MB fewer bytes bought nothing. Inline
   points would be worth roughly 4–10 %, against changing ~1,700 `set` call sites under the parity gate.
+- M3.5f: compact points. `Value` holds {x, y} / {x, y, z} of numbers inline (two new variant alternatives, still 32
+  bytes; is_object() is true, JSON and == treat them as the plain object). pt2/pt3 and make_object({x, y[, z]}) make
+  them; x/y/z read with `get()` (by value); find / operator[] / a const as_object() on one throw std::logic_error, so a
+  generic walker that meets a point fails loudly (the corpus check found two: table.cpp `deep`, dynblock `usable_point`).
+  Allocations per read: DXF 219k → 132k (−40 %), DWG 244k → 194k (−20 %). Time, interleaved A/B (12 × 7 runs, kitchen):
+  best −10 % (DXF) / −16 % (DWG), medians within noise (±3 %). Models and draw lists byte-identical on the corpus
+  (104 DXF, 110 DWG).

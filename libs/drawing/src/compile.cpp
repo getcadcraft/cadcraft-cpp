@@ -150,7 +150,7 @@ Affine mul(const Affine& p, const Affine& q) {
 }
 /// Entities drawn with a -Z extrusion are mirrored in X (arbitrary-axis rule, plan views).
 Affine ocs(const Affine& m, const Value& ext) {
-  return ext.truthy() && num(ext["z"]) < -0.5 ? mul(m, scale(-1, 1)) : m;
+  return ext.truthy() && num(ext.get("z")) < -0.5 ? mul(m, scale(-1, 1)) : m;
 }
 std::vector<double> tx(const Affine& m, std::span<const double> pts) {
   std::vector<double> out(pts.size());
@@ -213,16 +213,16 @@ std::vector<double> arc_points(double cx, double cy, double r, double a0, double
 }
 
 std::vector<double> ellipse_points(const Value& c, const Value& maj, double ratio, double p0, double p1) {
-  const double mx = num(maj["x"]);
-  const double my = num(maj["y"]);
+  const double mx = num(maj.get("x"));
+  const double my = num(maj.get("y"));
   const double len = std::hypot(mx, my);
   const double rot = std::atan2(my, mx);
   const double sweep = wrap_positive(p1 - p0);
   const double n = seg_count(sweep);
   const double cr = std::cos(rot);
   const double sr = std::sin(rot);
-  const double cx = num(c["x"]);
-  const double cy = num(c["y"]);
+  const double cx = num(c.get("x"));
+  const double cy = num(c.get("y"));
   std::vector<double> pts;
   for (std::size_t k = 0, count = loops_upto(n); k < count; ++k) {
     const auto i = static_cast<double>(k);
@@ -242,16 +242,16 @@ std::vector<double> bulge_polyline(std::span<const Value* const> vs, bool closed
   for (std::size_t i = 0; i < n; ++i) {
     const Value& a = *vs[i];
     const Value& b = *vs[(i + 1) % n];
-    const double ax = num(a["x"]);
-    const double ay = num(a["y"]);
+    const double ax = num(a.get("x"));
+    const double ay = num(a.get("y"));
     pts.push_back(ax);
     pts.push_back(ay);
     if (i == n - 1 && !closed) {
       break;
     }
     const double bulge = or_num(a["bulge"], 0);
-    const double bx = num(b["x"]);
-    const double by = num(b["y"]);
+    const double bx = num(b.get("x"));
+    const double by = num(b.get("y"));
     if (std::abs(bulge) > 1e-9) {
       const double theta = 4 * std::atan(bulge);
       const double chord = std::hypot(bx - ax, by - ay);
@@ -292,8 +292,8 @@ std::vector<const Value*> refs(const Array& a) {
 
 void flat_xy(const Array& pts, std::vector<double>& out) {
   for (const Value& p : pts) {
-    out.push_back(num(p["x"]));
-    out.push_back(num(p["y"]));
+    out.push_back(num(p.get("x")));
+    out.push_back(num(p.get("y")));
   }
 }
 
@@ -338,7 +338,7 @@ std::vector<double> spline_points(const Value& e) {
     for (std::size_t j = 0; j <= p; ++j) {
       const Value& q = cp[span - p + j];
       const double wt = weighted ? num(wv.as_array()[span - p + j]) : 1;
-      d[j] = {num(q["x"]) * wt, num(q["y"]) * wt, wt};
+      d[j] = {num(q.get("x")) * wt, num(q.get("y")) * wt, wt};
     }
     for (std::size_t r = 1; r <= p; ++r) {
       for (std::size_t j = p; j >= r; --j) {
@@ -372,15 +372,15 @@ std::vector<std::vector<double>> hatch_rings(const Value& e) {
       const std::string_view type = t.is_string() ? std::string_view(t.as_string()) : std::string_view();
       const bool cw = ed["ccw"].is_bool() && !ed["ccw"].as_bool();
       if (type == "line") {
-        pts.push_back(num(ed["start"]["x"]));
-        pts.push_back(num(ed["start"]["y"]));
-        pts.push_back(num(ed["end"]["x"]));
-        pts.push_back(num(ed["end"]["y"]));
+        pts.push_back(num(ed["start"].get("x")));
+        pts.push_back(num(ed["start"].get("y")));
+        pts.push_back(num(ed["end"].get("x")));
+        pts.push_back(num(ed["end"].get("y")));
       } else if (type == "arc") {  // a clockwise edge keeps its angles mirrored (DXF 73 = 0)
         const double s = num(ed["startAngle"]);
         const double f = num(ed["endAngle"]);
-        const double cx = num(ed["center"]["x"]);
-        const double cy = num(ed["center"]["y"]);
+        const double cx = num(ed["center"].get("x"));
+        const double cy = num(ed["center"].get("y"));
         const double r = num(ed["radius"]);
         append(cw ? arc_points(cx, cy, r, -s, -f, false) : arc_points(cx, cy, r, s, f, true));
       } else if (type == "ellipse") {
@@ -700,8 +700,10 @@ class Compiler {
       SpaceOut s = compile_space(array_or_empty((*it->second)["entities"]));
       const Value& lim = (*l)["limits"];
       std::optional<Bounds> paper;
-      if (lim.truthy() && lim["min"].truthy() && lim["max"].truthy() && num(lim["max"]["x"]) > num(lim["min"]["x"])) {
-        paper = Bounds{num(lim["min"]["x"]), num(lim["min"]["y"]), num(lim["max"]["x"]), num(lim["max"]["y"])};
+      if (lim.truthy() && lim["min"].truthy() && lim["max"].truthy() &&
+          num(lim["max"].get("x")) > num(lim["min"].get("x"))) {
+        paper = Bounds{num(lim["min"].get("x")), num(lim["min"].get("y")), num(lim["max"].get("x")),
+                       num(lim["max"].get("y"))};
       }
       std::vector<Viewport> vps;
       for (std::size_t k = 1; k < s.viewports.size(); ++k) {  // the first viewport is the sheet itself
@@ -711,12 +713,12 @@ class Compiler {
           continue;
         }
         Viewport vp;
-        vp.cx = num(v["center"]["x"]);
-        vp.cy = num(v["center"]["y"]);
+        vp.cx = num(v["center"].get("x"));
+        vp.cy = num(v["center"].get("y"));
         vp.w = num(v["width"]);
         vp.h = num(v["height"]);
-        vp.vx = or_num(v["viewTarget"]["x"], 0) + or_num(v["viewCenter"]["x"], 0);
-        vp.vy = or_num(v["viewTarget"]["y"], 0) + or_num(v["viewCenter"]["y"], 0);
+        vp.vx = or_num(v["viewTarget"].get("x"), 0) + or_num(v["viewCenter"].get("x"), 0);
+        vp.vy = or_num(v["viewTarget"].get("y"), 0) + or_num(v["viewCenter"].get("y"), 0);
         vp.view_height = num(v["viewHeight"]);
         vp.twist = or_num(v["twist"], 0);
         std::unordered_set<std::string> seen;
@@ -959,8 +961,8 @@ class Compiler {
     const std::string type = tv.is_string() ? tv.as_string() : text_of(tv);
     std::vector<double> pts;
     auto xy = [](const Value& p, std::vector<double>& out) {
-      out.push_back(num(p["x"]));
-      out.push_back(num(p["y"]));
+      out.push_back(num(p.get("x")));
+      out.push_back(num(p.get("y")));
     };
     if (type == "LINE") {
       xy(e["start"], pts);
@@ -978,10 +980,10 @@ class Compiler {
       }
       line(sp, st, bulge_polyline(vs, e["closed"].truthy()));
     } else if (type == "CIRCLE") {
-      line(sp, st, arc_points(num(e["center"]["x"]), num(e["center"]["y"]), num(e["radius"]), 0, kTau, true));
+      line(sp, st, arc_points(num(e["center"].get("x")), num(e["center"].get("y")), num(e["radius"]), 0, kTau, true));
     } else if (type == "ARC") {
       line(sp, st,
-           arc_points(num(e["center"]["x"]), num(e["center"]["y"]), num(e["radius"]), num(e["startAngle"]),
+           arc_points(num(e["center"].get("x")), num(e["center"].get("y")), num(e["radius"]), num(e["startAngle"]),
                       num(e["endAngle"]), true));
     } else if (type == "ELLIPSE") {
       line(sp, st,
@@ -1141,8 +1143,8 @@ class Compiler {
         const Value& ipv = e["insert"];
         const Value ip = ipv.truthy() ? ipv : base::pt2(0, 0);
         const Affine local =
-            mul(mul(translate(or_num(ip["x"], 0), or_num(ip["y"], 0)), rotate(or_num(e["rotation"], 0))),
-                scale(or_num(e["scale"]["x"], 1), or_num(e["scale"]["y"], 1)));
+            mul(mul(translate(or_num(ip.get("x"), 0), or_num(ip.get("y"), 0)), rotate(or_num(e["rotation"], 0))),
+                scale(or_num(e["scale"].get("x"), 1), or_num(e["scale"].get("y"), 1)));
         const Ctx sub = sub_ctx(ctx, mul(st.m, local), st, nullptr, {});
         for (const Value& be : array_or_empty((*blk)["entities"])) {
           emit(sp, be, sub);
@@ -1174,7 +1176,8 @@ class Compiler {
       } else {
         const Value& ipv = e["insert"];
         const Value ip = ipv.truthy() ? ipv : base::pt2(0, 0);
-        const Ctx sub = sub_ctx(ctx, mul(st.m, translate(or_num(ip["x"], 0), or_num(ip["y"], 0))), st, nullptr, {});
+        const Ctx sub =
+            sub_ctx(ctx, mul(st.m, translate(or_num(ip.get("x"), 0), or_num(ip.get("y"), 0))), st, nullptr, {});
         for (const Value& be : array_or_empty((*blk)["entities"])) {
           emit(sp, be, sub);
         }
@@ -1227,12 +1230,12 @@ class Compiler {
       base_pt = (*blk)["base"];
     }
     const Array& content = x != nullptr ? *x->model : array_or_empty((*blk)["entities"]);
-    const double sx = or_num(e["scale"]["x"], 1);
-    const double sy = or_num(e["scale"]["y"], 1);
+    const double sx = or_num(e["scale"].get("x"), 1);
+    const double sy = or_num(e["scale"].get("y"), 1);
     const double cols = js_max(1, or_num(e["cols"], 1));
     const double rows = js_max(1, or_num(e["rows"], 1));
-    const double bx = num(base_pt["x"]);
-    const double by = num(base_pt["y"]);
+    const double bx = num(base_pt.get("x"));
+    const double by = num(base_pt.get("y"));
     const std::string prefix = x != nullptr ? e["block"].as_string() + "|" : std::string();
     double cells = 0;
     for (std::size_t qr = 0, nr = loops_below(rows); qr < nr; ++qr) {
@@ -1243,7 +1246,7 @@ class Compiler {
           break;  // the JS would go on (for ever, with an infinite count) emitting nothing
         }
         const Affine local =
-            mul(mul(translate(num(e["insert"]["x"]), num(e["insert"]["y"])), rotate(or_num(e["rotation"], 0))),
+            mul(mul(translate(num(e["insert"].get("x")), num(e["insert"].get("y"))), rotate(or_num(e["rotation"], 0))),
                 mul(scale(sx, sy),
                     translate(-bx + c * or_num(e["colSpacing"], 0) / sx, -by + r * or_num(e["rowSpacing"], 0) / sy)));
         const Ctx sub = sub_ctx(ctx, mul(st.m, local), st, x, prefix);
@@ -1265,8 +1268,8 @@ class Compiler {
   void image(Space_& sp, const Style& st, const Value& e, const Ctx& ctx) {
     const auto dit = ctx.parts->image_defs.find(text_of(e["def"]));
     const Value* def = dit != ctx.parts->image_defs.end() ? dit->second : nullptr;
-    const Value& wv = e["size"]["x"];
-    const Value& hv = e["size"]["y"];
+    const Value& wv = e["size"].get("x");
+    const Value& hv = e["size"].get("y");
     const Value& u = e["u"];
     const Value& v = e["v"];
     const Value& p = e["insert"];
@@ -1277,8 +1280,8 @@ class Compiler {
     const double w = num(wv);
     const double h = num(hv);
     // pixel (x right, y down) → world: the position is the image's lower-left corner
-    const Affine pm = mul(st.m, {num(u["x"]), num(u["y"]), -num(v["x"]), -num(v["y"]), num(p["x"]) + h * num(v["x"]),
-                                 num(p["y"]) + h * num(v["y"])});
+    const Affine pm = mul(st.m, {num(u.get("x")), num(u.get("y")), -num(v.get("x")), -num(v.get("y")),
+                                 num(p.get("x")) + h * num(v.get("x")), num(p.get("y")) + h * num(v.get("y"))});
     const std::string ref = text_or_empty((*def)["fileName"]);
     sp.pics->push_back(Picture{pm, w, h, ref, st.layer});
     const std::array<double, 8> corners = {0, 0, w, 0, w, h, 0, h};
@@ -1321,16 +1324,16 @@ class Compiler {
         if (!lt.is_number() || lt.as_number() != 0) {
           std::vector<double> pts;
           for (const Value* p : vs) {
-            pts.push_back(num((*p)["x"]));
-            pts.push_back(num((*p)["y"]));
+            pts.push_back(num((*p).get("x")));
+            pts.push_back(num((*p).get("y")));
           }
           line(sp, st, pts);
         }
         if (arrow > 0 && vs.size() > 1) {  // closed filled arrowhead at the first point
-          const double ax = num((*vs[0])["x"]);
-          const double ay = num((*vs[0])["y"]);
-          const double bxx = num((*vs[1])["x"]);
-          const double byy = num((*vs[1])["y"]);
+          const double ax = num((*vs[0]).get("x"));
+          const double ay = num((*vs[0]).get("y"));
+          const double bxx = num((*vs[1]).get("x"));
+          const double byy = num((*vs[1]).get("y"));
           const double d = std::hypot(bxx - ax, byy - ay);
           if (d > 0) {
             const double ux = (bxx - ax) / d;
@@ -1350,9 +1353,9 @@ class Compiler {
       const Value& dir = sec["direction"];
       if (last.truthy() && e["doglegEnabled"].truthy() && dir.truthy() && dlv.truthy()) {
         const double dl = num(dlv);
-        const double lx = num(last["x"]);
-        const double ly = num(last["y"]);
-        const std::array<double, 4> seg = {lx, ly, lx + num(dir["x"]) * dl, ly + num(dir["y"]) * dl};
+        const double lx = num(last.get("x"));
+        const double ly = num(last.get("y"));
+        const std::array<double, 4> seg = {lx, ly, lx + num(dir.get("x")) * dl, ly + num(dir.get("y")) * dl};
         line(sp, st, seg);
       }
     }
@@ -1380,13 +1383,13 @@ class Compiler {
           const Array& a = tm.as_array();
           bm = {num(a[0]), num(a[4]), num(a[1]), num(a[5]), num(a[3]), num(a[7])};
         } else {
-          bm = mul(
-              translate(num(bc["location"]["x"]), num(bc["location"]["y"])),
-              mul(rotate(or_num(bc["rotation"], 0)), scale(or_num(bc["scale"]["x"], 1), or_num(bc["scale"]["y"], 1))));
+          bm = mul(translate(num(bc["location"].get("x")), num(bc["location"].get("y"))),
+                   mul(rotate(or_num(bc["rotation"], 0)),
+                       scale(or_num(bc["scale"].get("x"), 1), or_num(bc["scale"].get("y"), 1))));
         }
         const Value& bb = (*blk)["base"];
-        const double bx = bb.truthy() ? num(bb["x"]) : 0;
-        const double by = bb.truthy() ? num(bb["y"]) : 0;
+        const double bx = bb.truthy() ? num(bb.get("x")) : 0;
+        const double by = bb.truthy() ? num(bb.get("y")) : 0;
         Ctx sub = sub_ctx(ctx, mul(st.m, mul(bm, translate(-bx, -by))), st, nullptr, {});
         std::unordered_map<std::string, std::string> attrs;
         for (const Value& a : array_or_empty(e["blockLabels"])) {
@@ -1411,7 +1414,7 @@ class Compiler {
     const double v_align = or_num(t["vAlign"], 0);
     const bool aligned = h_align != 0 || v_align != 0;
     const Value& al = t["align"];
-    const Value& p = aligned && al.truthy() && (al["x"].truthy() || al["y"].truthy()) ? al : t["insert"];
+    const Value& p = aligned && al.truthy() && (al.get("x").truthy() || al.get("y").truthy()) ? al : t["insert"];
     static constexpr std::array<double, 6> kHa = {0, 1, 2,
                                                   0, 1, 0};  // left, centre, right; aligned/fit → left; middle → centre
     std::optional<double> ha;
@@ -1420,7 +1423,7 @@ class Compiler {
     }
     const Value& hv = t["hAlign"];
     const double va = hv.is_number() && hv.as_number() == 4 ? 2 : v_align;  // 0 baseline, 1 bottom, 2 middle, 3 top
-    place(sp, st, num(p["x"]), num(p["y"]), num(t["height"]), or_num(t["rotation"], 0), s, ha, va,
+    place(sp, st, num(p.get("x")), num(p.get("y")), num(t["height"]), or_num(t["rotation"], 0), s, ha, va,
           (int32(t["generation"]) & 2) == 2);
   }
 
@@ -1440,8 +1443,9 @@ class Compiler {
       return;
     }
     const Value& xa = e["xAxis"];
-    const double rot = xa.truthy() && (xa["x"].truthy() || xa["y"].truthy()) ? std::atan2(num(xa["y"]), num(xa["x"]))
-                                                                             : or_num(e["rotation"], 0);
+    const double rot = xa.truthy() && (xa.get("x").truthy() || xa.get("y").truthy())
+                           ? std::atan2(num(xa.get("y")), num(xa.get("x")))
+                           : or_num(e["rotation"], 0);
     const double ap = or_num(e["attach"], 1) - 1;
     const double ha = std::fmod(ap, 3);
     const double row = std::floor(ap / 3);  // 0 top, 1 middle, 2 bottom
@@ -1456,8 +1460,8 @@ class Compiler {
     }
     const double cr = std::cos(rot);
     const double sr = std::sin(rot);
-    const double ix = num(e["insert"]["x"]);
-    const double iy = num(e["insert"]["y"]);
+    const double ix = num(e["insert"].get("x"));
+    const double iy = num(e["insert"].get("y"));
     for (std::size_t i = 0; i < lines.size(); ++i) {
       if (base::js_blank(lines[i])) {
         continue;

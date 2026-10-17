@@ -554,8 +554,8 @@ Visibility visibility_of(const Value& o) {
   if (r.left() != 0 || k != refs.size()) {
     throw DynError("layout");
   }
-  if (!std::isfinite(v.point["x"].num_or(0)) || !std::isfinite(v.point["y"].num_or(0)) ||
-      !std::isfinite(v.point["z"].num_or(0))) {
+  if (!std::isfinite(v.point.get("x").num_or(0)) || !std::isfinite(v.point.get("y").num_or(0)) ||
+      !std::isfinite(v.point.get("z").num_or(0))) {
     throw DynError("point");
   }
   return v;
@@ -575,8 +575,8 @@ bool usable_point(const Value& p) {
   if (!p.truthy() || !p.is_object()) {
     return false;
   }
-  const Value& x = member(p, "x");
-  const Value& y = member(p, "y");
+  const Value& x = p.get("x");
+  const Value& y = p.get("y");
   return x.is_number() && std::isfinite(x.as_number()) && y.is_number() && std::isfinite(y.as_number());
 }
 
@@ -615,8 +615,8 @@ Value value_of(std::string_view kind, const Value& data) {
     if (pts.size() >= 2) {
       out.set("p1", *pts[0]);
       out.set("p2", *pts[1]);
-      const double dx = member(*pts[1], "x").as_number() - member(*pts[0], "x").as_number();
-      const double dy = member(*pts[1], "y").as_number() - member(*pts[0], "y").as_number();
+      const double dx = pts[1]->get("x").as_number() - pts[0]->get("x").as_number();
+      const double dy = pts[1]->get("y").as_number() - pts[0]->get("y").as_number();
       if (kind == "linear") {
         out.set("distance", js_hypot(dx, dy));
       } else {
