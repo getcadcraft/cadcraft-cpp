@@ -124,8 +124,8 @@ void Viewer::apply_theme() const {
   }
   st.FramePadding = touch_ ? ImVec2{12, std::max(3.0F, (40.0F - font_px) / 2)} : ImVec2{6, 3};
   st.ItemSpacing = touch_ ? ImVec2{10, 6} : ImVec2{6, 4};
-  st.ScrollbarSize = touch_ ? 24 : 14;
-  st.GrabMinSize = touch_ ? 24 : 12;
+  st.ScrollbarSize = touch_ ? 24.0F : 14.0F;
+  st.GrabMinSize = touch_ ? 24.0F : 12.0F;
   st.TouchExtraPadding = touch_ ? ImVec2{2, 2} : ImVec2{0, 0};
   ImVec4* c = st.Colors;  // NOLINT(cppcoreguidelines-pro-bounds-array-to-pointer-decay)
   const std::span<ImVec4> colors(c, ImGuiCol_COUNT);
