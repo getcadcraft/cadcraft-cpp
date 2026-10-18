@@ -224,4 +224,7 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   save dialog (`Services::pick_save`, SDL's dialog; the path comes back through the inbox); on the web a download
   (`Services::download`, EM_JS glue). Save as: DWG 2000–2018, DXF 2000, DXF R12. The report's notes go to the command
   history. Checked under Xvfb: a circle drawn, Ctrl+S, the file reopened by the CLI with the circle in it. **M4 done.**
+- M4.7e: a drawing opened in the viewer takes its file's name (meta.name, meta.source, as cadcraft.js does), so Save
+  offers "plan.dwg", not "Drawing1.dwg". Web build deployed to cpp.getcadcraft.com and checked in headless Chromium:
+  open a DWG, draw, Ctrl+S downloads the DWG with the new objects in it.
 

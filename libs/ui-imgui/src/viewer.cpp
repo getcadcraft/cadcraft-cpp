@@ -279,7 +279,16 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
   if (doc_->kind == "dwg") {
     // CadCraft opens a DWG as its document (readDwg → importDwg → Doc.load) and draws that
     cad_ = std::make_unique<doc::Doc>();
-    cad_->load(cad::import_dwg(doc_->model, doc_->options.version_tag, *words_), *words_);
+    // as cadcraft.js opens a file: meta.name = the file's name without its extension, meta.source = the file's name
+    base::Value drawing = cad::import_dwg(doc_->model, doc_->options.version_tag, *words_);
+    base::Value meta = drawing.get("meta").is_object() ? drawing.get("meta") : base::Value::object();
+    const std::string& file = doc_->name;
+    const std::size_t dot = file.find_last_of('.');
+    meta.set("name", dot == std::string::npos ? file : file.substr(0, dot));
+    meta.set("source", file);
+    meta.set("format", "dwg");
+    drawing.set("meta", std::move(meta));
+    cad_->load(std::move(drawing), *words_);
     cmd_host_ = std::make_unique<CmdHost>(*this);
     engine_ = std::make_unique<cmd::Engine>(*cad_, *cmd_host_, *words_);
     drawing_ = docview::to_drawing(*cad_);
