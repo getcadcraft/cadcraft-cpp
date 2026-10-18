@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.7a (what a document draws).
+Last updated 2026-10-18 · Change: M4.7b (drafting in the viewer).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -207,4 +207,10 @@ Last updated 2026-10-18 · Change: M4.7a (what a document draws).
   `cadcraft-cli walk`; tools/parity/walk.mjs compares every event (colour, lineweight, alpha, the dashed primitives,
   fills, placed texts, points, viewports, masks, construction lines) with the frozen 0.5 walk: **108 / 108 corpus
   drawings draw the same**; golden test on the public fixtures.
+- M4.7b: drafting in the viewer — a DWG opens as the CadCraft document (import → Doc) and is drawn through walk
+  (`docview::to_drawing`: strokes as polylines, fills, each text line at its baseline, sheets with their viewports),
+  rebuilt after every change; the command line under the canvas (the prompt, typed lines, Enter, Space, a right click
+  as Enter, Esc, Ctrl+Z / Ctrl+Y), a click answers the waiting prompt, the rubber band and the selection drawn over the
+  view (ImGui draw list), noun-verb picks, layers turned on and off in the document as an undo step. Checked on the
+  desktop build under Xvfb: LINE by clicks, CIRCLE by a click and a typed radius, RECTANG, Esc, undo.
 

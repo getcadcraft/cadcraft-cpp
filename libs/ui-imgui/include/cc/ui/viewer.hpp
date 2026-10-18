@@ -17,6 +17,10 @@
 #include <SDL3/SDL_events.h>
 #include <webgpu/webgpu_cpp.h>
 
+#include "cc/base/value.hpp"
+#include "cc/cmd/engine.hpp"
+#include "cc/doc/doc.hpp"
+#include "cc/drawing/compile.hpp"
 #include "cc/engine/open.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/render/scene.hpp"
@@ -53,7 +57,7 @@ class Viewer {
   /// `assets`: the folder with fonts/ and lang/. `locale`: "en" or "es-MX".
   Viewer(const Gpu& gpu, wgpu::TextureFormat target, Services services, const std::string& assets,
          const std::string& locale);
-  ~Viewer();
+  ~Viewer();  // NOLINT(performance-trivially-destructible) — the engine before the document it edits
   Viewer(const Viewer&) = delete;
   Viewer& operator=(const Viewer&) = delete;
   Viewer(Viewer&&) = delete;
@@ -86,11 +90,24 @@ class Viewer {
   [[nodiscard]] render::View view() const { return space_ < views_.size() ? views_[space_] : render::View{}; }
   /// True while the touch layout (40 px hit areas) is on: from the first finger until a real mouse moves.
   [[nodiscard]] bool touch_layout() const noexcept { return touch_; }
+  /// The command line (tests, scripts): a typed line, as Enter sends it.
+  void command(std::string_view line);
+  /// The CadCraft document a DWG opens as (null with nothing open, or a DXF: shown, not edited yet).
+  [[nodiscard]] const doc::Doc* document() const noexcept { return cad_.get(); }
+  /// The prompt the command line shows ("" between commands).
+  [[nodiscard]] const std::string& prompt() const noexcept { return prompt_; }
   /// The canvas colour (the host clears to it).
   [[nodiscard]] render::Rgba background() const;
 
  private:
+  class CmdHost;
   void take_inbox();
+  void rebuild();      // the document changed: its draw lists and scene again
+  void after_input();  // after the command line took input
+  void command_line();
+  void overlay();
+  void canvas_click(double x, double y, bool right);
+  [[nodiscard]] std::array<double, 2> world_at(double x, double y) const;
   void open_item(Inbox::Item item);
   void set_space(std::size_t s);
   void apply_theme() const;
@@ -102,6 +119,7 @@ class Viewer {
   [[nodiscard]] float layers_width() const noexcept { return touch_ ? 280.0F : 240.0F; }
   [[nodiscard]] float tabs_height() const noexcept { return touch_ ? 48.0F : 30.0F; }
   [[nodiscard]] float status_height() const noexcept { return touch_ ? 32.0F : 24.0F; }
+  [[nodiscard]] float command_height() const noexcept { return touch_ ? 120.0F : 72.0F; }
 
   Services services_;
   Inbox inbox_;
@@ -110,6 +128,19 @@ class Viewer {
   std::unique_ptr<text::Font> font_;
   SceneRenderer renderer_;
   std::unique_ptr<engine::OpenDrawing> doc_;
+  drawing::Drawing drawing_;  // what is drawn: the document's (a DWG), else the file's as compiled (a DXF)
+  std::unique_ptr<doc::Doc> cad_;
+  std::unique_ptr<CmdHost> cmd_host_;
+  std::unique_ptr<cmd::Engine> engine_;
+  std::uint64_t drawn_version_ = 0;
+  std::array<char, 512> line_{};
+  std::vector<std::string> printed_;  // the command line's history (last 200)
+  std::string prompt_;
+  base::Array preview_;  // the rubber band the waiting command draws
+  bool press_ = false;   // a button down on the canvas; `moved_` once it went beyond a click
+  bool moved_ = false;
+  int press_button_ = 0;
+  double press_x_ = 0, press_y_ = 0;
   render::Scene scene_;
   std::size_t space_ = 0;
   std::vector<render::View> views_;  // one per space (each keeps its own zoom and pan)

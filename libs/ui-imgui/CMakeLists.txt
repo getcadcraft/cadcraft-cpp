@@ -1,6 +1,6 @@
 cc_library(ui-imgui LAYER 6
   SOURCES src/gpu.cpp src/scene_renderer.cpp src/viewer.cpp src/host.cpp
-  DEPS cc::base cc::i18n cc::engine cc::render cc::text
+  DEPS cc::base cc::i18n cc::engine cc::render cc::text cc::cad cc::doc cc::docview cc::cmd
   EXTERNAL dawn::webgpu_dawn SDL3::SDL3 imgui)
 if(TARGET cc::engine AND NOT EMSCRIPTEN)
   cc_test(ui-imgui SOURCES tests/viewer_touch_test.cpp DEPS cc::ui-imgui imgui SDL3::SDL3 dawn::webgpu_dawn)
