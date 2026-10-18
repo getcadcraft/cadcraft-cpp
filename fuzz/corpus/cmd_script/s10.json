@@ -1,0 +1,1 @@
+{"name":"circle: radius by click, zero radius ends","steps":["CIRCLE","0,0",{"click":[3,4]},"CIRCLE","1,1","0"]}

@@ -6,3 +6,4 @@ cc_fuzz(dwg_save SOURCES fuzz_dwg_save.cpp DEPS cc::save cc::doc cc::cad cc::io-
 cc_fuzz(json SOURCES fuzz_json.cpp DEPS cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/json)
 cc_fuzz(dxf SOURCES fuzz_dxf.cpp DEPS cc::io-dxf CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/dxf)
 cc_fuzz(compile SOURCES fuzz_compile.cpp DEPS cc::drawing cc::io-dxf CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/compile)
+cc_fuzz(cmd_script SOURCES fuzz_cmd_script.cpp DEPS cc::cmd cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/cmd_script)

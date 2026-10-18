@@ -1,0 +1,1 @@
+{"name":"erase: remove from the set, nothing selected","steps":["CIRCLE","0,0","1","CIRCLE","3,3","1","ERASE","ALL","R",{"click":[0,1],"pick":1},"A","?","","ERASE",""]}

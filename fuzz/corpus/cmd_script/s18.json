@@ -1,0 +1,1 @@
+{"name":"erase: preselection, picks, window, ALL, LAST, previous","steps":["LINE","0,0","1,0","","CIRCLE","5,5","1","RECTANG","2,2","3,3",{"select":[1]},"ERASE","UNDO","ERASE",{"click":[5,4],"pick":2},{"click":[9,9]},"","UNDO","E",{"window":[0,0,10,10],"ids":[1,3]},"","U","ERASE","L","","U","ERASE","ALL","","U","ERASE","P",""]}

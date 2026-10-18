@@ -573,6 +573,24 @@ void Doc::squash(std::size_t mark, std::string label) {
   undo_.push_back(std::move(merged));
 }
 
+std::vector<std::string> Doc::undo_labels() const {
+  std::vector<std::string> out;
+  out.reserve(undo_.size());
+  for (const Step& s : undo_) {
+    out.push_back(s.label);
+  }
+  return out;
+}
+
+std::vector<std::string> Doc::redo_labels() const {
+  std::vector<std::string> out;
+  out.reserve(redo_.size());
+  for (const Step& s : redo_) {
+    out.push_back(s.label);
+  }
+  return out;
+}
+
 std::optional<std::string> Doc::undo() {
   if (undo_.empty()) {
     return std::nullopt;

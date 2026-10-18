@@ -1,0 +1,1 @@
+{"name":"circle: centre radius, diameter, default radius, 2P, 3P","steps":["CIRCLE","5,5","3","C","0,0","D","4","C","1,1","","CIRCLE","2P","0,0","4,0","CIRCLE","3P","0,0","4,0","2,2","CIRCLE","3P","0,0","1,1","2,2"]}

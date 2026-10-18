@@ -182,6 +182,13 @@ class Doc {
   /// The label of the step undone / redone, or nullopt when there is none.
   std::optional<std::string> undo();
   std::optional<std::string> redo();
+  /// The undo and redo steps' labels, oldest first (doc.js undoStack / redoStack).
+  [[nodiscard]] std::vector<std::string> undo_labels() const;
+  [[nodiscard]] std::vector<std::string> redo_labels() const;
+  /// `redoStack.length = 0` (a command's own undo, commands.js undoInside).
+  void clear_redo() noexcept { redo_.clear(); }
+  /// The id the next added entity gets (doc.js nextId).
+  [[nodiscard]] Id next_id() const noexcept { return next_id_; }
   [[nodiscard]] std::uint64_t version() const noexcept { return version_; }
   [[nodiscard]] bool dirty() const noexcept { return version_ != saved_version_; }
   void mark_saved() noexcept { saved_version_ = version_; }

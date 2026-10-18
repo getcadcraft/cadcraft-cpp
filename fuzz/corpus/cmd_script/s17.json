@@ -1,0 +1,1 @@
+{"name":"xline offset from a line, through and by distance","steps":["LINE","0,0","10,0","","XLINE","O","",{"click":[5,0],"pick":1},"5,5","","XLINE","O","2",{"click":[5,0],"pick":1},"3,-4","","XLINE","A","R",{"click":[5,0],"pick":1},"45","0,0",""]}

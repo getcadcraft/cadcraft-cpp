@@ -1,0 +1,1 @@
+{"name":"rotate and scale an arc, a polygon with bulges","steps":["ARC","0,0","5,5","10,0","PLINE","0,0","A","4,0","L","4,4","","ROTATE","ALL","","2,2","33.5","SCALE","ALL","","1,1","0.5","MIRROR","ALL","","1,0","1,3","Y"]}

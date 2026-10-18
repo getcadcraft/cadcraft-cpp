@@ -65,6 +65,11 @@ struct Bounds {
 /// attrs.js oneLine(s): runs of \r / \n → one space.
 [[nodiscard]] std::string one_line(std::string_view s);
 
+/// geom.js's 2D affine matrix [a b c d e f]: x' = a x + c y + e, y' = b x + d y + f.
+using Mat2 = std::array<double, 6>;
+/// geom.js txEntity(e, m): an entity through m (MOVE, COPY, ROTATE, SCALE, MIRROR); its other fields kept.
+[[nodiscard]] base::Value tx_entity(const base::Value& e, const Mat2& m);
+
 /// leader.js leaderStyle(e): MLEADER_DEFAULTS { asz 2.5, dogleg 2.5, gap 1 } with e.st over it.
 [[nodiscard]] base::Value leader_style(const base::Value& e);
 /// leader.js landing(e): where the landing starts and ends and where the text starts.

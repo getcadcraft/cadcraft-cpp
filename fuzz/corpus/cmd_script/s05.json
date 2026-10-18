@@ -1,0 +1,1 @@
+{"name":"line: U with nothing drawn, then undo the whole command","steps":["LINE","0,0","U","5,5","","UNDO","REDO","U","U"]}

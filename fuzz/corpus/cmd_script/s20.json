@@ -1,0 +1,1 @@
+{"name":"move: base and second point, displacement","steps":["LINE","0,0","2,0","","CIRCLE","0,0","1","MOVE","ALL","","0,0","5,5","M",{"click":[5,5],"pick":1},"","D","-1,2","MOVE","ALL","","1,1",""]}

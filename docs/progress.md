@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.4a, M4.5 (DXF save at parity).
+Last updated 2026-10-18 · Change: M4.6a (the command line).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -188,4 +188,11 @@ Last updated 2026-10-18 · Change: M4.4a, M4.5 (DXF save at parity).
   exponent lost the exponent: `from_chars` takes no `+`), fixed with a regression test; DWG save re-checked after it.  Speed (JS and C++ alternating, machine under load): R12 1.35–5.89× the JS, R2000 0.93–1.89× (it builds the DWG writer
   model first); R2000 read containers by copy at first (civil-example 11 ms → 2.4 ms after reading them in place;
   docs/perf-postmortem.md).
+- M4.6a: the command line — `libs/cmd` (L5): commands.js's Engine (typed points, lengths with fractions and feet and
+  inches, options, defaults, the prompt line, Enter-to-repeat, noun-verb selection with ALL / L / P / W / C / R / A / ?)
+  with commands as C++20 coroutines; Esc destroys the waiting command's coroutine frames (no exception). 17 commands:
+  LINE PLINE CIRCLE XLINE RAY ARC RECTANG POLYGON TEXT ERASE MOVE COPY ROTATE SCALE MIRROR UNDO REDO; geom.js txEntity in
+  libs/cad. `cadcraft-cli script` runs command scripts headless; tools/parity/commands.mjs runs the same scripts through
+  the frozen 0.5 Engine with the same stub host. **28 / 28 scripts the same** (everything printed and prompted, the model,
+  the current settings, next id, undo and redo labels); golden test; fuzz target `cmd_script` (929,479 runs clean).
 

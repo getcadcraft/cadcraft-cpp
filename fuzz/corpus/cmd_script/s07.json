@@ -1,0 +1,1 @@
+{"name":"pline: arc then CLose in arc mode, undo a vertex","steps":["PL","0,0","5,0","5,5","U","5,4","A","0,8","CL"]}

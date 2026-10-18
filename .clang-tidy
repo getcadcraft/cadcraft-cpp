@@ -29,7 +29,8 @@ Checks: >
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -readability-use-concise-preprocessor-directives,
   -clang-analyzer-optin.performance.Padding,
-  -clang-analyzer-optin.core.EnumCastOutOfRange
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -cppcoreguidelines-avoid-reference-coroutine-parameters
 # Why each one is off:
 #  easily-swappable-parameters  every (x, y) / (offset, size) pair trips it; the types are what they are
 #  magic-numbers (both)         format specs are full of bit widths, codes and offsets named by the spec chapter
@@ -51,6 +52,9 @@ Checks: >
 #  use-concise-preprocessor-directives  #elifdef is too new for every compiler we build with
 #  optin.core.EnumCastOutOfRange  fires inside Catch2's flag-enum operators (its headers, not our code)
 #  optin.performance.Padding    model structs keep a readable field order; their padding is not on a hot path
+#  avoid-reference-coroutine-parameters  every command coroutine takes the engine's Ctx&, which outlives every command
+#                               frame (the engine destroys the frames first); other references a command passes down
+#                               point into the frame that awaits the callee (libs/cmd/include/cc/cmd/task.hpp)
 WarningsAsErrors: '*'
 HeaderFilterRegex: '.*/(libs|apps|fuzz)/.*'
 CheckOptions:

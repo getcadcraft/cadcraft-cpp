@@ -19,6 +19,9 @@
 //                                                report. --created fixes the date, --seeded the GUIDs' random bytes
 //                                                (the parity harness gives the JS writer the same:
 //                                                tools/parity/dwg-write.mjs)
+//   cadcraft-cli script <scripts.json>          command scripts (libs/cmd run_script) on a fresh drawing: what was
+//                                                printed and prompted, the model, undo labels
+//                                                (tools/parity/commands.mjs)
 //   cadcraft-cli dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]
 //                                                the drawing saved as DXF R12 (dxf.js) or R2000 (dxf2000.js); prints
 //                                                the report (tools/parity/dxf-save.mjs)
@@ -51,9 +54,11 @@
 #include <vector>
 
 #include "cc/base/file.hpp"
+#include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
@@ -84,6 +89,7 @@ void usage(std::FILE* out) {
              "                                      write the drawing as a DWG of that version; prints the report\n"
              "  dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]\n"
              "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
+             "  script <scripts.json>                 command scripts on a fresh drawing (one JSON line each)\n"
              "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
              "  version                             print the version\n");
 }
@@ -374,6 +380,41 @@ int cmd_dxf_save(const std::filesystem::path& in, const std::string& format, con
   cc::base::write_json(bench > 0 ? cc::base::make_object({{"save_ms", save_ms}}) : r.report, js);
   js += '\n';
   (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  return 0;
+}
+
+int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
+  const auto text = cc::base::read_file(file, std::uint64_t{1} << 26U);
+  if (!text) {
+    print_error_json("io", text.error().message);
+    return 1;
+  }
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const auto scripts = cc::base::parse_json(cc::base::as_text(*text));
+  if (!scripts || !scripts->is_array()) {
+    print_error_json("invalid", scripts ? std::string("a script file is a JSON array") : scripts.error().message);
+    return 1;
+  }
+  for (const cc::base::Value& sc : scripts->as_array()) {
+    std::string js;
+    try {
+      cc::base::write_json(cc::cmd::run_script(sc, *words), js);
+    } catch (const std::exception& e) {
+      js.clear();
+      cc::base::write_json(cc::base::make_object({{"$error", cc::base::make_object({{"message", e.what()}})}}), js);
+    }
+    js += '\n';
+    (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  }
   return 0;
 }
 
@@ -705,6 +746,9 @@ int run(const std::vector<std::string_view>& args) {
     }
     return cmd_dxf_save(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), bench,
                         args[0]);
+  }
+  if (cmd == "script" && args.size() == 3) {
+    return cmd_script(std::filesystem::path(args[2]), args[0]);
   }
   if (cmd == "doc" && args.size() == 3) {
     return cmd_import(std::filesystem::path(args[2]), args[0], true);

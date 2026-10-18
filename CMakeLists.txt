@@ -85,6 +85,7 @@ endif()
 add_subdirectory(libs/importer)   # L4
 add_subdirectory(libs/save)       # L4
 add_subdirectory(libs/engine)     # L5
+add_subdirectory(libs/cmd)        # L5
 if(CC_BUILD_GUI)
   add_subdirectory(libs/ui-imgui) # L6
 endif()

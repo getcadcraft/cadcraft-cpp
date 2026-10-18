@@ -1,0 +1,1 @@
+{"name":"line: clicks, Esc","steps":["LINE",{"click":[1,2]},{"click":[5,2]},{"click":[5,9]},{"esc":true}]}
