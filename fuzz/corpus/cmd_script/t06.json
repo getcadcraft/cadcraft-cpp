@@ -1,0 +1,1 @@
+{"name":"trim: a circle and an arc by two lines","steps":["CIRCLE","0,0","5","LINE","-10,1","10,1","","LINE","-10,-1","10,-1","","TRIM",{"click":[0,5],"pick":1},{"click":[-5,1],"pick":2},""]}

@@ -1,0 +1,1 @@
+{"name":"trim: R erases, nothing to trim, a text refused","steps":["LINE","0,0","10,0","","CIRCLE","20,20","1","TEXT","30,30","1","0","t","","TRIM","R",{"click":[20,21],"pick":2},"",{"click":[30,30],"pick":3},""]}

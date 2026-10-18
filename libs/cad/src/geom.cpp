@@ -14,13 +14,14 @@
 #include "cc/base/js.hpp"
 #include "cc/base/js_math.hpp"
 #include "cc/cad/dims.hpp"
+#include "cc/cad/edit.hpp"
+#include "prims.hpp"
 #include "props.hpp"
 #include "util.hpp"
 
 namespace cc::cad {
 
 using detail::g;
-using detail::kTau;
 using detail::Mat;
 using detail::num;
 using detail::or_;
@@ -83,14 +84,11 @@ std::uint32_t next_code_point(std::string_view s, std::size_t& i) {
   return cp;
 }
 
+}  // namespace
+
 // ---------------------------------------------------------------- primitives
 
-struct Prim {
-  bool arc = false;
-  double x1 = 0, y1 = 0, x2 = 0, y2 = 0;         // L
-  double cx = 0, cy = 0, r = 0, a0 = 0, a1 = 0;  // A
-  bool full = false;
-};
+namespace detail {
 
 P2 m_apply(const Mat& m, double x, double y) {
   return {m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]};
@@ -101,7 +99,7 @@ double dist(double ax, double ay, double bx, double by) {
 }
 
 /// geom.js onSweep(a, a0, a1, tol)
-bool on_sweep(double a, double a0, double a1, double tol = 1e-9) {
+bool on_sweep(double a, double a0, double a1, double tol) {
   const double sweep = a1 - a0;
   if (sweep >= kTau - tol) {
     return true;
@@ -166,11 +164,12 @@ Prim bulge_arc(double px, double py, double qx, double qy, double b) {
   p.r = r;
   p.a0 = a0;
   p.a1 = a1;
+  p.rev = b < 0;
   return p;
 }
 
 /// geom.js mSimilar(m): { s, flip } of a uniform scale + rotation (+ mirror), else false.
-bool m_similar(const Mat& m, double& s, bool& flip) {
+static bool m_similar(const Mat& m, double& s, bool& flip) {
   const double sx = base::js_hypot(m[0], m[1]);
   const double sy = base::js_hypot(m[2], m[3]);
   const double dot = m[0] * m[2] + m[1] * m[3];
@@ -183,7 +182,7 @@ bool m_similar(const Mat& m, double& s, bool& flip) {
 }
 
 /// geom.js txPrim(p, m)
-void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out) {
+static void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out) {
   if (!p.arc) {
     const P2 a = m_apply(m, p.x1, p.y1);
     const P2 b = m_apply(m, p.x2, p.y2);
@@ -228,7 +227,7 @@ void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out) {
   }
 }
 
-void ring_prims(const base::Value& flat, std::vector<Prim>& out) {
+static void ring_prims(const base::Value& flat, std::vector<Prim>& out) {
   if (!flat.is_array()) {
     return;
   }
@@ -266,7 +265,7 @@ void poly_prims(const base::Value& e, std::vector<Prim>& out) {
   }
 }
 
-std::vector<P2> ellipse_points(const base::Value& e, double steps = 72) {
+std::vector<P2> ellipse_points(const base::Value& e, double steps) {
   const double mx = num(g(e, "mx"));
   const double my = num(g(e, "my"));
   const double ma = base::js_hypot(mx, my);
@@ -296,7 +295,7 @@ std::vector<P2> ellipse_points(const base::Value& e, double steps = 72) {
   return pts;
 }
 
-void text_box_prims(const base::Value& e, std::vector<Prim>& out) {
+static void text_box_prims(const base::Value& e, std::vector<Prim>& out) {
   const auto c = text_corners(e);
   for (std::size_t i = 0; i < 4; ++i) {
     out.push_back(line_prim(c.at(i).x, c.at(i).y, c.at((i + 1) % 4).x, c.at((i + 1) % 4).y));
@@ -401,6 +400,15 @@ void prims(const base::Value& e, const BlockLookup& blocks, int depth, std::vect
     }
   }
 }
+
+}  // namespace detail
+
+namespace {
+
+using detail::m_apply;
+using detail::on_sweep;
+using detail::prim_point;
+using detail::prims;
 
 void grow_pt(Bounds& b, double x, double y) {
   // `if (x < b.minX) b.minX = x` (a NaN changes nothing, unlike std::min's argument order)

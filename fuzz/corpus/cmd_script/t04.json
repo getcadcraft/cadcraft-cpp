@@ -1,0 +1,1 @@
+{"name":"trim: quick mode, a line between two others","steps":["LINE","0,0","10,0","","LINE","3,-2","3,2","","LINE","7,-2","7,2","","TRIM",{"click":[5,0],"pick":1},""]}

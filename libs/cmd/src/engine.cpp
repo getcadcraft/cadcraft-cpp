@@ -825,7 +825,7 @@ void Engine::window(const Rect& r, bool crossing) {
     w.set->windows.push_back(r);  // STRETCH stretches what these windows hold
   }
   host_.set_selection(*w.set);
-  host_.print(w.opts.remove ? words_.t("sel.removed", {{"n", std::to_string(ids.size())}}) : count_found(ids.size()));
+  host_.print(w.opts.remove ? words_.tn("sel.removed", static_cast<double>(ids.size())) : count_found(ids.size()));
 }
 
 std::string Engine::prompt_text() const {
@@ -967,7 +967,7 @@ Task<bool> Engine::select_option(const std::string& key, IdSet& set, bool remove
       }
     }
     host_.set_selection(set);
-    host_.print(remove ? words_.t("sel.removed", {{"n", std::to_string(n)}}) : count_found(n));
+    host_.print(remove ? words_.tn("sel.removed", static_cast<double>(n)) : count_found(n));
   };
   auto keep_preview = preview_fn_;
   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) — lives in this frame

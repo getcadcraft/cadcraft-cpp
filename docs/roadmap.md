@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-18 · Change: M4.6a done (the command line, 17 commands at parity); M4.6b (OFFSET, TRIM, EXTEND) next.
+Last updated 2026-10-18 · Change: M4.6 done (the command line, 20 commands at parity, 45/45 scripts); M4.7 (drafting in the viewer) next.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -13,7 +13,7 @@ benchmark table format below so the numbers compare.
 | M2 | cc-dwg reader in C++ (`libs/io-dwg`) | one bounds-checked reader; parity with `lib/dwg` readDwg on the corpus (six versions + ODA truth); libFuzzer target clean under ASan/UBSan; `cadcraft-cli info` / `convert --json`; the out-of-process importer helper; benchmark vs JS readDwg on the largest files; parity numbers + timings | done: 78/78; also DXF 104/104 (M3.1) |
 | M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | done: draw lists 202/202; live on cpp.getcadcraft.com (?sample, ?bench) |
 | M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (was 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (was on par) | done (a–h): 1.66–3.95×, browser cold ~1.4×; targets not met yet, levers in docs/perf-postmortem.md |
-| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | in progress: M4.1–M4.5 and M4.6a done (import, document, DWG writer, DWG save, DXF save, the command line); M4.6b next |
+| M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | in progress: M4.1–M4.6 done (import, document, DWG writer, DWG save, DXF save, the command line); M4.7 next |
 | M5+ | The rest | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M3.** | planned |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
@@ -87,5 +87,5 @@ parity on the corpus with no new test files: corpus DWG → read (M2) → import
 | M4.3 | `libs/io-dwg` writer (bits, CRC, container R2000…R2018, objects, tables, R2004 LZ, R2007) | bytes = JS writeDwg's for the same writer model, six versions — **done 2026-10-17: 648/648 byte-identical** |
 | M4.4 | `dwg-save.js` port (document → writer model) | corpus DWG → import → save: bytes = JS, six versions; and the saved files read back by our reader — **done 2026-10-18: 648/648 byte-identical** |
 | M4.5 | DXF save (dxf.js writeDxf R12, dxf2000.js writeDxf2000) | bytes = JS on the corpus — **done 2026-10-18: 216/216 byte-identical** (108 DWGs × R12 and R2000) |
-| M4.6 | Commands as coroutines (LINE, PLINE, CIRCLE, ARC, TEXT, MOVE, COPY, ROTATE, SCALE, ERASE, OFFSET, TRIM, EXTEND, UNDO/REDO) through `Session::execute`, scripted input; the CLI runs them headless | the JS command tests ported; command scripts give the same drawing JSON — **M4.6a done 2026-10-18**: libs/cmd, the engine and 17 commands (LINE PLINE CIRCLE XLINE RAY ARC RECTANG POLYGON TEXT ERASE MOVE COPY ROTATE SCALE MIRROR UNDO REDO), 28/28 scripts the same as the 0.5 Engine (prints, prompts, model, undo labels); **M4.6b**: OFFSET, TRIM, EXTEND |
+| M4.6 | Commands as coroutines (LINE, PLINE, CIRCLE, ARC, TEXT, MOVE, COPY, ROTATE, SCALE, ERASE, OFFSET, TRIM, EXTEND, UNDO/REDO) through `Session::execute`, scripted input; the CLI runs them headless | the JS command tests ported; command scripts give the same drawing JSON — **M4.6a done 2026-10-18**: libs/cmd, the engine and 17 commands (LINE PLINE CIRCLE XLINE RAY ARC RECTANG POLYGON TEXT ERASE MOVE COPY ROTATE SCALE MIRROR UNDO REDO), 28/28 scripts the same as the 0.5 Engine (prints, prompts, model, undo labels); **M4.6b done 2026-10-18**: OFFSET, TRIM (Quick / Standard, fence, crossing, edge mode, erase), EXTEND, on geom.js's editing geometry (libs/cad edit.hpp) — 45/45 scripts |
 | M4.7 | Drafting in the viewer: command line, prompts in the status bar, snaps, grips; Save / Save as (desktop picker, web download) | screenshots against the 0.5 app; save → reopen |

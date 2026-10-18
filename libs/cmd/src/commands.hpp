@@ -37,6 +37,7 @@ const std::vector<CommandDef>& command_table();
 // the commands, one function per area (draw.cpp, modify.cpp)
 void add_draw(std::vector<CommandDef>& t);
 void add_modify(std::vector<CommandDef>& t);
+void add_trim(std::vector<CommandDef>& t);
 
 // ---- geom.js
 inline double dist(Pt a, Pt b) {

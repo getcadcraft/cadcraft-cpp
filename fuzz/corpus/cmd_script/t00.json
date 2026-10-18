@@ -1,0 +1,1 @@
+{"name":"offset: a line, a circle inside and out, an arc, by distance","steps":["LINE","0,0","10,0","","CIRCLE","20,0","5","ARC","30,0","35,5","40,0","OFFSET","2",{"click":[5,0],"pick":1},"5,3",{"click":[5,0],"pick":1},"5,-3",{"click":[25,0],"pick":2},"27,0",{"click":[20,5],"pick":2},"20,1",{"click":[35,5],"pick":3},"35,10",""]}

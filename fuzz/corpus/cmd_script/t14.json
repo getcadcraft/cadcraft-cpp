@@ -1,0 +1,1 @@
+{"name":"extend: a line to a boundary, an arc, a polyline end","steps":["LINE","0,0","4,0","","LINE","10,-5","10,5","","ARC","C","5,-10","8,-10","5,-7","PLINE","0,3","4,3","4,4","","EXTEND",{"click":[3.5,0],"pick":1},{"click":[5,-7],"pick":3},{"click":[0.5,3],"pick":4},""]}

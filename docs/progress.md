@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.6a (the command line).
+Last updated 2026-10-18 · Change: M4.6 (the command line, OFFSET / TRIM / EXTEND).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -195,4 +195,11 @@ Last updated 2026-10-18 · Change: M4.6a (the command line).
   libs/cad. `cadcraft-cli script` runs command scripts headless; tools/parity/commands.mjs runs the same scripts through
   the frozen 0.5 Engine with the same stub host. **28 / 28 scripts the same** (everything printed and prompted, the model,
   the current settings, next id, undo and redo labels); golden test; fuzz target `cmd_script` (929,479 runs clean).
+- M4.6b: OFFSET (by distance or through a point; lines, arcs, circles, open and closed polylines with bulges), TRIM
+  (Quick and Standard mode, a pick, a fence, two clicks on nothing, a crossing window, EDGEMODE, erase, undo) and EXTEND
+  (lines, arcs, polyline ends; boundaries; fence) — geom.js's editing geometry in `libs/cad` edit.hpp (primitives and
+  their intersections, offsetEntity, trimSplit / pieceAt / pieceEntity / trimResult, pathCrossings, extendEntity,
+  extensionPart, inWindow; geom.cpp's primitives now shared through src/prims.hpp, a bulged arc knows it runs clockwise).
+  **45 / 45 command scripts the same as the 0.5 Engine.** Counts printed through the catalog's plural forms (`tn`), as
+  the JS's t() picks them.
 

@@ -256,6 +256,7 @@ const std::vector<CommandDef>& command_table() {
     std::vector<CommandDef> t;
     add_draw(t);
     add_modify(t);
+    add_trim(t);
     return t;
   }();
   return kTable;

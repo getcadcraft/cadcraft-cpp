@@ -1,0 +1,1 @@
+{"name":"trim: two empty clicks make a fence","steps":["LINE","0,0","10,0","","LINE","5,-3","5,3","","TRIM",{"click":[8,-1]},{"click":[8,1]},""]}

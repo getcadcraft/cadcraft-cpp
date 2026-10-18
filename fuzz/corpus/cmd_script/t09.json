@@ -1,0 +1,1 @@
+{"name":"trim: edge mode extend (implied crossing)","steps":["LINE","0,0","10,0","","LINE","5,2","5,6","","TRIM","E","E",{"click":[8,0],"pick":1},"E","N",""]}

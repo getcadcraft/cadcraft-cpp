@@ -1,0 +1,1 @@
+{"name":"trim: the end piece, then an object nothing crosses (erased)","steps":["LINE","0,0","10,0","","LINE","3,-2","3,2","","LINE","20,20","25,25","","TRIM",{"click":[1,0],"pick":1},{"click":[22,22],"pick":3},"U",""]}

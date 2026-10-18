@@ -1,0 +1,1 @@
+{"name":"offset: through a point, Enter keeps the last distance","steps":["LINE","0,0","10,10","","OFFSET","T",{"click":[5,5],"pick":1},"0,4","","OFFSET","",{"click":[5,5],"pick":1},"8,0","","OFFSET","1.5","","O","",{"click":[5,5],"pick":1},"1,9",""]}
