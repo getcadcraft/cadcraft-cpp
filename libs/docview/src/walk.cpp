@@ -9,6 +9,7 @@
 #include <limits>
 #include <map>
 #include <numbers>
+#include <ranges>
 #include <utility>
 
 #include "cc/base/checked.hpp"
@@ -242,16 +243,20 @@ std::optional<Bands> poly_bands(const Value& e) {
         along.push_back({p.cx + p.r * cx, p.cy + p.r * cy, ccw ? -cx : cx, ccw ? -cy : cy, t});
       }
     }
-    std::vector<double> left;
-    std::vector<double> right;
+    std::vector<double> ring;
+    std::vector<std::pair<double, double>> right;  // the JS unshifts each pair: appended reversed below
+    ring.reserve(along.size() * 4 + 2);
+    right.reserve(along.size());
     for (const Along& v : along) {
       const double h = (ws + (we - ws) * v.t) / 2;
-      left.push_back(v.x + v.nx * h);
-      left.push_back(v.y + v.ny * h);
-      right.insert(right.begin(), {v.x - v.nx * h, v.y - v.ny * h});
+      ring.push_back(v.x + v.nx * h);
+      ring.push_back(v.y + v.ny * h);
+      right.emplace_back(v.x - v.nx * h, v.y - v.ny * h);
     }
-    std::vector<double> ring = left;
-    ring.insert(ring.end(), right.begin(), right.end());
+    for (const auto& [rx, ry] : std::views::reverse(right)) {
+      ring.push_back(rx);
+      ring.push_back(ry);
+    }
     const double r0 = ring[0];
     const double r1 = ring[1];
     ring.push_back(r0);

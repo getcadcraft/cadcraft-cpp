@@ -227,4 +227,6 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 - M4.7e: a drawing opened in the viewer takes its file's name (meta.name, meta.source, as cadcraft.js does), so Save
   offers "plan.dwg", not "Drawing1.dwg". Web build deployed to cpp.getcadcraft.com and checked in headless Chromium:
   open a DWG, draw, Ctrl+S downloads the DWG with the new objects in it.
+- M4.7f: GCC 14's -Wnull-dereference false positive on `vector::insert(begin, {x, y})` in walk.js polyBands (CI's
+  GCC job red since M4.7c): the band's right side is collected and appended reversed instead (same ring).
 
