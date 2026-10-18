@@ -241,6 +241,13 @@ struct Init {
 Value make_object(std::initializer_list<Init> members);
 
 /// A point {x, y} or {x, y, z}: compact (no allocation; see the top of this file).
+/// [x]: an array holding one value. Not `Array{x}` for an array x — compilers differ on whether a one-element braced
+/// list of the vector's own type copies it (MSVC) or nests it (clang, GCC).
+inline Array array_of(Value x) {
+  Array a;
+  a.push_back(std::move(x));
+  return a;
+}
 inline Value pt2(double x, double y) {
   return {Pt2{x, y}};
 }

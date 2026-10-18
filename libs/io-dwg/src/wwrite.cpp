@@ -272,9 +272,9 @@ double aci_from_rgb(double rgb) {
       const double lo = pastel ? v / 2 : 0;
       const double q = v - (v - lo) * f;
       const double u = lo + (v - lo) * f;
-      const std::array<std::array<double, 3>, 6> rgb = {
+      const std::array<std::array<double, 3>, 6> sextant = {
           {{v, u, lo}, {q, v, lo}, {lo, v, u}, {lo, q, v}, {u, lo, v}, {v, lo, q}}};
-      const auto& c = rgb[static_cast<std::size_t>(static_cast<int>(std::floor(h6)) % 6)];
+      const auto& c = sextant[static_cast<std::size_t>(static_cast<int>(std::floor(h6)) % 6)];
       a[static_cast<std::size_t>(i)] = {base::js_round(c[0]), base::js_round(c[1]), base::js_round(c[2])};
     }
     const std::array<double, 6> g = {51, 91, 132, 173, 214, 255};
@@ -1887,12 +1887,27 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
   for (const Value& b : arr(model, "blocks")) {
     blocks_in.push_back(&b);
   }
-  static const std::regex ms_re(R"(^\*model_space$)", std::regex::icase);
-  static const std::regex ps_re(R"(^\*paper_space\d*$)", std::regex::icase);
-  static const std::regex ps0_re(R"(^\*paper_space$)", std::regex::icase);
+  // /^\*model_space$/i, /^\*paper_space\d*$/i, /^\*paper_space$/i (ASCII letters: the i flag folds them only)
+  const auto ascii_lower = [](std::string s) {
+    for (char& c : s) {
+      if (c >= 'A' && c <= 'Z') {
+        c = static_cast<char>(c - 'A' + 'a');
+      }
+    }
+    return s;
+  };
+  const auto ms_name = [&](const std::string& n) { return ascii_lower(n) == "*model_space"; };
+  const auto ps_name = [&](const std::string& n) {
+    const std::string l = ascii_lower(n);
+    if (!l.starts_with("*paper_space")) {
+      return false;
+    }
+    return std::ranges::all_of(l.substr(12), [](char c) { return c >= '0' && c <= '9'; });
+  };
+  const auto ps0_name = [&](const std::string& n) { return ascii_lower(n) == "*paper_space"; };
   const auto name_of = [](const Value* b) { return str_of(orv_value(ref(*b, "name"))); };
-  const auto is_ms = [&](const Value* b) { return std::regex_search(name_of(b), ms_re); };
-  const auto is_ps = [&](const Value* b) { return std::regex_search(name_of(b), ps_re); };
+  const auto is_ms = [&](const Value* b) { return ms_name(name_of(b)); };
+  const auto is_ps = [&](const Value* b) { return ps_name(name_of(b)); };
   if (std::ranges::none_of(blocks_in, is_ms)) {
     blocks_in.insert(blocks_in.begin(),
                      &synth.emplace_back(make_object({{"name", "*Model_Space"}, {"entities", Array{}}})));
@@ -1912,8 +1927,8 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
     }
   }
   std::ranges::stable_sort(ps_bs, [&](const Value* a, const Value* b) {
-    const bool pa = std::regex_search(name_of(a), ps0_re);
-    const bool pb = std::regex_search(name_of(b), ps0_re);
+    const bool pa = ps0_name(name_of(a));
+    const bool pb = ps0_name(name_of(b));
     return pa && !pb;
   });
   std::unordered_map<std::string, const Value*> block_recs_by_record;
@@ -2301,12 +2316,12 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
                      {"h", W.H["mlsDict"]},
                      {"owner", W.H["nod"]},
                      {"reactors", nod_reactor},
-                     {"items", Array{Array{"Standard", W.H["mlstyle"]}}}}));
+                     {"items", base::array_of(Array{"Standard", W.H["mlstyle"]})}}));
   pushv(make_object({{"t", "DICTIONARYWDFLT"},
                      {"h", W.H["plotStyleDict"]},
                      {"owner", W.H["nod"]},
                      {"reactors", nod_reactor},
-                     {"items", Array{Array{"Normal", W.H["plotStyleNormal"]}}},
+                     {"items", base::array_of(Array{"Normal", W.H["plotStyleNormal"]})},
                      {"defaultEntry", W.H["plotStyleNormal"]}}));
   pushv(make_object({{"t", "PLACEHOLDER"},
                      {"h", W.H["plotStyleNormal"]},
@@ -2611,8 +2626,16 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
   }
   Parts parts;
   double entities = 0;
-  static const std::regex not_entity(
-      R"(CONTROL|^LAYER$|^STYLE$|^LTYPE$|^APPID$|^DIMSTYLE$|^VPORT$|^VIEW$|DICTIONARY|PLACEHOLDER|MLINESTYLE|LAYOUT|BLOCK_HEADER)");
+  // /CONTROL|^LAYER$|^STYLE$|^LTYPE$|^APPID$|^DIMSTYLE$|^VPORT$|^VIEW$|DICTIONARY|PLACEHOLDER|MLINESTYLE|LAYOUT|BLOCK_HEADER/
+  const auto not_entity = [](const std::string& t) {
+    for (const std::string_view k : {"CONTROL", "DICTIONARY", "PLACEHOLDER", "MLINESTYLE", "LAYOUT", "BLOCK_HEADER"}) {
+      if (t.contains(k)) {
+        return true;
+      }
+    }
+    return t == "LAYER" || t == "STYLE" || t == "LTYPE" || t == "APPID" || t == "DIMSTYLE" || t == "VPORT" ||
+           t == "VIEW";
+  };
   for (RecPtr const& r : recs) {
     std::optional<ByteBuf> data = encode_object(*r, ctx);
     const std::string t = ref(r->v, "t").is_string() ? ref(r->v, "t").as_string() : std::string();
@@ -2621,7 +2644,7 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
       continue;
     }
     parts.objects.push_back({ref(r->v, "h").as_number(), std::move(*data)});
-    if (!std::regex_search(t, not_entity)) {
+    if (!not_entity(t)) {
       entities += 1;
     }
   }

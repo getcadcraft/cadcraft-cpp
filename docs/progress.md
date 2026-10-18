@@ -150,3 +150,7 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   JS sizes, CRC-32s and reports for the public fixtures × six versions; tests for the compressors against the reader's
   decompressors, read-back of written files, an empty model; fuzz target `dwg_write` (read hostile bytes → write → read).
   `cadcraft-cli dwg-write <in> <version> <out>`.
+- M4.3a: writer speed (release, best of 7, same model, load ~5): example-2007 R2000 7.8 ms vs JS 11.7, R2004 11.1 vs
+  19.7, R2007 15.3 vs 43.7, R2018 16.1 vs 30.0; civil-example 9.5–16.4 vs 14.6–28.9; blocks-and-tables (thousands of
+  blocks) R2000 76 → 63.5 vs 71 after the per-record std::regex tests became plain string tests (regex was 12 % of the
+  profile). 1.1–2.9× the JS; no other change made (the gains left are Value copies in the records, as in the reader).

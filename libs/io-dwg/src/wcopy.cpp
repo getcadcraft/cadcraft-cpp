@@ -888,14 +888,14 @@ CopyWriter::CopyWriter(Writer& w) : impl(std::make_unique<Impl>(w)) {
     }
   }
   if (has_ml && I.old) {
-    I.mleader_eed = w.eed_of(make_object({{"ACAD_MLEADERVER", Array{Array{1070, 2}}}}));
+    I.mleader_eed = w.eed_of(make_object({{"ACAD_MLEADERVER", base::array_of(Array{1070, 2})}}));
   }
   for (const Value& o : arr(model, "objects")) {
     Value x = ref(o, "xdata");
     if (is_str(ref(o, "type"), "MLEADERSTYLE") && !raw_usable(ref(o, "raw"), w.version)) {
       x = x.truthy() && x.is_object() ? x : Value::object();
       if (I.old) {
-        x.set("ACAD_MLEADERVER", Array{Array{1070, 2}});
+        x.set("ACAD_MLEADERVER", base::array_of(Array{1070, 2}));
       } else {
         x.erase("ACAD_MLEADERVER");
       }
@@ -1354,11 +1354,11 @@ void ensure_mleader_style(std::vector<RecPtr>& recs, Writer& W, const Value& mle
   rec->encode = [src, ts, lt](Rec& r, Ctx& ctx) {
     return encode_mleader_style(
         r.v, *src,
-        [ts, lt](const Value& k) {
-          if (is_str(k, "*TS")) {
+        [ts, lt](const Value& key) {
+          if (is_str(key, "*TS")) {
             return ts;
           }
-          if (is_str(k, "*LT")) {
+          if (is_str(key, "*LT")) {
             return lt;
           }
           return 0.0;
@@ -2037,7 +2037,10 @@ void CopyWriter::finish(std::vector<RecPtr>& recs, const std::vector<std::pair<V
   ensure_mleader_style(recs, W, I.mleader_eed);
   // extension dictionaries and reactors of written entities, table entries, block records and layouts
   double linked = 0;
-  static const std::regex eed_types(R"(^(LAYER|STYLE|LTYPE|DIMSTYLE|BLOCK_HEADER|VPORT|VIEW)$)");
+  const auto eed_type = [](const std::string& t) {
+    return t == "LAYER" || t == "STYLE" || t == "LTYPE" || t == "DIMSTYLE" || t == "BLOCK_HEADER" || t == "VPORT" ||
+           t == "VIEW";
+  };
   for (const RecPtr& r : recs) {
     const auto it = thing_by_new.find(num(ref(r->v, "h")));
     if (it == thing_by_new.end()) {
@@ -2052,7 +2055,7 @@ void CopyWriter::finish(std::vector<RecPtr>& recs, const std::vector<std::pair<V
       r->v.set("xdic", written(ref(s, "extDict")));
       linked += 1;
     }
-    if (!tr(r->v, "eed") && I.eed_cache.contains(&s) && std::regex_match(t, eed_types)) {
+    if (!tr(r->v, "eed") && I.eed_cache.contains(&s) && eed_type(t)) {
       r->v.set("eed", I.eed_cache.at(&s));
     }
     Array rs;

@@ -1771,8 +1771,7 @@ double Ctx::class_num(std::string_view t) {
   return it->second;
 }
 
-ObjWriter::ObjWriter(std::string_view version, bool inl)
-    : BitWriter(version, 256), hnd(version, 64), strs(version, 64), inline_handles(inl) {
+ObjWriter::ObjWriter(std::string_view v, bool inl) : BitWriter(v, 256), hnd(v, 64), strs(v, 64), inline_handles(inl) {
   str = &strs;
 }
 

@@ -537,12 +537,12 @@ Value Importer::multileader(const Value& e, const Value& base) {
             const double bx = ax + ux * aszn;
             const double by = ay + uy * aszn;
             const double hw = aszn / 6;
-            parts.push_back(base::make_object(
-                {{"type", "hatch"},
-                 {"layer", "0"},
-                 {"color", 0},
-                 {"solid", true},
-                 {"loops", Array{Array{ax, ay, bx - uy * hw, by + ux * hw, bx + uy * hw, by - ux * hw, ax, ay}}}}));
+            parts.push_back(base::make_object({{"type", "hatch"},
+                                               {"layer", "0"},
+                                               {"color", 0},
+                                               {"solid", true},
+                                               {"loops", base::array_of(Array{ax, ay, bx - uy * hw, by + ux * hw,
+                                                                              bx + uy * hw, by - ux * hw, ax, ay})}}));
           }
         }
       }

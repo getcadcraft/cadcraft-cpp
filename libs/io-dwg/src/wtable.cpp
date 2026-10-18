@@ -1208,8 +1208,8 @@ struct TableWriter::Impl {
         reactors.emplace_back(od);
       }
       for (const Value& t : sp->tables) {
-        if (const double n = Wp->src(t); n != 0) {
-          reactors.emplace_back(n);
+        if (const double th = Wp->src(t); th != 0) {
+          reactors.emplace_back(th);
         }
       }
       rec.v.set("reactors", std::move(reactors));
