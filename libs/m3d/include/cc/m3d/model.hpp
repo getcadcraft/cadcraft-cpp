@@ -104,6 +104,8 @@ struct Def {
   std::int64_t e_add(std::int64_t a, std::int64_t b);
   /// fAdd(def, loops, color): the face and its edges.
   std::int64_t f_add(std::vector<std::vector<std::int64_t>> loops, const std::string& color = {});
+  // The vertex `v`; a face naming a missing vertex is a model bug (std::logic_error).
+  [[nodiscard]] const Vec3& vert(std::int64_t v) const;
   [[nodiscard]] std::vector<Vec3> points(const std::vector<std::int64_t>& loop) const;
 };
 

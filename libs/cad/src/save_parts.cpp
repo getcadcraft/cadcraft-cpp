@@ -3,6 +3,7 @@
 // and xref.js roots, from CadCraft 0.5 (the dwg-props.js write side is in props.cpp, next to its tables).
 #include "cc/cad/save_parts.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <string>

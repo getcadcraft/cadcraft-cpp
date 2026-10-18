@@ -205,7 +205,7 @@ std::optional<File3d> for_file3d(const Model& m, std::string_view units) {
   File3d out;
   m.walk([&](const Def& def, const Mat4& wm) {
     const auto W = [&](std::int64_t v) {
-      const Vec3 p = apply(wm, *def.verts.get(v));
+      const Vec3 p = apply(wm, def.vert(v));
       return Vec3{p[0] / k, p[1] / k, p[2] / k};
     };
     for (const auto& [fid, f] : def.faces.items()) {

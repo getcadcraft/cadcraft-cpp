@@ -132,15 +132,19 @@ std::int64_t Def::f_add(std::vector<std::vector<std::int64_t>> loops, const std:
   return fid;
 }
 
+const Vec3& Def::vert(std::int64_t v) const {
+  const Vec3* p = verts.get(v);
+  if (p == nullptr) {
+    throw std::logic_error("m3d: a face names a missing vertex");
+  }
+  return *p;
+}
+
 std::vector<Vec3> Def::points(const std::vector<std::int64_t>& loop) const {
   std::vector<Vec3> out;
   out.reserve(loop.size());
   for (const std::int64_t v : loop) {
-    const Vec3* p = verts.get(v);
-    if (p == nullptr) {
-      throw std::logic_error("m3d: a face names a missing vertex");
-    }
-    out.push_back(*p);
+    out.push_back(vert(v));
   }
   return out;
 }
@@ -163,7 +167,7 @@ std::vector<std::array<std::int64_t, 3>> face_tris(const Def& d, const Face& f) 
       holes.push_back(ids.size());
     }
     for (const std::int64_t v : f.loops[i]) {
-      const Vec3& p = *d.verts.get(v);
+      const Vec3& p = d.vert(v);
       flat.push_back(dot(p, fr.u));
       flat.push_back(dot(p, fr.v));
       ids.push_back(v);
@@ -173,9 +177,9 @@ std::vector<std::array<std::int64_t, 3>> face_tris(const Def& d, const Face& f) 
   std::vector<std::array<std::int64_t, 3>> out;
   for (std::size_t i = 0; i + 2 < t.size(); i += 3) {
     std::array<std::int64_t, 3> tri = {ids.at(t[i]), ids.at(t[i + 1]), ids.at(t[i + 2])};
-    const Vec3& a = *d.verts.get(tri[0]);
-    const Vec3& b = *d.verts.get(tri[1]);
-    const Vec3& c = *d.verts.get(tri[2]);
+    const Vec3& a = d.vert(tri[0]);
+    const Vec3& b = d.vert(tri[1]);
+    const Vec3& c = d.vert(tri[2]);
     if (dot(cross(sub(b, a), sub(c, a)), n) < 0) {
       std::swap(tri[1], tri[2]);
     }
