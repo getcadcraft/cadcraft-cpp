@@ -265,6 +265,9 @@ inline Value object_with_capacity(std::size_t n) {
 // undefined members dropped, undefined array items as null, lone surrogates as \uXXXX escapes)
 void write_json(const Value& v, std::string& out);
 [[nodiscard]] std::string to_json(const Value& v);
+/// JSON.stringify(v): NaN / ±Infinity as null, keys in JavaScript's property order (js_members), undefined members
+/// dropped and undefined array items as null.
+[[nodiscard]] std::string js_stringify(const Value& v);
 /// Appends `s` as a JSON string literal, escaped as JSON.stringify escapes it.
 void append_json_string(std::string& out, std::string_view s);
 

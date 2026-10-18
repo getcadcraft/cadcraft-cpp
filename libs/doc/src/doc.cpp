@@ -11,6 +11,7 @@
 
 #include "cc/base/js.hpp"
 #include "cc/cad/files.hpp"
+#include "cc/m3d/drawing3d.hpp"
 
 namespace cc::doc {
 
@@ -644,7 +645,6 @@ void Doc::load(Value drawing, const i18n::Catalog& words) {
   // 3DFACEs and CadCraft's 3D model are not 2D objects (model3d.js split3d; kept for the 3D model, M5)
   const Value in3d = cad::split3d(drawing, words);
   model3d_text = in3d.get("text").is_string() ? in3d.get("text").as_string() : std::string();
-  faces3d = in3d.get("faces");
   vports = cad::clean_panes(drawing.get("vports"));
   model_->clear();
   layers_.clear();
@@ -740,6 +740,21 @@ void Doc::load(Value drawing, const i18n::Catalog& words) {
   views = std::move(vs);
   meta = spread(base::make_object({{"name", "Drawing1"}, {"units", ""}, {"source", ""}, {"version", ""}}),
                 drawing.get("meta"));
+  {  // this.model3d.fromFile(in3d, this.meta.units, report)
+    const Value mu = meta.get("units");
+    const auto got =
+        m3d::from_file(model3d, in3d, mu.is_string() ? mu.as_string() : std::string(), words.t("model3d.faces_file"));
+    if (Value* rep = drawing.find("report"); rep != nullptr && rep->is_object()) {
+      if (Value* notes = rep->find("notes"); notes != nullptr && notes->is_array()) {
+        if (got.loose > 0) {
+          notes->push(words.tn("model3d.read.loose_faces", static_cast<double>(got.loose)));
+        }
+        if (got.left_out > 0) {
+          notes->push(words.tn("model3d.read.faces_left_out", static_cast<double>(got.left_out)));
+        }
+      }
+    }
+  }
   current.set("layer", "0");
   current.set("linetype", Value(nullptr));
   current.set("lineweight", Value(nullptr));

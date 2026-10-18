@@ -10,6 +10,7 @@
 
 #include "bits.hpp"
 #include "cc/base/js.hpp"
+#include "cc/base/js_math.hpp"
 #include "container.hpp"
 #include "messages.hpp"
 #include "wwriter.hpp"
@@ -637,8 +638,8 @@ void write_context(ObjWriter& w, const Value& c, MlRefs& R, int v) {
         const double lx = lv.truthy() ? numk(lv, "x") : 0;
         const double ly = lv.truthy() ? numk(lv, "y") : 0;
         const double lz = lv.truthy() ? numk(lv, "z") : 0;
-        const double cs = std::cos(r);
-        const double sn = std::sin(r);
+        const double cs = cc::base::js_cos(r);
+        const double sn = cc::base::js_sin(r);
         for (const double x :
              {cs * sx, -sn * sy, 0.0, lx, sn * sx, cs * sy, 0.0, ly, 0.0, 0.0, sz, lz, 0.0, 0.0, 0.0, 1.0}) {
           w.BD(x);

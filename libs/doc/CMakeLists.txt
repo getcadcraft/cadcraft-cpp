@@ -1,6 +1,6 @@
 cc_library(doc LAYER 3
   SOURCES src/doc.cpp
-  DEPS cc::base cc::i18n cc::cad)
+  DEPS cc::base cc::i18n cc::cad cc::m3d)
 
 cc_test(doc
   SOURCES tests/doc_test.cpp

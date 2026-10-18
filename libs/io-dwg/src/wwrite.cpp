@@ -14,6 +14,7 @@
 
 #include "cc/base/file.hpp"
 #include "cc/base/js.hpp"
+#include "cc/base/js_math.hpp"
 #include "cc/dwg/write.hpp"
 #include "messages.hpp"
 #include "wcontainer.hpp"
@@ -905,7 +906,7 @@ struct Conv {
       const double dx = d.get("x").as_number();
       const double dy = d.get("y").as_number();
       const double dz = d.get("z").as_number();
-      const double n = std::hypot(dx, dy, dz);
+      const double n = base::js_hypot(dx, dy, dz);
       if (!(n > 0)) {
         return std::monostate{};
       }
@@ -1182,10 +1183,18 @@ struct Conv {
         if (!okP(ref(a, "insert")) || base::js_to_number(ref(a, "height")) <= 0 || !tr(a, "tag")) {
           continue;
         }
-        Value merged = e;
-        spread(merged, a);
-        merged.set("layer", nullish(ref(a, "layer")) ? ref(e, "layer") : ref(a, "layer"));
-        merged.set("color", nullish(ref(a, "color")) ? ref(e, "color") : ref(a, "color"));
+        // { ...e, ...a, layer, color }: only the fields common() reads (a deep copy of e, its attribs included,
+        // per attribute was quadratic; the JS spread is shallow)
+        Value merged = base::object_with_capacity(8);
+        for (const std::string_view k : {"linetype", "transparency", "ltscale", "lineweight", "invisible", "xdata"}) {
+          if (const Value* av = a.is_point() ? nullptr : a.find(k)) {
+            merged.append(k, *av);
+          } else if (const Value* ev = e.find(k)) {
+            merged.append(k, *ev);
+          }
+        }
+        merged.append("layer", nullish(ref(a, "layer")) ? ref(e, "layer") : ref(a, "layer"));
+        merged.append("color", nullish(ref(a, "color")) ? ref(e, "color") : ref(a, "color"));
         Value x = W.common(merged, "ATTRIB", hh);
         x.set("mode", 0);
         spread(x, text_fields(a));
@@ -2156,7 +2165,7 @@ WriteResult write_dwg(const base::Value& model, const WriteOptions& opts) {
           g(ref(r, "center"), base::js_to_number(ref(r, "radius")));
         } else if (t == "ELLIPSE") {
           const Value& m = ref(r, "majorAxis");
-          g(ref(r, "center"), std::hypot(numk(m, "x"), numk(m, "y")));
+          g(ref(r, "center"), base::js_hypot(numk(m, "x"), numk(m, "y")));
         } else if (t == "LWPOLYLINE") {
           for (const Value& p : arr(r, "vertices")) {
             g(make_object({{"x", get(p, "x")}, {"y", get(p, "y")}, {"z", ref(r, "elevation")}}));

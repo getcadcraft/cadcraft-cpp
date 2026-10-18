@@ -599,7 +599,73 @@ void write_value(const Value& v, std::string& out) {
   }
 }
 
+// JSON.stringify: NaN and ±Infinity as null, keys in JavaScript's property order.
+// NOLINTNEXTLINE(misc-no-recursion)
+void stringify_value(const Value& v, std::string& out) {
+  if (v.is_point()) {
+    out += "{\"x\":";
+    stringify_value(Value(v.get("x").as_number()), out);
+    out += ",\"y\":";
+    stringify_value(Value(v.get("y").as_number()), out);
+    if (v.has("z")) {
+      out += ",\"z\":";
+      stringify_value(Value(v.get("z").as_number()), out);
+    }
+    out += '}';
+    return;
+  }
+  switch (v.kind()) {
+    case Value::Kind::number: {
+      const double d = v.as_number();
+      if (std::isfinite(d)) {
+        append_number(out, d == 0 ? 0.0 : d);
+      } else {
+        out += "null";
+      }
+      return;
+    }
+    case Value::Kind::array: {
+      out += '[';
+      bool first = true;
+      for (const Value& x : v.as_array()) {
+        if (!first) {
+          out += ',';
+        }
+        first = false;
+        stringify_value(x, out);
+      }
+      out += ']';
+      return;
+    }
+    case Value::Kind::object: {
+      out += '{';
+      bool first = true;
+      for (const Member* m : js_members(v.as_object())) {
+        if (m->value.is_undefined()) {
+          continue;
+        }
+        if (!first) {
+          out += ',';
+        }
+        first = false;
+        write_string(out, m->key);
+        out += ':';
+        stringify_value(m->value, out);
+      }
+      out += '}';
+      return;
+    }
+    default: write_value(v, out); return;
+  }
+}
+
 }  // namespace
+
+std::string js_stringify(const Value& v) {
+  std::string s;
+  stringify_value(v, s);
+  return s;
+}
 
 void append_json_string(std::string& out, std::string_view s) {
   write_string(out, s);

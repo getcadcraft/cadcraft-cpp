@@ -35,3 +35,9 @@ with a fixed date and the harness's seeded random bytes: size, CRC-32 of the byt
 write (`writes.json`). Made with `node tools/parity/dwg-write.mjs build/corpus/fixtures --golden-out <dir>/dwg-write/writes.json`,
 then the same `tar` line with `dwg-write`. The test `io-dwg.the writer matches the JS writer…` compares them; the full
 check (648 writes) is `tools/parity/dwg-write.mjs`.
+
+`js-0.5-dwg-save.tar.gz` — the 0.5 `saveDwg` (dwg-save.js) for the four public DWG fixtures in all six versions: the
+fixture opened as the app opens it (readDwg → importDwg → Doc.load) and saved with a fixed date and the harness's
+seeded random bytes; size, CRC-32 and canonical report of each save (`saves.json`). Made with
+`node tools/parity/dwg-save.mjs build/corpus/fixtures --golden-out <dir>/dwg-save/saves.json`, then the same `tar` line
+with `dwg-save`. The test `save.golden` compares them; the full check (660 saves) is `tools/parity/dwg-save.mjs`.

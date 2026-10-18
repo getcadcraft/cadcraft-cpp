@@ -35,8 +35,8 @@ Mat m_mul(const Mat& m, const Mat& n) {
 }
 
 Mat m_rotate(double r) {
-  const double c = std::cos(r);
-  const double s = std::sin(r);
+  const double c = cc::base::js_cos(r);
+  const double s = cc::base::js_sin(r);
   return {c, s, -s, c, 0, 0};
 }
 
@@ -70,8 +70,8 @@ Mat insert_matrix(const Value& e, const Value& blk) {
 
 Value tx_text(const Value& e, const Mat& m) {
   // mSimilar(m) || { s: sqrt|det|, rot: atan2(m1, m0), flip: det < 0 }
-  const double sx = std::hypot(m[0], m[1]);
-  const double sy = std::hypot(m[2], m[3]);
+  const double sx = base::js_hypot(m[0], m[1]);
+  const double sy = base::js_hypot(m[2], m[3]);
   const double dot = m[0] * m[2] + m[1] * m[3];
   double s = sx;
   double srot = base::js_atan2(m[1], m[0]);
@@ -86,7 +86,7 @@ Value tx_text(const Value& e, const Mat& m) {
   double rot = r0 + srot;
   if (flip) {
     rot = base::js_atan2(m[1], m[0]) - r0;
-    if (std::cos(rot) < -1e-9) {
+    if (cc::base::js_cos(rot) < -1e-9) {
       rot += std::numbers::pi;
     }
   }

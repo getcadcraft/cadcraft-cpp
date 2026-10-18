@@ -71,6 +71,7 @@ add_subdirectory(libs/base)       # L0
 add_subdirectory(libs/i18n)       # L1
 add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/cad)        # L2
+add_subdirectory(libs/m3d)        # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()
@@ -82,6 +83,7 @@ if(CC_BUILD_RENDER)
   add_subdirectory(libs/image)    # L3
 endif()
 add_subdirectory(libs/importer)   # L4
+add_subdirectory(libs/save)       # L4
 add_subdirectory(libs/engine)     # L5
 if(CC_BUILD_GUI)
   add_subdirectory(libs/ui-imgui) # L6

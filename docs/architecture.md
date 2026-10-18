@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-17 · Change: libs/cad (M4.1 import), base JS math (atan2) and property order.
+Last updated 2026-10-18 · Change: libs/m3d, libs/save (M4.4 DWG save); V8's sin/cos/hypot in base; no FMA contraction.
 
 ## Toolchain (pinned)
 
@@ -57,8 +57,10 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/base` | L0 | `Error`/`Result`, checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `env_var`, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form), `js.hpp` (JS semantics the ports need: trim, parseFloat/parseInt, UTF-16 lengths, toUpperCase/toLowerCase and the ICU numeric collation, both from tables generated from Node by `tools/gen/`) |
 | `libs/drawing` | L2 | `cc::drawing::compile_drawing` — BimCraft's dwg-compile.js: a drawing model → typed draw lists (spaces → batches of polylines, fills, texts, in world units), what the 2D view and the renderer read |
 | `libs/cad` | L2 | `cc::cad::import_dwg` — CadCraft 0.5's dwg-import.js (and the parts of attrs.js, dwg-props.js, dyn-blocks.js, model3d.js, panes.js, pictures.js, sheets.js, xclip.js, gcons.js it calls): a reader's model → the drawing the CadCraft document loads; JSON-shaped (base::Value), so it compares with the JS on the corpus (tools/parity/import.mjs) |
+| `libs/m3d` | L2 | `cc::m3d` — the start of the ModelCraft kernel (m3d/model.js, vec.js, earcut.js): definitions, faces, instances, `toJSON`, `faceTris`, `meshDef`; and model3d.js's drawing side (`from_file`: a drawing's 3D faces as one group; `for_file3d`: 3DFACEs + CadCraft's JSON for saving) |
 | `libs/doc` | L3 | `cc::doc::Doc` — CadCraft 0.5's doc.js: the drawing a session edits (spaces, layers, blocks, layouts), one undo step per `change()`, `load()` of a drawing; equal to the JS document on the corpus (tools/parity/doc.mjs) |
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
+| `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
 | `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module. `cc::dwg::write_dwg` — the port of `writeDwg` (src/w*.cpp: bits, CRCs, R2004/R2007 compressors and file layouts, the object encoders, the source's objects copied, tables, solids, surfaces, data storage), byte for byte the JS writer's output (tools/parity/dwg-write.mjs) |
 
@@ -83,6 +85,15 @@ The kit compares DWG models. DXF models and draw lists are checked by this repo'
 abs 1e-9 + rel 1e-9 as the Rust fork's cdiff.mjs, and it reports how many also match at rel 1e-12). Both also run over
 the fuzzers' corpora (differential fuzzing: every input the fuzzer kept, JS against C++), which is how the hostile-input
 behaviour in docs/gaps.md was found and matched.
+
+### Doubles bit for bit (M4.4)
+
+A saved DWG keeps every double the save computes, so the ports that feed a file compute as V8 does, not merely within a
+tolerance: Math.sin / Math.cos / Math.atan / Math.atan2 are fdlibm's in Node (`base::js_sin` … `js_atan2`, checked bit
+for bit against Node on millions of inputs; glibc differs on 2.5 % of sin inputs), Math.hypot is V8's own scaled Kahan
+sum (`base::js_hypot`), toFixed / toExponential round an exact half away from zero (`base::js_to_fixed`), `+v || 0`
+turns -0 into 0, and no compiler may fuse `a * b + c` into an FMA (`-ffp-contract=off` everywhere; GCC fuses by default
+where the CPU has FMA, and every arm64 CPU has it). The renderer and the UI keep the C library's functions.
 
 ### The 2D viewer (M3, planned)
 

@@ -1,6 +1,6 @@
 # Post-mortem: the M3.5 speed work (C++ fork)
 
-Last updated 2026-10-17 · Change: first version, after M3.5a–g.
+Last updated 2026-10-18 · Change: the DWG writer and save (M4.3a, M4.4) added.
 
 For review by the owner. What M3.5 set out to do, what each change measured, what was kept, what was dropped and why,
 and where the time goes now. Every number here was measured on this machine (8 cores, shared with other sessions);
@@ -84,6 +84,45 @@ perf, frame-pointer release build, kitchen files, samples inside the timed read 
 3. **The web parse in a worker** (pthreads are on): a big file never blocks a frame; and the browser's warm parse is
    2× native — look at wasm tiering and the allocator under pthreads.
 4. **Fewer allocations per DWG record** (handle lists, EED, field objects): the records are what is freed.
+
+## M4.3a / M4.4: the DWG writer and the save
+
+The save (dwg-save.js → cc-dwg writeDwg) went in at parity first (648/648 byte-identical), then was measured: release
+build, a document loaded once, best of 7 saves after 3 warm-ups, same machine, load average 5–8 (2026-10-18 02:05 UTC).
+JS = the frozen 0.5 `saveDwg` in Node 24.
+
+| File | Version | 0.5 JS (ms) | C++ (ms) | Speed-up |
+|---|---|---:|---:|---:|
+| example-2007.dwg | 2000 | 7.7 | 6.5 | 1.17× |
+| example-2007.dwg | 2018 | 13.7 | 8.7 | 1.58× |
+| civil-example-imperial.dwg | 2000 | 3.8 | 4.5 | 0.84× |
+| civil-example-imperial.dwg | 2018 | 8.1 | 5.0 | 1.61× |
+| blocks-and-tables-imperial.dwg | 2000 | 38.7 | 39.9 | 0.97× |
+| blocks-and-tables-imperial.dwg | 2018 | 47.9 | 42.3 | 1.13× |
+| architectural-annotation-scaling-and-multileaders.dwg | 2000 | 22.6 | 20.7 | 1.09× |
+| architectural-annotation-scaling-and-multileaders.dwg | 2018 | 30.9 | 24.7 | 1.25× |
+| kitchen-equipment.dwg | 2000 | 73.9 | 71.9 | 1.03× |
+| kitchen-equipment.dwg | 2018 | 113.8 | 81.2 | 1.40× |
+
+What changed on the way, each measured and parity-checked (648/648 after each):
+
+| Step | Change | Effect | Kept |
+|---|---|---|---|
+| M4.3a | per-record `std::regex` tests in the writer → plain string tests | blocks-and-tables R2000 write 76 → 63.5 ms (regex was 12 % of the profile) | yes |
+| M4.4 | the writer merged each ATTRIB's reference as a deep copy of the INSERT (its whole `attribs` array included) per attribute — quadratic; the JS spread is shallow. Now only the eight fields `common()` reads | kitchen R2000 save ~125 → ~80 ms (writer `convert` 31 → 17 % of samples) | yes |
+| M4.4 | `world_attribs` copied the reference and its block (all its entities) per reference to drop constant attributes; now filtered in place | part of the line above | yes |
+
+Where the time goes now (kitchen, R2000, frame-pointer build): the writer ~65 % of the save (record conversion 17 %,
+object encoders 14 %, the rest container and tables), the save's own conversion ~20 % (references and their
+attributes), and across both `Value::set` searches and member copies (~25 % together). Not a single hot spot.
+
+Next levers (not done; the plan goes on with M4.5):
+
+1. **The save model as typed records**, not `Value` objects: the writer reads each field once; today it is built by
+   string-keyed sets and read by string-keyed lookups. The biggest lever, and a redesign of the writer's input.
+2. **One dimension geometry per dimension**: `dim_text_point` builds the geometry a second time (the JS caches it per
+   entity object); a cache for the save's duration.
+3. **`Value::set` on objects built in a known order** (`append` where the key cannot be there yet).
 
 ## Method
 

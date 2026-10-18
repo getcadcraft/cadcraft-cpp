@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include "cc/base/js.hpp"
+#include "cc/base/js_math.hpp"
 #include "container.hpp"
 #include "record.hpp"
 
@@ -746,7 +747,7 @@ void mtext(ObjWriter& w, const Value& r) {
   if (ref(r, "xAxis").truthy()) {
     xa = P(ref(r, "xAxis"));
   } else {
-    xa = {std::cos(numk(r, "rotation")), std::sin(numk(r, "rotation")), 0};
+    xa = {cc::base::js_cos(numk(r, "rotation")), cc::base::js_sin(numk(r, "rotation")), 0};
   }
   w.BD3(ins.x, ins.y, ins.z);
   ext3(w, ref(r, "extrusion"));
@@ -1895,7 +1896,7 @@ ByteBuf eed_bytes(const Value& items, const BitWriter& w) {
     } else if (code >= 1040 && code <= 1042) {
       o.RC(code - 1000);
       const double d = base::js_to_number(v);
-      o.RD(d == d ? d : 0);
+      o.RD(d == d && d != 0 ? d : 0);  // +v || 0: NaN and -0 → 0
     } else if (code == 1070) {
       o.RC(70);
       o.RS(iv(v));
@@ -2054,7 +2055,7 @@ ByteBuf xrecord_bytes(const Value& items, bool r2007) {
     o.RS(code);
     const auto plus_or0 = [](const Value& x) {
       const double d = base::js_to_number(x);
-      return d == d ? d : 0.0;
+      return d == d && d != 0 ? d : 0.0;  // +x || 0: NaN and -0 → 0
     };
     if (t == "str") {
       if (r2007) {

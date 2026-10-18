@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-17 · Change: M3.5b–d.
+Last updated 2026-10-18 · Change: M4.3a, M4.4 (DWG save at parity).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -154,3 +154,27 @@ Last updated 2026-10-17 · Change: M3.5b–d.
   19.7, R2007 15.3 vs 43.7, R2018 16.1 vs 30.0; civil-example 9.5–16.4 vs 14.6–28.9; blocks-and-tables (thousands of
   blocks) R2000 76 → 63.5 vs 71 after the per-record std::regex tests became plain string tests (regex was 12 % of the
   profile). 1.1–2.9× the JS; no other change made (the gains left are Value copies in the records, as in the reader).
+- M4.3a: the writer on MSVC (a one-element `Array{Array{…}}` flattens there and nests on clang/GCC: `base::array_of`)
+  and GCC 11's -Wshadow; CI green on every job.
+
+## 2026-10-18 (session fork-cpp)
+
+- M4.4: saving a drawing as DWG — `libs/save` (L4) `cc::save::save_dwg`, CadCraft 0.5's dwg-save.js and what it calls:
+  libs/cad gained geom.hpp (font.js widths, textLayout, bounds, attribute texts, leaders), dims.hpp (dims.js +
+  dimstyle.js + units.js formatLength) and save_parts.hpp (the dwg-props.js write side, colours, hatch patterns,
+  dwg-vports.js, pictures.js, xclip.js); the dynamic-block save (dyn-blocks.js dynSave) is in libs/save; `libs/m3d`
+  (L2) is the first slice of the ModelCraft kernel (definitions, faces, toJSON, earcut faceTris, meshDef) and
+  model3d.js's fromFile / forFile3d — the Doc now builds its 3D model at load as the JS does. `cadcraft-cli dwg-save`.
+  **Parity: 648 / 648 saves byte-identical to the JS** (the 108 readable corpus DWGs opened as the app opens them,
+  saved in all six versions; tools/parity/dwg-save.mjs, which also compares the writer models with `--model`), the
+  reports equal too; golden test on the public fixtures (24 saves, read back); fuzz target `dwg_save` (1.75 M runs
+  clean). What byte parity took: (1) Node's Math.sin / Math.cos are fdlibm's, not the C library's (a dimension's
+  measurement differed in the last bit) — `base::js_sin` / `js_cos` are V8's, argument reduction included, bit for bit
+  against Node on 3,000,000 inputs; (2) Math.hypot is V8's own Kahan sum — `base::js_hypot`; (3) toFixed rounds an
+  exact half away from zero (printf rounds to even) — `base::js_to_fixed`; (4) the writer's `+v || 0` turns -0 into 0
+  (a sheet's corner at -0 was written as -0); (5) `-ffp-contract=off` everywhere (GCC fuses a*b+c by default where
+  FMA exists). All earlier parities re-checked after the trig change: import 110/110, doc 110/110, writer 648/648,
+  DXF 104/104, draw lists 214/214. Speed 0.84–1.61× the JS after removing a quadratic copy in the writer's attributes
+  and a block copy per reference (docs/perf-postmortem.md). Not ported (docs/gaps.md): the constraints payload, reading
+  CadCraft's own 3D model back, re-writing edited visibility states.
+

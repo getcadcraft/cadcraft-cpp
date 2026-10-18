@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "cc/base/checked.hpp"
+#include "cc/base/js_math.hpp"
 #include "container.hpp"
 #include "messages.hpp"
 #include "parts.hpp"
@@ -384,7 +385,7 @@ std::optional<std::pair<Array, Array>> fit_spline_control(const Array& fit, doub
   auto Z = [&](std::size_t i) { return fit[i].get("z").truthy() ? fit[i].get("z").num_or(0) : 0.0; };
   std::vector<double> u{0};
   for (std::size_t i = 1; i < n; ++i) {
-    double d = std::hypot(X(i) - X(i - 1), Y(i) - Y(i - 1), Z(i) - Z(i - 1));
+    double d = base::js_hypot(X(i) - X(i - 1), Y(i) - Y(i - 1), Z(i) - Z(i - 1));
     if (knot_param == 1) {
       d = std::sqrt(d);
     } else if (knot_param == 2) {

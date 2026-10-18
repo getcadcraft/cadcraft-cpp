@@ -13,9 +13,10 @@
 
 namespace cc::base {
 
-/// String#trimStart / String#trim (Unicode white space and line terminators).
+/// String#trimStart / String#trim / String#trimEnd (Unicode white space and line terminators).
 [[nodiscard]] std::string_view js_trim_start(std::string_view s) noexcept;
 [[nodiscard]] std::string_view js_trim(std::string_view s) noexcept;
+[[nodiscard]] std::string_view js_trim_end(std::string_view s) noexcept;
 /// `s.trim() === ''`
 [[nodiscard]] bool js_blank(std::string_view s) noexcept;
 
@@ -26,6 +27,13 @@ namespace cc::base {
 /// Number(s) (StringToNumber): the whole string, trimmed, must be a number — decimal, Infinity, or 0x / 0o / 0b
 /// digits; "" → 0; anything else → NaN.
 [[nodiscard]] double js_number(std::string_view s);
+
+/// Number#toFixed(digits) (0–100): the exact value rounded to `digits` decimals, an exact half away from zero (the C
+/// library rounds it to even); |x| ≥ 1e21 and non-finite x as String(x); -0 → "0", a negative that rounds to zero
+/// keeps its sign ("-0.00").
+[[nodiscard]] std::string js_to_fixed(double x, int digits);
+/// Number#toExponential(digits) (0–100): "d.ddde+x" with an exact half rounded away from zero.
+[[nodiscard]] std::string js_to_exponential(double x, int digits);
 
 /// UTF-8 → UTF-16 code units (what JS indexes), and the count of them (`s.length`).
 [[nodiscard]] std::vector<std::uint16_t> to_utf16(std::string_view s);

@@ -23,6 +23,7 @@
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
+#include "cc/base/js_math.hpp"
 #include "cc/base/value.hpp"
 
 namespace cc::drawing {
@@ -140,8 +141,8 @@ Affine scale(double sx, double sy) {
   return {sx, 0, 0, sy, 0, 0};
 }
 Affine rotate(double r) {
-  const double c = std::cos(r);
-  const double s = std::sin(r);
+  const double c = cc::base::js_cos(r);
+  const double s = cc::base::js_sin(r);
   return {c, s, -s, c, 0, 0};
 }
 Affine mul(const Affine& p, const Affine& q) {
@@ -206,8 +207,8 @@ std::vector<double> arc_points(double cx, double cy, double r, double a0, double
   for (std::size_t k = 0, count = loops_upto(n); k < count; ++k) {
     const auto i = static_cast<double>(k);
     const double a = a0 + dir * sweep * (i / n);
-    pts.push_back(cx + r * std::cos(a));
-    pts.push_back(cy + r * std::sin(a));
+    pts.push_back(cx + r * cc::base::js_cos(a));
+    pts.push_back(cy + r * cc::base::js_sin(a));
   }
   return pts;
 }
@@ -219,16 +220,16 @@ std::vector<double> ellipse_points(const Value& c, const Value& maj, double rati
   const double rot = std::atan2(my, mx);
   const double sweep = wrap_positive(p1 - p0);
   const double n = seg_count(sweep);
-  const double cr = std::cos(rot);
-  const double sr = std::sin(rot);
+  const double cr = cc::base::js_cos(rot);
+  const double sr = cc::base::js_sin(rot);
   const double cx = num(c.get("x"));
   const double cy = num(c.get("y"));
   std::vector<double> pts;
   for (std::size_t k = 0, count = loops_upto(n); k < count; ++k) {
     const auto i = static_cast<double>(k);
     const double t = p0 + sweep * (i / n);
-    const double x = len * std::cos(t);
-    const double y = len * ratio * std::sin(t);
+    const double x = len * cc::base::js_cos(t);
+    const double y = len * ratio * cc::base::js_sin(t);
     pts.push_back(cx + x * cr - y * sr);
     pts.push_back(cy + x * sr + y * cr);
   }
@@ -256,10 +257,10 @@ std::vector<double> bulge_polyline(std::span<const Value* const> vs, bool closed
       const double theta = 4 * std::atan(bulge);
       const double chord = std::hypot(bx - ax, by - ay);
       if (chord > 0) {
-        const double r = chord / (2 * std::sin(theta / 2));
+        const double r = chord / (2 * cc::base::js_sin(theta / 2));
         const double mx = (ax + bx) / 2;
         const double my = (ay + by) / 2;
-        const double h = r * std::cos(theta / 2);
+        const double h = r * cc::base::js_cos(theta / 2);
         const double ux = -(by - ay) / chord;
         const double uy = (bx - ax) / chord;
         const double cx = mx + ux * h;
@@ -269,8 +270,8 @@ std::vector<double> bulge_polyline(std::span<const Value* const> vs, bool closed
         for (std::size_t q = 1, count = loops_below(steps); q < count; ++q) {  // k = 1 … while k < steps
           const auto k = static_cast<double>(q);
           const double t = a0 + theta * (k / steps);
-          pts.push_back(cx + std::abs(r) * std::cos(t));
-          pts.push_back(cy + std::abs(r) * std::sin(t));
+          pts.push_back(cx + std::abs(r) * cc::base::js_cos(t));
+          pts.push_back(cy + std::abs(r) * cc::base::js_sin(t));
         }
       }
     }
@@ -1458,8 +1459,8 @@ class Compiler {
     } else if (row == 1) {
       top = total / 2 - h / 2;
     }
-    const double cr = std::cos(rot);
-    const double sr = std::sin(rot);
+    const double cr = cc::base::js_cos(rot);
+    const double sr = cc::base::js_sin(rot);
     const double ix = num(e["insert"].get("x"));
     const double iy = num(e["insert"].get("y"));
     for (std::size_t i = 0; i < lines.size(); ++i) {
@@ -1487,7 +1488,7 @@ class Compiler {
     // Rough extent so fit-to-drawing includes text: assume 0.6 h per character.
     const double w =
         static_cast<double>(base::utf16_length(s)) * H * 0.6 * (sx / (sy != 0 && !std::isnan(sy) ? sy : 1));
-    const std::array<double, 4> ext = {X, Y, X + w * std::cos(angle), Y + w * std::sin(angle)};
+    const std::array<double, 4> ext = {X, Y, X + w * cc::base::js_cos(angle), Y + w * cc::base::js_sin(angle)};
     grow(*sp.bounds, ext);
   }
 

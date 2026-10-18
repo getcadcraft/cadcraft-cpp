@@ -60,7 +60,7 @@ double js_mod(double a, double b) {
 }
 
 double dist(const Value& a, const Value& b) {
-  return std::hypot(num(g(b, "x")) - num(g(a, "x")), num(g(b, "y")) - num(g(a, "y")));
+  return base::js_hypot(num(g(b, "x")) - num(g(a, "x")), num(g(b, "y")) - num(g(a, "y")));
 }
 
 /// P(p): a finite 2D point {x, y}, or null
@@ -399,7 +399,7 @@ Value Importer::dimension(const Value& e) const {
       const double dx = num(g(p2, "x")) - num(g(p1, "x"));
       const double dy = num(g(p2, "y")) - num(g(p1, "y"));
       for (const double r : cands) {
-        if (close(std::abs(dx * std::cos(r) + dy * std::sin(r)))) {
+        if (close(std::abs(dx * cc::base::js_cos(r) + dy * cc::base::js_sin(r)))) {
           d = base::make_object({{"kind", "linear"}, {"p1", p1}, {"p2", p2}, {"loc", q2}, {"rot", r}});
           break;
         }
@@ -814,14 +814,14 @@ void arc_between(Array& pts, const Value& p, const Value& q, double b) {
   const double py = num(g(p, "y"));
   const double qx = num(g(q, "x"));
   const double qy = num(g(q, "y"));
-  const double c = std::hypot(qx - px, qy - py);
+  const double c = base::js_hypot(qx - px, qy - py);
   if (c == 0 || std::isnan(c)) {
     return;
   }
-  const double r = c / (2 * std::sin(theta / 2));
+  const double r = c / (2 * cc::base::js_sin(theta / 2));
   const double mx = (px + qx) / 2;
   const double my = (py + qy) / 2;
-  const double h = r * std::cos(theta / 2);
+  const double h = r * cc::base::js_cos(theta / 2);
   const double ux = -(qy - py) / c;
   const double uy = (qx - px) / c;
   const double cx = mx + ux * h;
@@ -832,8 +832,8 @@ void arc_between(Array& pts, const Value& p, const Value& q, double b) {
   for (std::size_t ki = 1; ki < segs; ++ki) {
     const auto k = static_cast<double>(ki);
     const double t = a0 + theta * k / n;
-    pts.emplace_back(cx + std::abs(r) * std::cos(t));
-    pts.emplace_back(cy + std::abs(r) * std::sin(t));
+    pts.emplace_back(cx + std::abs(r) * cc::base::js_cos(t));
+    pts.emplace_back(cy + std::abs(r) * cc::base::js_sin(t));
   }
 }
 
@@ -893,14 +893,14 @@ Array hatch_loops(const Value& e) {
           for (std::size_t qi = 0; static_cast<double>(qi) <= n; ++qi) {  // n = max(4, ceil(…))
             const auto q = static_cast<double>(qi);
             const double a = s + dir * sweep * q / n;
-            pts.emplace_back(cxn + r * std::cos(a));
-            pts.emplace_back(cyn + r * std::sin(a));
+            pts.emplace_back(cxn + r * cc::base::js_cos(a));
+            pts.emplace_back(cyn + r * cc::base::js_sin(a));
           }
         } else if (type == Value("ellipse")) {
           const Value ma = g(ed, "majorAxis");
           const double mx = num(g(ma, "x"));
           const double my = num(g(ma, "y"));
-          const double h = std::hypot(mx, my);
+          const double h = base::js_hypot(mx, my);
           const double lenv = h != 0 && !std::isnan(h) ? h : 1;
           const double ratio = num(or_(g(ed, "ratio"), 1));
           const double rot = base::js_atan2(my, mx);
@@ -916,10 +916,10 @@ Array hatch_loops(const Value& e) {
           for (std::size_t qi = 0; static_cast<double>(qi) <= n; ++qi) {  // n = max(8, ceil(…))
             const auto q = static_cast<double>(qi);
             const double t = sa + sweep * q / n;
-            const double x = lenv * std::cos(t);
-            const double y = lenv * ratio * std::sin(t);
-            pts.emplace_back(cxn + x * std::cos(rot) - y * std::sin(rot));
-            pts.emplace_back(cyn + x * std::sin(rot) + y * std::cos(rot));
+            const double x = lenv * cc::base::js_cos(t);
+            const double y = lenv * ratio * cc::base::js_sin(t);
+            pts.emplace_back(cxn + x * cc::base::js_cos(rot) - y * cc::base::js_sin(rot));
+            pts.emplace_back(cyn + x * cc::base::js_sin(rot) + y * cc::base::js_cos(rot));
           }
         } else if (type == Value("spline")) {
           Value sp = base::make_object({{"fit", g(ed, "fit")},
@@ -1223,8 +1223,8 @@ Value Importer::convert_base(const Value& e) {
         Array out;
         for (const Value& l : pl) {
           const double ang = num(g(l, "angle"));
-          const double ca = std::cos(ang);
-          const double sa = std::sin(ang);
+          const double ca = cc::base::js_cos(ang);
+          const double sa = cc::base::js_sin(ang);
           const Value b = g(l, "base");
           const Value o = g(l, "offset");
           const double ox = num(g(o, "x"));
@@ -1278,8 +1278,8 @@ Value Importer::convert_base(const Value& e) {
     Array out;
     const double cols = js_max(1, num(or_(g(e, "cols"), 1)));
     const double rows = js_max(1, num(or_(g(e, "rows"), 1)));
-    const double c = std::cos(num(ins.get("rot")));
-    const double s = std::sin(num(ins.get("rot")));
+    const double c = cc::base::js_cos(num(ins.get("rot")));
+    const double s = cc::base::js_sin(num(ins.get("rot")));
     const double ix = num(ins.get("x"));
     const double iy = num(ins.get("y"));
     const double cs = num(or_(g(e, "colSpacing"), 0));
@@ -1470,7 +1470,7 @@ Value Importer::convert_base(const Value& e) {
   }
   if (type == "XLINE" || type == "RAY") {
     const Value d = g(e, "direction");
-    const double n = d.truthy() ? std::hypot(num(g(d, "x")), num(g(d, "y"))) : 0;
+    const double n = d.truthy() ? base::js_hypot(num(g(d, "x")), num(g(d, "y"))) : 0;
     const Value s = g(e, "start");
     if (!s.truthy() || !finite(g(s, "x")) || !(n > 1e-12)) {
       skip(et);

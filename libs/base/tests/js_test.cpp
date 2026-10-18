@@ -105,3 +105,59 @@ TEST_CASE("Number(), Math.round, toString(16) and JS property order") {
   }
   CHECK(order == "2 10 b a 01 4294967295 ");  // array indices first, ascending; the rest as inserted
 }
+
+TEST_CASE("toFixed and toExponential round an exact half away from zero, as JS does (values from Node)") {
+  using cc::base::js_to_exponential;
+  using cc::base::js_to_fixed;
+  CHECK(js_to_fixed(0.5, 0) == "1");
+  CHECK(js_to_fixed(2.5, 0) == "3");
+  CHECK(js_to_fixed(1.005, 2) == "1.00");
+  CHECK(js_to_fixed(1.25, 1) == "1.3");
+  CHECK(js_to_fixed(-1.25, 1) == "-1.3");
+  CHECK(js_to_fixed(-0.001, 2) == "-0.00");
+  CHECK(js_to_fixed(-0.0, 2) == "0.00");
+  CHECK(js_to_fixed(1e21, 2) == "1e+21");
+  CHECK(js_to_fixed(123.456, 8) == "123.45600000");
+  CHECK(js_to_fixed(0.125, 2) == "0.13");
+  CHECK(js_to_fixed(9.995, 2) == "9.99");
+  CHECK(js_to_fixed(1.45, 1) == "1.4");
+  CHECK(js_to_fixed(2.675, 2) == "2.67");
+  CHECK(js_to_fixed(1e-7, 3) == "0.000");
+  CHECK(js_to_fixed(999.5, 0) == "1000");
+  CHECK(js_to_exponential(1.25, 1) == "1.3e+0");
+  CHECK(js_to_exponential(12345, 2) == "1.23e+4");
+  CHECK(js_to_exponential(0, 3) == "0.000e+0");
+  CHECK(js_to_exponential(9.995, 2) == "9.99e+0");
+  CHECK(js_to_exponential(1.5, 0) == "2e+0");
+  CHECK(js_to_exponential(9.5, 0) == "1e+1");
+  CHECK(js_to_exponential(0.000125, 1) == "1.3e-4");
+  CHECK(js_to_exponential(-2.5e-10, 0) == "-3e-10");
+  CHECK(js_to_exponential(123456789, 4) == "1.2346e+8");
+}
+
+TEST_CASE("Math.hypot gives V8's last bit (values from Node)") {
+  using cc::base::js_hypot;
+  CHECK(js_hypot(3, 4) == 5);
+  CHECK(js_hypot(1e-200, 1e-200) == 1.414213562373095e-200);
+  CHECK(js_hypot(0.1, 0.2) == 0.223606797749979);
+  CHECK(js_hypot(1.1, 2.2, 3.3) == 4.115823125451335);
+  CHECK(js_hypot(123.456, 789.012) == 798.612121170221);
+  CHECK(js_hypot(1e308, 1e308) == 1.4142135623730951e+308);
+  CHECK(js_hypot(0.7, 0.9) == 1.140175425099138);
+  CHECK(std::isnan(js_hypot(std::numeric_limits<double>::quiet_NaN(), 1)));
+  CHECK(js_hypot(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity()) ==
+        std::numeric_limits<double>::infinity());
+}
+
+TEST_CASE("JSON.stringify: NaN and Infinity as null, keys in property order") {
+  cc::base::Value o = cc::base::Value::object();
+  o.set("b", 1);
+  o.set("2", std::numeric_limits<double>::quiet_NaN());
+  cc::base::Array a;
+  a.emplace_back();
+  a.emplace_back(std::numeric_limits<double>::infinity());
+  a.emplace_back(-0.0);
+  o.set("a", std::move(a));
+  o.set("c", cc::base::Value());
+  CHECK(cc::base::js_stringify(o) == R"({"2":null,"b":1,"a":[null,null,0]})");
+}

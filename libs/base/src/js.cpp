@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <limits>
 #include <span>
 #include <string>
@@ -75,7 +77,10 @@ std::string_view js_trim_start(std::string_view s) noexcept {
 }
 
 std::string_view js_trim(std::string_view s) noexcept {
-  s = js_trim_start(s);
+  return js_trim_end(js_trim_start(s));
+}
+
+std::string_view js_trim_end(std::string_view s) noexcept {
   for (bool cut = true; cut;) {
     cut = false;
     for (std::size_t back = 1; back <= 3 && back <= s.size(); ++back) {
@@ -436,6 +441,124 @@ int js_locale_compare_numeric(std::string_view a, std::string_view b) {
     }
   }
   return 0;
+}
+
+// ---------------------------------------------------------------- toFixed / toExponential
+
+namespace {
+
+/// printf of one double: "%.*f" or "%.*e".
+std::string print_double(double x, int digits, bool exponential) {
+  std::array<char, 512> buf{};
+  // NOLINTBEGIN(cppcoreguidelines-pro-type-vararg) — the one formatted print; the format is a literal
+  const int n = exponential ? std::snprintf(buf.data(), buf.size(), "%.*e", digits, x)
+                            : std::snprintf(buf.data(), buf.size(), "%.*f", digits, x);
+  // NOLINTEND(cppcoreguidelines-pro-type-vararg)
+  return n > 0 ? std::string(buf.data(), std::min(static_cast<std::size_t>(n), buf.size() - 1)) : std::string();
+}
+
+/// One unit added to the last digit of a decimal string of digits and an optional '.' ("9.99" → "10.00").
+std::string bump(std::string s) {
+  std::size_t i = s.size();
+  while (i > 0) {
+    --i;
+    if (s[i] == '.') {
+      continue;
+    }
+    if (s[i] != '9') {
+      ++s[i];
+      return s;
+    }
+    s[i] = '0';
+  }
+  s.insert(s.begin(), '1');
+  return s;
+}
+
+}  // namespace
+
+std::string js_to_fixed(double x, int digits) {
+  digits = std::clamp(digits, 0, 100);
+  if (!std::isfinite(x) || std::abs(x) >= 1e21) {
+    return js_string(Value(x));
+  }
+  const bool neg = x < 0;
+  double a = neg ? -x : x;
+  if (a == 0) {
+    a = 0;  // -0 prints as 0
+  }
+  std::string s = print_double(a, digits, false);
+  // An exact half at the last place: the C library rounds it to even, JS away from zero. A half needs a value with
+  // exactly digits + 1 binary-exact decimals, i.e. a · 2^(digits+1) an integer; printed with one more digit it is
+  // then exact, and ends in 5.
+  const double scaled = std::ldexp(a, digits + 1);
+  if (scaled == std::floor(scaled)) {
+    const std::string longer = print_double(a, digits + 1, false);
+    if (!longer.empty() && longer.back() == '5') {
+      std::string cut = longer.substr(0, longer.size() - 1);
+      if (!cut.empty() && cut.back() == '.') {
+        cut.pop_back();
+      }
+      s = bump(cut);
+    }
+  }
+  return neg ? "-" + s : s;
+}
+
+std::string js_to_exponential(double x, int digits) {
+  digits = std::clamp(digits, 0, 100);
+  if (!std::isfinite(x)) {
+    return js_string(Value(x));
+  }
+  const bool neg = x < 0;
+  double a = neg ? -x : x;
+  if (a == 0) {
+    a = 0;  // -0 prints as 0
+  }
+  std::string s = print_double(a, digits, true);
+  // an exact half: 40 more digits that read 5 then zeros (a double's exact expansion ends there or much further)
+  const std::string longer = print_double(a, digits + 41, true);
+  const std::size_t le = longer.find('e');
+  if (le != std::string::npos && le > static_cast<std::size_t>(digits) + 41) {
+    const std::size_t tail = le - 41;  // the first digit past the kept ones
+    bool half = longer[tail] == '5';
+    for (std::size_t k = tail + 1; half && k < le; ++k) {
+      half = longer[k] == '0';
+    }
+    if (half) {
+      std::string mant = longer.substr(0, tail);
+      int ex = 0;
+      const std::string_view exp_digits = std::string_view(longer).substr(le + 1);
+      std::from_chars(std::to_address(exp_digits.begin()), std::to_address(exp_digits.end()), ex);
+      if (!mant.empty() && mant.back() == '.') {
+        mant.pop_back();
+      }
+      mant = bump(mant);
+      std::string ds;  // the digits without the point
+      for (const char c : mant) {
+        if (c != '.') {
+          ds += c;
+        }
+      }
+      if (ds.size() > static_cast<std::size_t>(digits) + 1) {  // 9.99 → 10.00: one more power of ten
+        ds.pop_back();
+        ++ex;
+      }
+      mant = digits > 0 ? ds.substr(0, 1) + "." + ds.substr(1) : ds;
+      s = mant + (ex < 0 ? "e-" : "e+") + std::to_string(std::abs(ex));
+      return neg ? "-" + s : s;
+    }
+  }
+  // "d.ddde+XX" → "d.ddde+X"
+  const std::size_t e = s.find('e');
+  if (e != std::string::npos && e + 2 < s.size()) {
+    std::size_t k = e + 2;
+    while (k + 1 < s.size() && s[k] == '0') {
+      ++k;
+    }
+    s = s.substr(0, e + 2) + s.substr(k);
+  }
+  return neg ? "-" + s : s;
 }
 
 }  // namespace cc::base

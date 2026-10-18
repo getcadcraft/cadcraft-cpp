@@ -18,6 +18,7 @@
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
+#include "cc/base/js_math.hpp"
 #include "cc/base/reader.hpp"
 
 namespace cc::dxf {
@@ -853,7 +854,7 @@ class Reader {
         x_axis = point(g, 11);
       } else {
         const double a = num(50, 0) * kD2R;
-        x_axis = base::pt3(std::cos(a), std::sin(a), 0);
+        x_axis = base::pt3(cc::base::js_cos(a), cc::base::js_sin(a), 0);
       }
       std::string value;
       for (const Group& x : g) {

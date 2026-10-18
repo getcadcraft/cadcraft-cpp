@@ -3,11 +3,15 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
+#include <optional>
+#include <span>
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
 #include "cc/base/json.hpp"
+#include "cc/cad/save_parts.hpp"
 
 namespace cc::cad::detail {
 
@@ -664,3 +668,312 @@ std::vector<std::string> cadcraft_strings(const Value& xdata) {
 }
 
 }  // namespace cc::cad::detail
+
+// ---------------------------------------------------------------- the write side (dwg-save.js, dxf.js)
+
+namespace cc::cad {
+
+using detail::g;
+using detail::num;
+using detail::str;
+using detail::Value;
+
+namespace {
+
+/// String#slice(i, j) in UTF-16 units
+std::string utf16_slice(std::string_view s, std::size_t i, std::size_t j) {
+  const auto u = base::to_utf16(s);
+  i = std::min(i, u.size());
+  j = std::min(std::max(j, i), u.size());
+  std::string out;
+  base::append_utf16(out, std::span<const std::uint16_t>(u).subspan(i, j - i));
+  return out;
+}
+
+/// chunks(prefix, s): prefix + pieces of s, each piece 250 − prefix.length UTF-16 units (at least one piece).
+std::vector<std::string> chunks(std::string_view prefix, std::string_view s) {
+  constexpr std::size_t kStr = 250;
+  const std::size_t step = kStr - prefix.size();
+  const std::size_t n = base::utf16_length(s);
+  std::vector<std::string> out;
+  for (std::size_t i = 0; i < n || out.empty(); i += step) {
+    out.push_back(std::string(prefix) + utf16_slice(s, i, i + step));
+  }
+  return out;
+}
+
+Value pair(double code, Value v) {
+  return Value(base::Array{Value(code), std::move(v)});
+}
+
+/// colorWord: '#rrggbb' → 0xC2rrggbb, ACI 1–255 → 0xC3 + index, else undefined
+std::optional<std::uint32_t> color_word(const Value& c) {
+  if (c.is_string() && c.as_string().size() == 7 && c.as_string()[0] == '#') {
+    bool hex = true;
+    for (std::size_t i = 1; i < 7; ++i) {
+      const char ch = c.as_string()[i];
+      hex = hex && ((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F'));
+    }
+    if (hex) {
+      return 0xC2000000U | static_cast<std::uint32_t>(std::stoul(c.as_string().substr(1), nullptr, 16));
+    }
+  }
+  if (c.is_number() && c.as_number() == std::floor(c.as_number()) && c.as_number() >= 1 && c.as_number() <= 255) {
+    return 0xC3000000U | static_cast<std::uint32_t>(c.as_number());
+  }
+  return std::nullopt;
+}
+
+double aci_of(const Value& c) {  // aci(c) of dwg-props.js
+  if (c.is_undefined() || c.is_null()) {
+    return 256;
+  }
+  if (c.is_number() && c.as_number() == 0) {
+    return 0;
+  }
+  if (c.is_number() && std::isfinite(c.as_number()) && c.as_number() == std::floor(c.as_number())) {
+    return c.as_number();
+  }
+  return 256;
+}
+
+Value out1(std::string_view kind, const Value& v) {
+  if (kind == "real") {
+    const double x = num(v);
+    return std::isfinite(x) ? x : 0;
+  }
+  if (kind == "int") {
+    const double x = num(v);
+    return base::js_round(std::isnan(x) || x == 0 ? 0 : x);
+  }
+  if (kind == "bool") {
+    return v.truthy() ? 1 : 0;
+  }
+  if (kind == "color") {
+    return v.is_string() ? Value(nearest_aci(v.as_string())) : Value(aci_of(v));
+  }
+  if (kind == "lw") {
+    if (v.is_number() && (v.as_number() == -1 || v.as_number() == -2 || v.as_number() == -3)) {
+      return v;
+    }
+    return detail::finite(v) && v.as_number() >= 0 ? base::js_round(v.as_number() * 100) : -2;
+  }
+  if (kind == "sep") {
+    return str(v) == "," ? 44 : 46;
+  }
+  return v;
+}
+
+std::string post_of(const Value& pre, const Value& suf) {
+  if (!pre.truthy() && !suf.truthy()) {
+    return {};
+  }
+  return (pre.truthy() ? str(pre) : std::string()) + "<>" + (suf.truthy() ? str(suf) : std::string());
+}
+
+/// { ...DIM_DEFAULTS, ...DIM_EXTRA }
+const Value& dim_def() {
+  static const Value kV = [] {
+    Value v = detail::dim_defaults();
+    for (const base::Member& m : detail::dim_extra().as_object()) {
+      v.set(m.key, m.value);
+    }
+    return v;
+  }();
+  return kV;
+}
+
+/// JS === of two st values (numbers, strings, booleans, null)
+bool strict_eq(const Value& a, const Value& b) {
+  if (a.kind() != b.kind()) {
+    return false;
+  }
+  return a == b;
+}
+
+}  // namespace
+
+std::optional<double> tr_word(const Value& tr) {
+  if (tr == Value("ByBlock")) {
+    return 0x01000000;
+  }
+  if (!detail::finite(tr)) {
+    return std::nullopt;
+  }
+  const double alpha = base::js_round(255 * (1 - std::max(0.0, std::min(90.0, tr.as_number())) / 100));
+  return static_cast<double>(0x02000000U | static_cast<std::uint32_t>(base::js_to_int32(alpha)));
+}
+
+Value props_xdata(const Value& e, bool r12) {
+  Value x = Value::object();
+  std::vector<std::string> cc;
+  const Value tr = g(e, "tr");
+  if (r12 && (detail::finite(tr) || tr == Value("ByBlock"))) {
+    cc.push_back("CCTR:" + str(tr));
+  }
+  const Value mat = g(e, "mat");
+  if (mat.is_string() && !mat.as_string().empty()) {
+    for (auto& c : chunks("CCMAT:", detail::js_slice(mat.as_string(), 255))) {
+      cc.push_back(std::move(c));
+    }
+  }
+  const bool hatch = g(e, "type") == Value("hatch");
+  const Value ox = g(e, "ox");
+  const Value oy = g(e, "oy");
+  if (hatch && !g(e, "solid").truthy() && (detail::finite(ox) || detail::finite(oy)) && (ox.truthy() || oy.truthy())) {
+    const auto plus0 = [](const Value& v) {
+      const double d = num(v);
+      return std::isnan(d) || d == 0 ? 0.0 : d;
+    };
+    cc.push_back("CCHORG:" + str(Value(plus0(ox))) + "," + str(Value(plus0(oy))));
+  }
+  if (hatch && g(e, "assoc").truthy()) {
+    cc.emplace_back("CCHASSOC");
+  }
+  if (!cc.empty()) {
+    base::Array items;
+    for (auto& s : cc) {
+      items.push_back(pair(1000, std::move(s)));
+    }
+    x.set("CADCRAFT", std::move(items));
+  }
+  const Value url = g(e, "url");
+  if (url.is_string() && !url.as_string().empty()) {
+    x.set("PE_URL", base::array_of(pair(1000, detail::js_slice(url.as_string(), 255))));
+  }
+  if (g(e, "ann").truthy()) {
+    x.set("AcadAnnotative",
+          base::Array{pair(1000, "AnnotativeData"), pair(1002, "{"), pair(1070, 1), pair(1070, 1), pair(1002, "}")});
+  }
+  const Value bg = g(e, "bg");
+  if (hatch && !bg.is_undefined() && !bg.is_null()) {
+    if (const auto w = color_word(bg)) {
+      x.set("HATCHBACKGROUNDCOLOR", base::array_of(pair(1071, base::js_to_int32(static_cast<double>(*w)))));
+    }
+  }
+  const Value xd = g(e, "xd");
+  if (xd.is_object() && !xd.is_point()) {
+    for (const base::Member* m : base::js_members(xd.as_object())) {
+      if (x.find(m->key) == nullptr && m->value.is_array() && !m->value.as_array().empty()) {
+        x.set(m->key, m->value);
+      }
+    }
+  }
+  return x;
+}
+
+Value vars_of(const Value& st) {
+  Value s = dim_def();
+  if (st.is_object() && !st.is_point()) {
+    for (const base::Member* m : base::js_members(st.as_object())) {
+      s.set(m->key, m->value);
+    }
+  }
+  Value v = Value::object();
+  detail::each_dimvar([&](const detail::DimVar& d) { v.set(d.name, out1(d.kind, s[d.key])); });
+  v.set("DIMTIH", s["tih"].truthy() ? 1 : 0);
+  v.set("DIMTOH", s["tih"].truthy() ? 1 : 0);
+  v.set("DIMPOST", post_of(s["pre"], s["suf"]));
+  v.set("DIMAPOST", post_of(s["apre"], s["asuf"]));
+  const Value tol = s["tol"];
+  v.set("DIMTOL", tol == Value("sym") || tol == Value("dev") ? 1 : 0);
+  v.set("DIMLIM", tol == Value("lim") ? 1 : 0);
+  if (tol == Value("basic")) {
+    const Value gap = v["DIMGAP"];
+    v.set("DIMGAP", -std::abs(gap.truthy() ? num(gap) : 0.625));
+  }
+  const auto or_empty = [](const Value& x) { return x.truthy() ? str(x) : std::string(); };
+  v.set("DIMSAH", or_empty(s["blk1"]) != or_empty(s["blk2"]) ? 1 : 0);
+  if (!(st.truthy() && g(st, "lunit").truthy())) {
+    v.erase("DIMLUNIT");
+  }
+  return v;
+}
+
+base::Array dstyle_items(const Value& st, bool r12) {
+  const Value v = vars_of(st);
+  base::Array items = {pair(1000, "DSTYLE"), pair(1002, "{")};
+  const auto put = [&](double code, std::string_view kind, const Value& value) {
+    items.push_back(pair(1070, code));
+    if (kind == "str") {
+      items.push_back(pair(1000, str(value)));
+    } else if (kind == "real") {
+      items.push_back(pair(1040, value));
+    } else {
+      items.push_back(pair(1070, base::js_to_int32(num(value))));
+    }
+  };
+  detail::each_dimvar([&](const detail::DimVar& d) {
+    if (r12 && !d.r12) {
+      return;
+    }
+    const Value* x = v.find(d.name);
+    if (x == nullptr || x->is_undefined()) {
+      return;
+    }
+    put(d.code, d.kind == "real" ? "real" : "int", *x);
+  });
+  put(73, "int", v["DIMTIH"]);
+  put(74, "int", v["DIMTOH"]);
+  put(71, "int", v["DIMTOL"]);
+  put(72, "int", v["DIMLIM"]);
+  put(173, "int", v["DIMSAH"]);
+  if (v["DIMPOST"].truthy()) {
+    put(3, "str", v["DIMPOST"]);
+  }
+  if (v["DIMAPOST"].truthy()) {
+    put(4, "str", v["DIMAPOST"]);
+  }
+  const Value lunit = g(st, "lunit");
+  if (r12 && lunit.truthy() && !(lunit == Value(2))) {
+    double u = base::js_to_int32(num(lunit));
+    if (lunit == Value(4)) {
+      u = 6;
+    } else if (lunit == Value(5)) {
+      u = 7;
+    }
+    put(270, "int", u);
+  }
+  items.push_back(pair(1002, "}"));
+  return items;
+}
+
+base::Array cc_dim_items(const Value& st, bool r12) {
+  const Value s = st.truthy() ? st : Value::object();
+  Value keep = Value::object();
+  const auto in_r12 = [](std::string_view k) {
+    bool yes = k == "tih" || k == "pre" || k == "suf" || k == "apre" || k == "asuf" || k == "tol";
+    detail::each_dimvar([&](const detail::DimVar& d) { yes = yes || (d.r12 && d.key == k); });
+    return yes;
+  };
+  for (const base::Member& m : detail::dim_extra().as_object()) {
+    const std::string& k = m.key;
+    const Value v = g(s, k);
+    if (v.is_undefined() || strict_eq(v, m.value)) {
+      continue;
+    }
+    const bool never = k == "blk1" || k == "blk2" || k == "txsty" ||
+                       (v.is_string() && (k.starts_with("clr") || k.starts_with("tfillclr")));
+    if (never || (r12 && !in_r12(k))) {
+      keep.set(k, v);
+    }
+  }
+  if (r12) {
+    for (const char* k : {"dec", "adec", "lunit"}) {
+      const Value v = g(s, k);
+      if (!v.is_undefined() && !strict_eq(v, detail::dim_defaults()[k])) {
+        keep.set(k, v);
+      }
+    }
+  }
+  if (keep.as_object().empty()) {
+    return {};
+  }
+  base::Array out;
+  for (auto& c : chunks("CCDIMST:", base::js_stringify(keep))) {
+    out.push_back(pair(1000, std::move(c)));
+  }
+  return out;
+}
+
+}  // namespace cc::cad

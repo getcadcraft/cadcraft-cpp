@@ -12,8 +12,9 @@
 // insert, hatch, dim, viewport, mleader, xline, ray). Spaces: `model` holds the drawing, each layout its paper-space
 // entities; `entities()` is whichever is open.
 //
-// Not ported yet (docs/gaps.md): constraints and parameters (a file's CADCRAFT_PARAMETRIC payload is kept as text), the
-// 3D model (model3d.js; a file's 3D faces are kept for it), Studio Live's hook, add-on edit hooks.
+// Not ported yet (docs/gaps.md): constraints and parameters (a file's CADCRAFT_PARAMETRIC payload is kept as text),
+// reading CadCraft's own copy of the 3D model back (a file's 3D faces come in as loose faces), Studio Live's hook,
+// add-on edit hooks.
 #pragma once
 
 #include <cstdint>
@@ -28,6 +29,7 @@
 
 #include "cc/base/value.hpp"
 #include "cc/i18n/i18n.hpp"
+#include "cc/m3d/model.hpp"
 
 namespace cc::doc {
 
@@ -209,8 +211,8 @@ class Doc {
   Value constraints = base::Value::array();  // gcons.js (not ported: docs/gaps.md)
   Value params;                              // params.js { vars, links }
   std::string parametric_text;               // a file's CADCRAFT_PARAMETRIC payload, kept for saving
-  Value faces3d;                             // a file's 3D faces (model3d.js, not ported)
-  std::string model3d_text;                  // a file's CADCRAFT_3D JSON (model3d.js, not ported)
+  m3d::Model model3d;                        // the 3D model (model3d.js): the file's 3D faces as one group
+  std::string model3d_text;                  // a file's CADCRAFT_3D JSON (not read back yet: docs/gaps.md)
 
  private:
   MapPtr model_ = std::make_shared<EntityMap>();

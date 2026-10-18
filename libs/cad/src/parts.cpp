@@ -445,8 +445,8 @@ Value picture_block(const std::string& name, const Value& pic, const Value* clip
       pts.push_back(base::make_object({{"x", p[0]}, {"y", p[1]}, {"b", 0}}));
     }
   }
-  const double wlen = std::hypot(c[1][0] - c[0][0], c[1][1] - c[0][1]);
-  const double hlen = std::hypot(c[3][0] - c[0][0], c[3][1] - c[0][1]);
+  const double wlen = base::js_hypot(c[1][0] - c[0][0], c[1][1] - c[0][1]);
+  const double hlen = base::js_hypot(c[3][0] - c[0][0], c[3][1] - c[0][1]);
   const double rot = base::js_atan2(c[1][1] - c[0][1], c[1][0] - c[0][0]);
   // String(pic.file || '').split(/[\\/]/).pop() || 'image'
   std::string file = g(pic, "file").truthy() ? str(g(pic, "file")) : std::string();
@@ -473,8 +473,8 @@ Value picture_block(const std::string& name, const Value& pic, const Value* clip
   ents.push_back(base::make_object({{"type", "text"},
                                     {"layer", "0"},
                                     {"color", 0},
-                                    {"x", c[0][0] + (std::cos(rot) - std::sin(rot)) * k},
-                                    {"y", c[0][1] + (std::sin(rot) + std::cos(rot)) * k},
+                                    {"x", c[0][0] + (cc::base::js_cos(rot) - cc::base::js_sin(rot)) * k},
+                                    {"y", c[0][1] + (cc::base::js_sin(rot) + cc::base::js_cos(rot)) * k},
                                     {"h", th},
                                     {"rot", std::fmod(std::fmod(rot, tau) + tau, tau)},
                                     {"s", file},
@@ -663,8 +663,8 @@ Value clean_view(const Value& v) {
 Mat insert_matrix2(const Value& e, const Value& b) {
   const Value rot = g(e, "rot");
   const double r = rot.truthy() ? num(rot) : 0;
-  const double c = std::cos(r);
-  const double s = std::sin(r);
+  const double c = cc::base::js_cos(r);
+  const double s = cc::base::js_sin(r);
   const Value sxv = g(e, "sx");
   const Value syv = g(e, "sy");
   const double sx = nullish(sxv) ? 1 : num(sxv);
@@ -785,12 +785,12 @@ Value split3d(Value& input, const i18n::Catalog& words) {
       for (const Value& q : at(e, "pts").as_array()) {
         const double x = num(item(q, 0));
         const double y = num(item(q, 1));
-        if (pts.empty() || std::hypot(x - num(g(pts.back(), "x")), y - num(g(pts.back(), "y"))) > 1e-12) {
+        if (pts.empty() || base::js_hypot(x - num(g(pts.back(), "x")), y - num(g(pts.back(), "y"))) > 1e-12) {
           pts.push_back(base::make_object({{"x", x}, {"y", y}, {"b", 0}}));
         }
       }
-      if (pts.size() > 1 && std::hypot(num(g(pts.front(), "x")) - num(g(pts.back(), "x")),
-                                       num(g(pts.front(), "y")) - num(g(pts.back(), "y"))) <= 1e-12) {
+      if (pts.size() > 1 && base::js_hypot(num(g(pts.front(), "x")) - num(g(pts.back(), "x")),
+                                           num(g(pts.front(), "y")) - num(g(pts.back(), "y"))) <= 1e-12) {
         pts.pop_back();
       }
       ++flat;

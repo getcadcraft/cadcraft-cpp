@@ -57,6 +57,14 @@ function(cc_apply_policy target)
     endif()
   endif()
 
+  # ---- floating point as JavaScript does it: no fused multiply-add (GCC fuses by default where the CPU has FMA, and
+  # arm64 always has it). A port's doubles must be the JS's bit for bit: a written DWG keeps them (M4.4).
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /fp:precise)  # no contractions unless /fp:contract (VS 2022)
+  else()
+    target_compile_options(${target} PRIVATE -ffp-contract=off)
+  endif()
+
   # ---- hardened standard library, every build type
   if(CC_HAVE_LIBCXX)
     target_compile_definitions(${target} PRIVATE
