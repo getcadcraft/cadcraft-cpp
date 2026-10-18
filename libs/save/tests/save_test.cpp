@@ -20,6 +20,7 @@
 #include "cc/dwg/read.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/save/dwg.hpp"
+#include "cc/save/dxf.hpp"
 #include "golden.hpp"
 
 namespace fs = std::filesystem;
@@ -120,6 +121,54 @@ TEST_CASE("golden: saving the public fixtures gives the JS saveDwg's bytes and r
     ++checked;
   }
   CHECK(checked == 24);
+}
+
+TEST_CASE(
+    "golden: saving the public fixtures as DXF R12 and R2000 gives the JS writeDxf / writeDxf2000 text and report") {
+  const fs::path golden = fs::path(CC_GOLDEN_DIR) / "dxf-save/saves.json";
+  const fs::path corpus(CC_CORPUS_DIR);
+  if (!fs::exists(golden) || !fs::exists(corpus / "fixtures")) {
+    if (cc::base::env_var("CC_REQUIRE_CORPUS")) {
+      FAIL("CC_REQUIRE_CORPUS is set but the public fixtures are missing");
+    }
+    SKIP("references or fixtures missing (cmake -DDEST=build/corpus -P tools/corpus.cmake)");
+  }
+  const auto ref_bytes = cc::base::read_file(golden, std::uint64_t{1} << 30U);
+  REQUIRE(ref_bytes.has_value());
+  const auto want = cc::base::parse_json(cc::base::as_text(*ref_bytes));
+  REQUIRE(want.has_value());
+  std::map<std::string, std::unique_ptr<cc::doc::Doc>> docs;
+  int checked = 0;
+  for (const Value& w : (*want)["saves"].as_array()) {
+    const std::string name = w["name"].as_string();
+    const std::string format = w["format"].as_string();
+    if (!docs.contains(name)) {
+      fs::path src = corpus / "fixtures/dwg" / name;
+      if (!fs::exists(src)) {
+        src = corpus / "fixtures/electrical" / name;
+      }
+      REQUIRE(fs::exists(src));
+      docs[name] = open(src);
+    }
+    const cc::save::DxfSaveResult r =
+        format == "2000" ? cc::save::write_dxf2000(*docs[name], words()) : cc::save::write_dxf(*docs[name], words());
+    INFO(name << " " << format);
+    std::vector<std::uint8_t> u8;
+    u8.reserve(r.text.size());
+    for (const char c : r.text) {
+      u8.push_back(static_cast<std::uint8_t>(c));
+    }
+    CHECK(static_cast<double>(r.text.size()) == w["size"].as_number());
+    CHECK(static_cast<double>(crc32(u8)) == w["crc32"].as_number());
+    std::vector<std::string> diffs;
+    cc::test::compare(w["report"], r.report, "report", diffs);
+    for (const auto& d : diffs) {
+      UNSCOPED_INFO(d);
+    }
+    CHECK(diffs.empty());
+    ++checked;
+  }
+  CHECK(checked == 8);
 }
 
 TEST_CASE("a drawing made here saves in every version and reads back with what was drawn") {

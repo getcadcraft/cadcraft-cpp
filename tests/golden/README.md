@@ -41,3 +41,9 @@ fixture opened as the app opens it (readDwg → importDwg → Doc.load) and save
 seeded random bytes; size, CRC-32 and canonical report of each save (`saves.json`). Made with
 `node tools/parity/dwg-save.mjs build/corpus/fixtures --golden-out <dir>/dwg-save/saves.json`, then the same `tar` line
 with `dwg-save`. The test `save.golden` compares them; the full check (660 saves) is `tools/parity/dwg-save.mjs`.
+
+`js-0.5-dxf-save.tar.gz` — the 0.5 `writeDxf` (dxf.js, R12) and `writeDxf2000` (dxf2000.js, R2000) for the four public
+DWG fixtures opened as the app opens them: size and CRC-32 of the UTF-8 text and the canonical report of each save
+(`saves.json`). Made with `node tools/parity/dxf-save.mjs build/corpus/fixtures --golden-out <dir>/dxf-save/saves.json`,
+then the same `tar` line with `dxf-save`. The test `save.golden: saving the public fixtures as DXF…` compares them; the
+full check (216 saves) is `tools/parity/dxf-save.mjs`.

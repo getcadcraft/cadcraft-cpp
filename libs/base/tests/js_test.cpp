@@ -128,6 +128,11 @@ TEST_CASE("toFixed and toExponential round an exact half away from zero, as JS d
   CHECK(js_to_exponential(12345, 2) == "1.23e+4");
   CHECK(js_to_exponential(0, 3) == "0.000e+0");
   CHECK(js_to_exponential(9.995, 2) == "9.99e+0");
+  // an exact half with a positive exponent keeps it (Node: (25).toExponential(0),
+  // (914.4000244140625).toExponential(14))
+  CHECK(js_to_exponential(25, 0) == "3e+1");
+  CHECK(js_to_exponential(914.4000244140625, 14) == "9.14400024414063e+2");
+  CHECK(js_to_exponential(-21.66619873046875, 14) == "-2.16661987304688e+1");
   CHECK(js_to_exponential(1.5, 0) == "2e+0");
   CHECK(js_to_exponential(9.5, 0) == "1e+1");
   CHECK(js_to_exponential(0.000125, 1) == "1.3e-4");

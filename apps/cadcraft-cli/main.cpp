@@ -19,6 +19,9 @@
 //                                                report. --created fixes the date, --seeded the GUIDs' random bytes
 //                                                (the parity harness gives the JS writer the same:
 //                                                tools/parity/dwg-write.mjs)
+//   cadcraft-cli dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]
+//                                                the drawing saved as DXF R12 (dxf.js) or R2000 (dxf2000.js); prints
+//                                                the report (tools/parity/dxf-save.mjs)
 //   cadcraft-cli dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]
 //                                                open a DWG as CadCraft does (import + document) and save it as a DWG
 //                                                of that version (dwg-save.js); prints the report, or with --model the
@@ -59,6 +62,7 @@
 #include "cc/i18n/i18n.hpp"
 #include "cc/importer/importer.hpp"
 #include "cc/save/dwg.hpp"
+#include "cc/save/dxf.hpp"
 
 namespace {
 
@@ -79,6 +83,7 @@ void usage(std::FILE* out) {
              "  dwg-write <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--bench <runs>]\n"
              "                                      write the drawing as a DWG of that version; prints the report\n"
              "  dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]\n"
+             "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
              "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
              "  version                             print the version\n");
 }
@@ -318,6 +323,55 @@ int cmd_dwg_save(const std::filesystem::path& in, const std::string& version, co
   } else {
     cc::base::write_json(a.model ? r.model : r.report, js);
   }
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  return 0;
+}
+
+int cmd_dxf_save(const std::filesystem::path& in, const std::string& format, const std::filesystem::path& out,
+                 int bench, std::string_view argv0) {
+  const auto bytes = cc::base::read_file(in, kMaxFile);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+  if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
+    print_error_json("invalid", "unreadable");
+    return 1;
+  }
+  const std::span<const std::byte> head =
+      std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
+  cc::doc::Doc d;
+  d.load(cc::cad::import_dwg(model, cc::base::as_text(head), *words), *words);
+  cc::save::DxfSaveResult r;
+  cc::base::Array save_ms;
+  try {
+    for (int i = 0; i < std::max(1, bench); ++i) {
+      const auto t0 = std::chrono::steady_clock::now();
+      r = format == "2000" ? cc::save::write_dxf2000(d, *words) : cc::save::write_dxf(d, *words);
+      save_ms.emplace_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+    }
+  } catch (const std::exception& e) {
+    print_error_json("invalid", e.what());
+    return 1;
+  }
+  if (const auto ok = cc::base::write_file_atomic(out, std::as_bytes(std::span(r.text))); !ok) {
+    print_error_json("io", ok.error().message);
+    return 1;
+  }
+  std::string js;
+  cc::base::write_json(bench > 0 ? cc::base::make_object({{"save_ms", save_ms}}) : r.report, js);
   js += '\n';
   (void)std::fwrite(js.data(), 1, js.size(), stdout);
   return 0;
@@ -637,6 +691,19 @@ int run(const std::vector<std::string_view>& args) {
       }
     }
     return cmd_dwg_save(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), sa,
+                        args[0]);
+  }
+  if (cmd == "dxf-save" && (args.size() == 5 || args.size() == 7) && (args[3] == "r12" || args[3] == "2000")) {
+    int bench = 0;
+    if (args.size() == 7) {
+      const std::span<const char> txt(args[6]);
+      const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), bench);
+      if (args[5] != "--bench" || ec != std::errc{} || ptr != std::to_address(txt.end()) || bench < 1 || bench > 1000) {
+        usage(stderr);
+        return 2;
+      }
+    }
+    return cmd_dxf_save(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), bench,
                         args[0]);
   }
   if (cmd == "doc" && args.size() == 3) {

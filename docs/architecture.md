@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-18 · Change: libs/m3d, libs/save (M4.4 DWG save); V8's sin/cos/hypot in base; no FMA contraction.
+Last updated 2026-10-18 · Change: libs/save writes DXF R12 and R2000 (M4.5).
 
 ## Toolchain (pinned)
 
@@ -60,7 +60,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/m3d` | L2 | `cc::m3d` — the start of the ModelCraft kernel (m3d/model.js, vec.js, earcut.js): definitions, faces, instances, `toJSON`, `faceTris`, `meshDef`; and model3d.js's drawing side (`from_file`: a drawing's 3D faces as one group; `for_file3d`: 3DFACEs + CadCraft's JSON for saving) |
 | `libs/doc` | L3 | `cc::doc::Doc` — CadCraft 0.5's doc.js: the drawing a session edits (spaces, layers, blocks, layouts), one undo step per `change()`, `load()` of a drawing; equal to the JS document on the corpus (tools/parity/doc.mjs) |
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
-| `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
+| `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs); `write_dxf` (dxf.js, R12, straight from the document) and `write_dxf2000` (dxf2000.js, R2000, from the DWG writer model with `model_only`), the same text as the JS (tools/parity/dxf-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
 | `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module. `cc::dwg::write_dwg` — the port of `writeDwg` (src/w*.cpp: bits, CRCs, R2004/R2007 compressors and file layouts, the object encoders, the source's objects copied, tables, solids, surfaces, data storage), byte for byte the JS writer's output (tools/parity/dwg-write.mjs) |
 

@@ -528,7 +528,10 @@ std::string js_to_exponential(double x, int digits) {
     if (half) {
       std::string mant = longer.substr(0, tail);
       int ex = 0;
-      const std::string_view exp_digits = std::string_view(longer).substr(le + 1);
+      std::string_view exp_digits = std::string_view(longer).substr(le + 1);
+      if (exp_digits.starts_with('+')) {
+        exp_digits.remove_prefix(1);  // from_chars takes '-' but not '+'
+      }
       std::from_chars(std::to_address(exp_digits.begin()), std::to_address(exp_digits.end()), ex);
       if (!mant.empty() && mant.back() == '.') {
         mant.pop_back();

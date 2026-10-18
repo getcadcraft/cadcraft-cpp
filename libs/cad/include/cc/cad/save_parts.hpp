@@ -23,6 +23,10 @@ namespace cc::cad {
 [[nodiscard]] base::Value vars_of(const base::Value& st);
 /// dstyleItems(st, { r12 }): the ACAD "DSTYLE" override items [[code, value]…].
 [[nodiscard]] base::Array dstyle_items(const base::Value& st, bool r12);
+/// dimstylePairs(st, { r12 }): the DIMSTYLE table's [[group code, value]…] (the DSTYLE items' pairs).
+[[nodiscard]] base::Array dimstyle_pairs(const base::Value& st, bool r12);
+/// stFromVars(vars, {}): a style from variables by name (a DIMSTYLE record's vars).
+[[nodiscard]] base::Value st_from_vars(const base::Value& vars);
 /// ccDimItems(st, { r12 }): CADCRAFT "CCDIMST:<json>" items for what no variable holds exactly ([] when none).
 [[nodiscard]] base::Array cc_dim_items(const base::Value& st, bool r12);
 

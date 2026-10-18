@@ -1,6 +1,6 @@
 # Post-mortem: the M3.5 speed work (C++ fork)
 
-Last updated 2026-10-18 · Change: the DWG writer and save (M4.3a, M4.4) added.
+Last updated 2026-10-18 · Change: the DXF save (M4.5) added.
 
 For review by the owner. What M3.5 set out to do, what each change measured, what was kept, what was dropped and why,
 and where the time goes now. Every number here was measured on this machine (8 cores, shared with other sessions);
@@ -123,6 +123,31 @@ Next levers (not done; the plan goes on with M4.5):
 2. **One dimension geometry per dimension**: `dim_text_point` builds the geometry a second time (the JS caches it per
    entity object); a cache for the save's duration.
 3. **`Value::set` on objects built in a known order** (`append` where the key cannot be there yet).
+
+## M4.5: the DXF save
+
+DXF R12 (dxf.js writeDxf) and R2000 (dxf2000.js writeDxf2000) went in at parity first (216/216 byte-identical), then
+were measured: release build, a document loaded once, best of 3 rounds × 7 saves, the JS and the C++ alternating per
+round so both see the same load (load average 22–44 on 8 cores, other sessions building: absolute times are high,
+compare the ratios). JS = the frozen 0.5 writers in Node 24.
+
+| File | R12 JS (ms) | R12 C++ (ms) | R12 × | R2000 JS (ms) | R2000 C++ (ms) | R2000 × |
+|---|---:|---:|---:|---:|---:|---:|
+| kitchen-equipment-r2000.dwg | 121.1 | 20.6 | 5.89× | 118.4 | 119.5 | 0.99× |
+| base-plan.dwg | 0.84 | 0.51 | 1.66× | 1.05 | 0.90 | 1.17× |
+| electrical-sample.dwg | 6.96 | 3.00 | 2.32× | 9.07 | 4.79 | 1.89× |
+| civil-example-imperial.dwg | 2.43 | 1.62 | 1.50× | 2.19 | 2.36 | 0.93× |
+| Carey Foodservice.dwg (9 MB DXF) | 1478 | 1099 | 1.35× | 2505 | 1427 | 1.76× |
+
+R12 writes straight from the document and is faster on every file. R2000 first builds the DWG writer model
+(save_dwg, `model_only`) and inherits its speed (M4.4: 0.84–1.61×); the text itself is the smaller part.
+
+| Step | Change | Effect | Kept |
+|---|---|---|---|
+| M4.5 | the R2000 writer read container fields with `Value::get` (a copy): every block's entity list once more for the application names, each polyline's vertices, each hatch's loops, the tables | civil-example R2000 11.0 → 2.4 ms, kitchen 622 → 120 ms (before: one run at load ~44, not alternated; the drop is far beyond that noise) | yes |
+
+Next levers: those of M4.4 (the typed save model is the one that moves R2000); for R12, `props_xdata` is built twice
+per entity (the APPID table, then the entity) as in the JS — once would do.
 
 ## Method
 

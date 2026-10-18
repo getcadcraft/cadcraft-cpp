@@ -938,6 +938,24 @@ base::Array dstyle_items(const Value& st, bool r12) {
   return items;
 }
 
+base::Array dimstyle_pairs(const Value& st, bool r12) {
+  const base::Array items = dstyle_items(st, r12);
+  base::Array out;
+  for (std::size_t j = 2; j + 1 < items.size(); j += 2) {
+    const base::Array& a = items[j].as_array();
+    if (a.at(0) == Value(1070)) {
+      out.emplace_back(base::Array{a.at(1), items[j + 1].as_array().at(1)});
+    }
+  }
+  return out;
+}
+
+Value st_from_vars(const Value& vars) {
+  Value st = Value::object();
+  detail::st_from_vars(vars, st);
+  return st;
+}
+
 base::Array cc_dim_items(const Value& st, bool r12) {
   const Value s = st.truthy() ? st : Value::object();
   Value keep = Value::object();

@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.3a, M4.4 (DWG save at parity).
+Last updated 2026-10-18 · Change: M4.4a, M4.5 (DXF save at parity).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -177,4 +177,15 @@ Last updated 2026-10-18 · Change: M4.3a, M4.4 (DWG save at parity).
   DXF 104/104, draw lists 214/214. Speed 0.84–1.61× the JS after removing a quadratic copy in the writer's attributes
   and a block copy per reference (docs/perf-postmortem.md). Not ported (docs/gaps.md): the constraints payload, reading
   CadCraft's own 3D model back, re-writing edited visibility states.
+- M4.4a: GCC 14 builds again (`std::min({…})` needed `<algorithm>`; -Wnull-dereference on unchecked vertex lookups in
+  m3d, now `Def::vert`, which refuses a missing vertex like `Def::points`).
+- M4.5: saving as DXF — `cc::save::write_dxf` (dxf.js writeDxf, R12) and `write_dxf2000` (dxf2000.js, R2000, built on
+  the DWG writer model: `save_dwg` with `model_only` + `explode_leaders`); `cadcraft-cli dxf-save <in> r12|2000 <out>`.
+  **Parity: 216 / 216 saves byte-identical to the JS** (the 108 readable corpus DWGs opened as the app opens them, both
+  formats; tools/parity/dxf-save.mjs), reports equal; golden test on the public fixtures (8 saves); fuzz target
+  `dwg_save` now saves DXF too (171,947 runs clean). What byte parity took: `Number(n.toPrecision(15))` with an exact
+  half rounded away from zero, and on the way a bug in `base::js_to_exponential` (an exact half with a positive
+  exponent lost the exponent: `from_chars` takes no `+`), fixed with a regression test; DWG save re-checked after it.  Speed (JS and C++ alternating, machine under load): R12 1.35–5.89× the JS, R2000 0.93–1.89× (it builds the DWG writer
+  model first); R2000 read containers by copy at first (civil-example 11 ms → 2.4 ms after reading them in place;
+  docs/perf-postmortem.md).
 

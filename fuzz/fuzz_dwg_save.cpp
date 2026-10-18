@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Saving whatever drawing CadCraft makes of hostile bytes (read → import → document → save, the path File > Save as
 // takes): save_dwg must never crash, hang or trip a sanitizer, and its file must read back. The first byte picks the
-// version saved (the rest is the file).
+// version saved (the rest is the file). The same document is saved as DXF R12 and R2000 too (where the JS throws, the
+// R12 writer throws std::invalid_argument; the save command's guard turns it into a message).
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <span>
+#include <stdexcept>
 #include <string_view>
 
 #include "cc/base/reader.hpp"
@@ -14,6 +16,7 @@
 #include "cc/dwg/read.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/save/dwg.hpp"
+#include "cc/save/dxf.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
   if (size < 7) {
@@ -39,5 +42,10 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   const cc::save::DwgSaveResult r = cc::save::save_dwg(d, o, kWords);
   const cc::base::Value back = cc::dwg::read_dwg(std::as_bytes(std::span(r.bytes)), {.threads = 1});
   (void)back;
+  try {
+    (void)cc::save::write_dxf(d, kWords);
+  } catch (const std::invalid_argument&) {  // NOLINT(bugprone-empty-catch) — the JS's own refusal
+  }
+  (void)cc::save::write_dxf2000(d, kWords);
   return 0;
 }
