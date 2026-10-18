@@ -69,16 +69,6 @@ void apply(Ctx& c, const std::vector<Value>& src, const Mat& m, bool copy) {
   });
 }
 
-/// commands.js undoInside(c): undo the command's last step (U at a prompt).
-void undo_inside(Ctx& c) {
-  if (c.doc.mark() > c.engine.cmd_mark) {
-    (void)c.doc.undo();
-    c.doc.clear_redo();
-  } else {
-    c.print(c.t("cmd.extend.nothing_undo_command"));
-  }
-}
-
 Task<void> erase_cmd(Ctx& c) {
   const Answer ids = co_await c.select();
   if (ids.kind != Answer::Kind::set || ids.set.empty()) {
@@ -240,6 +230,16 @@ Task<void> redo_cmd(Ctx& c) {
 
 }  // namespace
 
+/// commands.js undoInside(c): undo the command's last step (U at a prompt).
+void undo_inside(Ctx& c) {
+  if (c.doc.mark() > c.engine.cmd_mark) {
+    (void)c.doc.undo();
+    c.doc.clear_redo();
+  } else {
+    c.print(c.t("cmd.extend.nothing_undo_command"));
+  }
+}
+
 void add_modify(std::vector<CommandDef>& t) {
   t.push_back(def("ERASE", {"E", "DELETE"}, erase_cmd, "cmd.erase.remove_objects"));
   t.push_back(def("MOVE", {"M"}, move_cmd, "cmd.move.move_objects_base_point"));
@@ -257,6 +257,7 @@ const std::vector<CommandDef>& command_table() {
     add_draw(t);
     add_modify(t);
     add_trim(t);
+    add_reshape(t);
     return t;
   }();
   return kTable;

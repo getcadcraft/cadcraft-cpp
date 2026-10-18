@@ -229,4 +229,9 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   open a DWG, draw, Ctrl+S downloads the DWG with the new objects in it.
 - M4.7f: GCC 14's -Wnull-dereference false positive on `vector::insert(begin, {x, y})` in walk.js polyBands (CI's
   GCC job red since M4.7c): the band's right side is collected and appended reversed instead (same ring).
+- M5 planned (docs/roadmap.md § M5 plan): CadCraft complete before the other apps, in command batches.
+- M5.1a: ELLIPSE, POINT, DUPLICATE, SELECTALL, DESELECT, STRETCH, BREAK, BREAKATPOINT, LENGTHEN, JOIN, EXPLODE
+  (libs/cmd/src/reshape.cpp) on geom.js's paramOn, breakEntity, curveLength, lengthenEntity, joinEntities,
+  stretchEntity, explodeEntity (libs/cad/src/reshape.cpp). Command parity 66/66 scripts (21 new in
+  tests/commands/reshape.json: every branch, error and option of each command); goldens regenerated.
 

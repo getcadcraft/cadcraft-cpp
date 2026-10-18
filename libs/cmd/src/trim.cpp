@@ -340,15 +340,6 @@ std::size_t apply_extend(Ctx& c, const std::vector<ExtendItem>& list) {
   return list.size();
 }
 
-void undo_inside(Ctx& c) {
-  if (c.doc.mark() > c.engine.cmd_mark) {
-    (void)c.doc.undo();
-    c.doc.clear_redo();
-  } else {
-    c.print(c.t("cmd.extend.nothing_undo_command"));
-  }
-}
-
 /// The pieces a trim would remove, or the parts an extend would add, greyed (preview entities with `ghost`).
 base::Array ghosts(Ctx& c, const TrimState& s, const std::optional<IdSet>& edges, Pt cur, bool extend,
                    const std::vector<Pt>& path) {

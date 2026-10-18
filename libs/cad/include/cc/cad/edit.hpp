@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <optional>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "cc/base/value.hpp"
@@ -84,5 +86,42 @@ struct Rect2 {
 };
 /// geom.js inWindow(e, w, crossing, blocks): inside (window) or inside or touching (crossing).
 [[nodiscard]] bool in_window(const base::Value& e, const Rect2& w, bool crossing, const BlockLookup& blocks);
+
+// ---- reshape.cpp: BREAK, LENGTHEN, JOIN, STRETCH, EXPLODE
+
+/// geom.js paramOn(e, q): where q is along e (line / arc 0 … 1, polyline segment index + 0 … 1).
+[[nodiscard]] double param_on(const base::Value& e, P2 q);
+/// geom.js breakEntity(e, p1, p2): the pieces left, or error "type" / "circle".
+struct BreakResult {
+  std::string error;
+  base::Array pieces;
+};
+[[nodiscard]] BreakResult break_entity(const base::Value& e, P2 p1, P2 p2);
+/// geom.js curveLength(e): a line's, arc's or polyline's length (nothing for others).
+[[nodiscard]] std::optional<double> curve_length(const base::Value& e);
+/// geom.js lengthenEntity(e, pick, { delta, dAngle }): e with the end nearest pick moved, or error "type" / "short" /
+/// "full".
+struct LengthenResult {
+  std::string error;
+  base::Value e;
+};
+[[nodiscard]] LengthenResult lengthen_entity(const base::Value& e, P2 pick, double delta,
+                                             std::optional<double> d_angle = std::nullopt);
+/// geom.js joinEntities(ents, tol): { results: [{ from: ids, to }], left: ids }.
+struct JoinPart {
+  base::Array from;
+  base::Value to;
+};
+struct JoinResult {
+  std::vector<JoinPart> results;
+  base::Array left;
+};
+[[nodiscard]] JoinResult join_entities(const std::vector<base::Value>& ents, std::optional<double> tol = std::nullopt);
+/// geom.js stretchEntity(e, inside, dx, dy): what is in the window moves; nothing when nothing of e moves.
+[[nodiscard]] std::optional<base::Value> stretch_entity(const base::Value& e, const std::function<bool(P2)>& inside,
+                                                        double dx, double dy);
+/// geom.js explodeEntity(e, blocks): a polyline's lines and arcs, a leader's parts, a reference's or dimension's
+/// objects; nothing for other objects (or a reference to a missing block).
+[[nodiscard]] std::optional<base::Array> explode_entity(const base::Value& e, const BlockLookup& blocks);
 
 }  // namespace cc::cad

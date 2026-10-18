@@ -14,7 +14,8 @@ benchmark table format below so the numbers compare.
 | M3 | CadCraft 2D viewer | SDL3 + Dear ImGui + WebGPU (Dawn / emdawnwebgpu); open DWG/DXF, model + sheets, pan/zoom, layers; desktop and web; deployed to cpp.getcadcraft.com through `forks/deploy.sh`; frame-time benchmark on the big drawings | done: draw lists 202/202; live on cpp.getcadcraft.com (?sample, ?bench) |
 | M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (was 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (was on par) | done (a–h): 1.66–3.95×, browser cold ~1.4×; targets not met yet, levers in docs/perf-postmortem.md |
 | M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | done 2026-10-18: import, document, DWG writer, DWG and DXF save, the command line (20 commands), drafting in the viewer (snaps, grips, windows, save) |
-| M5+ | The rest | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M3.** | planned |
+| M5 | CadCraft complete | the rest of commands.js (about 150 commands) in batches by area, CadCraft's own DXF reader, the panels (layers, properties), sheets and plotting — each batch at parity through tools/parity/commands.mjs scripts | planned (M5 plan below) |
+| M6+ | The other apps | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M5.** | planned |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
 
@@ -89,3 +90,21 @@ parity on the corpus with no new test files: corpus DWG → read (M2) → import
 | M4.5 | DXF save (dxf.js writeDxf R12, dxf2000.js writeDxf2000) | bytes = JS on the corpus — **done 2026-10-18: 216/216 byte-identical** (108 DWGs × R12 and R2000) |
 | M4.6 | Commands as coroutines (LINE, PLINE, CIRCLE, ARC, TEXT, MOVE, COPY, ROTATE, SCALE, ERASE, OFFSET, TRIM, EXTEND, UNDO/REDO) through `Session::execute`, scripted input; the CLI runs them headless | the JS command tests ported; command scripts give the same drawing JSON — **M4.6a done 2026-10-18**: libs/cmd, the engine and 17 commands (LINE PLINE CIRCLE XLINE RAY ARC RECTANG POLYGON TEXT ERASE MOVE COPY ROTATE SCALE MIRROR UNDO REDO), 28/28 scripts the same as the 0.5 Engine (prints, prompts, model, undo labels); **M4.6b done 2026-10-18**: OFFSET, TRIM (Quick / Standard, fence, crossing, edge mode, erase), EXTEND, on geom.js's editing geometry (libs/cad edit.hpp) — 45/45 scripts |
 | M4.7 | Drafting in the viewer: command line, prompts in the status bar, snaps, grips; Save / Save as (desktop picker, web download) | screenshots against the 0.5 app; save → reopen — **M4.7a done 2026-10-18**: libs/docview, walk.js (what a document draws: colours, linetype dashes, pattern hatches, widths, masks), 108/108 corpus drawings draw the same event for event; **M4.7b done**: the viewer opens a DWG as the CadCraft document and draws it through walk (docview::to_drawing, rebuilt after each change); the command line under the canvas (prompts, typed input, Enter / Space / right click, Esc, Ctrl+Z / Ctrl+Y), clicks to the waiting prompt, the rubber band and the selection over the view, noun-verb picks, layers turned on and off in the document — checked by screenshots (Xvfb); **M4.7c done**: object snaps (end, mid, centre, quadrant, intersection, perpendicular, node, insertion; F3) and ortho (F8) for every point prompt, selection windows (left → right inside, right → left crossing) idle and at Select objects, grips on the selection (click a grip, click where it goes: one undo step); **M4.7d done**: Save (Ctrl+S: the drawing's own format and DWG version, in place on the desktop when it came from such a file, else the save dialog; a download on the web) and Save as (Ctrl+Shift+S: DWG 2000–2018, DXF 2000, DXF R12), the report's notes in the command history — checked under Xvfb: save in place, reopen with the circle drawn |
+
+## M5 plan (2026-10-18): CadCraft complete
+
+Each step ports commands.js commands with the geom.js / helper code they use, parity-checked by command scripts
+(tools/parity/commands.mjs) against the frozen 0.5 Engine, then shown in the viewer.
+
+| Step | Commands and pieces |
+|---|---|
+| M5.1a | ELLIPSE, POINT, DUPLICATE, SELECTALL, DESELECT, EXPLODE, STRETCH, BREAK, BREAKATPOINT, LENGTHEN, JOIN (geom.js stretchEntity, breakEntity, lengthenEntity, joinEntities, explodeEntity) |
+| M5.1b | FILLET, CHAMFER, ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD, MATCHPROP, MTEXT, MLEADER, TEXTEDIT, HATCH (corners, boundaries) |
+| M5.2 | dimensions: DIMLINEAR, DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR, DIMCONTINUE, DIMBASELINE, DIMLUNIT |
+| M5.3 | blocks: BLOCK, ATTDEF, INSERT, PURGE, the block editor (BEDIT … BCLOSE), DELBLOCKS |
+| M5.4 | inquiry and views: DIST, AREA, MEASUREGEOM, ID, LIST, ZOOM, NAMEDVIEW, UNITS, UCS and the turned views, SELECT, QSELECT, SELECTSIMILAR, FIND |
+| M5.5 | layers and properties: LAYER and the layer tools, PROPERTIES, LINETYPE, LTSCALE, LWEIGHT, the properties panel |
+| M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen |
+| M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands |
+| M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets |
+
