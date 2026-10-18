@@ -124,4 +124,44 @@ struct JoinResult {
 /// objects; nothing for other objects (or a reference to a missing block).
 [[nodiscard]] std::optional<base::Array> explode_entity(const base::Value& e, const BlockLookup& blocks);
 
+// ---- corners.cpp: FILLET and CHAMFER
+
+/// geom.js cornerTarget(e, pick): what a pick on e is for a corner (seg: the polyline segment nearest the pick).
+struct CornerTarget {
+  base::Value e;
+  std::optional<std::size_t> seg;
+  Prim prim;
+  P2 pick;
+};
+[[nodiscard]] std::optional<CornerTarget> corner_target(const base::Value& e, P2 pick);
+/// A corner: { ok, edits (entities with their ids), add (new entities) } or an error code (type, same, parallel,
+/// collinear, large, none, middle, angle); semicircle: FILLET joined two parallel lines.
+struct CornerResult {
+  bool ok = false;
+  std::string error;
+  base::Array edits;
+  base::Array add;
+  bool semicircle = false;
+};
+/// geom.js filletPair(A, B, r, { trim, current })
+[[nodiscard]] CornerResult fillet_pair(const CornerTarget& a, const CornerTarget& b, double r, bool trim,
+                                       const base::Value& current);
+/// A chamfer's settings: method D (d1 from the first piece, d2 from the second) or A (len along the first at ang).
+struct ChamferSpec {
+  std::string method = "D";
+  double d1 = 0;
+  std::optional<double> d2;
+  double len = 0;
+  double ang = 0;
+};
+/// geom.js chamferPair(A, B, spec, { trim, current })
+[[nodiscard]] CornerResult chamfer_pair(const CornerTarget& a, const CornerTarget& b, const ChamferSpec& spec,
+                                        bool trim, const base::Value& current);
+/// geom.js polyCorners(e, kind, spec): every corner of a polyline filleted (radius) or chamfered (spec).
+struct PolyCornersResult {
+  base::Value e;
+  std::size_t done = 0, short_ = 0, arcs = 0, removed = 0;
+};
+[[nodiscard]] PolyCornersResult poly_corners(const base::Value& e, bool fillet, double radius, const ChamferSpec& spec);
+
 }  // namespace cc::cad

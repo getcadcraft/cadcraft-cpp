@@ -234,4 +234,8 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   (libs/cmd/src/reshape.cpp) on geom.js's paramOn, breakEntity, curveLength, lengthenEntity, joinEntities,
   stretchEntity, explodeEntity (libs/cad/src/reshape.cpp). Command parity 66/66 scripts (21 new in
   tests/commands/reshape.json: every branch, error and option of each command); goldens regenerated.
+- M5.1b: FILLET and CHAMFER (libs/cmd/src/corner.cpp) on geom.js cornerTarget, filletPair, chamferPair, polyCorners
+  (libs/cad/src/corners.cpp): lines, arcs, circles, polyline segments, parallel lines (half circle), shift = sharp
+  corner, P every corner, M, U, T trim mode, D/A/E chamfer settings. Command parity 74/74 (8 new scripts in
+  tests/commands/corners.json).
 

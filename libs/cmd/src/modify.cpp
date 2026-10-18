@@ -258,6 +258,7 @@ const std::vector<CommandDef>& command_table() {
     add_modify(t);
     add_trim(t);
     add_reshape(t);
+    add_corner(t);
     return t;
   }();
   return kTable;

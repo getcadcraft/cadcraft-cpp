@@ -99,7 +99,8 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | Step | Commands and pieces |
 |---|---|
 | M5.1a | ELLIPSE, POINT, DUPLICATE, SELECTALL, DESELECT, EXPLODE, STRETCH, BREAK, BREAKATPOINT, LENGTHEN, JOIN (geom.js stretchEntity, breakEntity, lengthenEntity, joinEntities, explodeEntity) |
-| M5.1b | FILLET, CHAMFER, ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD, MATCHPROP, MTEXT, MLEADER, TEXTEDIT, HATCH (corners, boundaries) |
+| M5.1b | FILLET, CHAMFER (geom.js corners) |
+| M5.1c | ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD, MATCHPROP, MTEXT, MLEADER, TEXTEDIT, HATCH (corners, boundaries) |
 | M5.2 | dimensions: DIMLINEAR, DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR, DIMCONTINUE, DIMBASELINE, DIMLUNIT |
 | M5.3 | blocks: BLOCK, ATTDEF, INSERT, PURGE, the block editor (BEDIT … BCLOSE), DELBLOCKS |
 | M5.4 | inquiry and views: DIST, AREA, MEASUREGEOM, ID, LIST, ZOOM, NAMEDVIEW, UNITS, UCS and the turned views, SELECT, QSELECT, SELECTSIMILAR, FIND |

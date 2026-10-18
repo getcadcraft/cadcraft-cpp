@@ -1,0 +1,651 @@
+[
+ {
+  "name": "fillet: two lines with a radius, radius 0, too large",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "LINE",
+   "12,2",
+   "12,10",
+   "",
+   "FILLET",
+   "R",
+   "2",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     12,
+     6
+    ],
+    "pick": 2
+   },
+   "LINE",
+   "0,20",
+   "10,20",
+   "",
+   "LINE",
+   "12,22",
+   "12,30",
+   "",
+   "F",
+   "R",
+   "0",
+   {
+    "click": [
+     5,
+     20
+    ],
+    "pick": 4
+   },
+   {
+    "click": [
+     12,
+     26
+    ],
+    "pick": 5
+   },
+   "LINE",
+   "0,40",
+   "10,40",
+   "",
+   "LINE",
+   "12,42",
+   "12,50",
+   "",
+   "F",
+   "R",
+   "50",
+   {
+    "click": [
+     5,
+     40
+    ],
+    "pick": 6
+   },
+   {
+    "click": [
+     12,
+     46
+    ],
+    "pick": 7
+   }
+  ]
+ },
+ {
+  "name": "fillet: crossing lines keep the picked parts; shift picks a sharp corner",
+  "steps": [
+   "LINE",
+   "-10,0",
+   "10,0",
+   "",
+   "LINE",
+   "0,-10",
+   "0,10",
+   "",
+   "FILLET",
+   "R",
+   "1",
+   {
+    "click": [
+     8,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     0,
+     8
+    ],
+    "pick": 2
+   },
+   "LINE",
+   "20,0",
+   "40,0",
+   "",
+   "LINE",
+   "30,-10",
+   "30,10",
+   "",
+   "FILLET",
+   {
+    "click": [
+     22,
+     0
+    ],
+    "pick": 4
+   },
+   {
+    "shift": true
+   },
+   {
+    "click": [
+     30,
+     -8
+    ],
+    "pick": 5
+   },
+   {
+    "shift": false
+   }
+  ]
+ },
+ {
+  "name": "fillet: parallel lines get a half circle",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "LINE",
+   "0,4",
+   "12,4",
+   "",
+   "FILLET",
+   {
+    "click": [
+     9,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     9,
+     4
+    ],
+    "pick": 2
+   }
+  ]
+ },
+ {
+  "name": "fillet: line and circle, arc and arc, no trim",
+  "steps": [
+   "LINE",
+   "0,0",
+   "20,0",
+   "",
+   "CIRCLE",
+   "10,4",
+   "3",
+   "FILLET",
+   "R",
+   "1",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     7,
+     6
+    ],
+    "pick": 2
+   },
+   "ARC",
+   "C",
+   "40,0",
+   "45,0",
+   "40,5",
+   "ARC",
+   "C",
+   "48,0",
+   "48,5",
+   "43,0",
+   "FILLET",
+   "T",
+   "N",
+   {
+    "click": [
+     43.5,
+     3.5
+    ],
+    "pick": 4
+   },
+   {
+    "click": [
+     44.5,
+     3.5
+    ],
+    "pick": 5
+   },
+   "FILLET",
+   "T",
+   "T",
+   "R",
+   "0",
+   {
+    "click": [
+     43.5,
+     3.5
+    ],
+    "pick": 4
+   },
+   {
+    "click": [
+     44.5,
+     3.5
+    ],
+    "pick": 5
+   }
+  ]
+ },
+ {
+  "name": "fillet: polyline corners, two segments of one polyline, P",
+  "steps": [
+   "PLINE",
+   "0,0",
+   "10,0",
+   "10,10",
+   "0,10",
+   "",
+   "FILLET",
+   "R",
+   "2",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     10,
+     5
+    ],
+    "pick": 1
+   },
+   "RECTANG",
+   "20,0",
+   "30,10",
+   "FILLET",
+   "P",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 2
+   },
+   "FILLET",
+   "P",
+   "R",
+   "1",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 2
+   },
+   "FILLET",
+   "P",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   "LINE",
+   "40,0",
+   "50,0",
+   "",
+   "FILLET",
+   "P",
+   {
+    "click": [
+     45,
+     0
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     45,
+     0
+    ],
+    "pick": 3
+   }
+  ]
+ },
+ {
+  "name": "fillet: same object, the middle of a polyline, multiple, undo",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "FILLET",
+   {
+    "click": [
+     2,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     8,
+     0
+    ],
+    "pick": 1
+   },
+   "",
+   "PLINE",
+   "20,0",
+   "30,0",
+   "30,10",
+   "20,10",
+   "20,20",
+   "",
+   "LINE",
+   "25,5",
+   "28,5",
+   "",
+   "FILLET",
+   "R",
+   "1",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     25,
+     10
+    ],
+    "pick": 2
+   },
+   "FILLET",
+   "M",
+   "R",
+   "0.5",
+   "",
+   "LINE",
+   "60,0",
+   "70,0",
+   "",
+   "LINE",
+   "72,2",
+   "72,10",
+   "",
+   "LINE",
+   "60,20",
+   "70,20",
+   "",
+   "LINE",
+   "72,22",
+   "72,30",
+   "",
+   "FILLET",
+   "M",
+   {
+    "click": [
+     65,
+     0
+    ],
+    "pick": 4
+   },
+   {
+    "click": [
+     72,
+     6
+    ],
+    "pick": 5
+   },
+   {
+    "click": [
+     65,
+     20
+    ],
+    "pick": 6
+   },
+   {
+    "click": [
+     72,
+     26
+    ],
+    "pick": 7
+   },
+   "U",
+   ""
+  ]
+ },
+ {
+  "name": "chamfer: distances, angle, method, too large, parallel",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "LINE",
+   "12,2",
+   "12,10",
+   "",
+   "CHAMFER",
+   "D",
+   "1",
+   "2",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     12,
+     6
+    ],
+    "pick": 2
+   },
+   "LINE",
+   "0,20",
+   "10,20",
+   "",
+   "LINE",
+   "12,22",
+   "12,30",
+   "",
+   "CHA",
+   "A",
+   "3",
+   "30",
+   {
+    "click": [
+     5,
+     20
+    ],
+    "pick": 4
+   },
+   {
+    "click": [
+     12,
+     26
+    ],
+    "pick": 5
+   },
+   "LINE",
+   "0,40",
+   "10,40",
+   "",
+   "LINE",
+   "12,42",
+   "12,50",
+   "",
+   "CHA",
+   "E",
+   "D",
+   "D",
+   "40",
+   "40",
+   {
+    "click": [
+     5,
+     40
+    ],
+    "pick": 7
+   },
+   {
+    "click": [
+     12,
+     46
+    ],
+    "pick": 8
+   },
+   "",
+   "LINE",
+   "0,60",
+   "10,60",
+   "",
+   "LINE",
+   "0,64",
+   "10,64",
+   "",
+   "CHA",
+   "D",
+   "1",
+   "1",
+   {
+    "click": [
+     5,
+     60
+    ],
+    "pick": 9
+   },
+   {
+    "click": [
+     5,
+     64
+    ],
+    "pick": 10
+   }
+  ]
+ },
+ {
+  "name": "chamfer: polylines, an arc, shift, an angle that does not close",
+  "steps": [
+   "RECTANG",
+   "0,0",
+   "10,10",
+   "CHAMFER",
+   "D",
+   "1",
+   "2",
+   "P",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   "PLINE",
+   "20,0",
+   "30,0",
+   "30,10",
+   "",
+   "CHAMFER",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     30,
+     5
+    ],
+    "pick": 2
+   },
+   "ARC",
+   "40,0",
+   "45,5",
+   "50,0",
+   "CHAMFER",
+   {
+    "click": [
+     45,
+     5
+    ],
+    "pick": 3
+   },
+   "",
+   "LINE",
+   "0,30",
+   "10,30",
+   "",
+   "LINE",
+   "12,32",
+   "12,40",
+   "",
+   "CHAMFER",
+   {
+    "click": [
+     5,
+     30
+    ],
+    "pick": 4
+   },
+   {
+    "shift": true
+   },
+   {
+    "click": [
+     12,
+     36
+    ],
+    "pick": 5
+   },
+   {
+    "shift": false
+   },
+   "LINE",
+   "0,50",
+   "10,50",
+   "",
+   "LINE",
+   "12,52",
+   "12,60",
+   "",
+   "CHAMFER",
+   "A",
+   "2",
+   "170",
+   {
+    "click": [
+     5,
+     50
+    ],
+    "pick": 6
+   },
+   {
+    "click": [
+     12,
+     56
+    ],
+    "pick": 7
+   },
+   ""
+  ]
+ }
+]
