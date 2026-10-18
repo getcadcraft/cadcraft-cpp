@@ -11,13 +11,17 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <SDL3/SDL_events.h>
 #include <webgpu/webgpu_cpp.h>
 
 #include "cc/base/value.hpp"
+#include "cc/cad/geom.hpp"
+#include "cc/cad/snap.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/drawing/compile.hpp"
@@ -107,6 +111,12 @@ class Viewer {
   void command_line();
   void overlay();
   void canvas_click(double x, double y, bool right);
+  void canvas_window(double x0, double y0, double x1, double y1);
+  [[nodiscard]] bool wants_point() const;
+  [[nodiscard]] bool can_select() const;
+  /// The point a click or a move stands for: an object snap, else ortho from the base point, else the cursor.
+  [[nodiscard]] std::array<double, 2> point_for(std::array<double, 2> raw);
+  [[nodiscard]] std::vector<const base::Value*> near_cursor(std::array<double, 2> p, double r);
   [[nodiscard]] std::array<double, 2> world_at(double x, double y) const;
   void open_item(Inbox::Item item);
   void set_space(std::size_t s);
@@ -137,7 +147,18 @@ class Viewer {
   std::vector<std::string> printed_;  // the command line's history (last 200)
   std::string prompt_;
   base::Array preview_;  // the rubber band the waiting command draws
-  bool press_ = false;   // a button down on the canvas; `moved_` once it went beyond a click
+  cad::SnapKinds kinds_ = {"end", "mid", "cen", "quad", "int", "perp", "node", "ins"};
+  bool osnap_ = true;                                // F3
+  bool ortho_ = false;                               // F8
+  std::optional<cad::Snap> snap_;                    // the snap the cursor is on
+  std::unordered_map<doc::Id, cad::Bounds> bounds_;  // per object, for the snaps' nearby test (the drawn version)
+  struct GripEdit {
+    doc::Id id = 0;
+    std::string key;
+    double x = 0, y = 0;
+  };
+  std::optional<GripEdit> grip_;  // a grip picked: the next click moves it there
+  bool press_ = false;            // a button down on the canvas; `moved_` once it went beyond a click
   bool moved_ = false;
   int press_button_ = 0;
   double press_x_ = 0, press_y_ = 0;

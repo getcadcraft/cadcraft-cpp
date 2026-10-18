@@ -146,3 +146,11 @@ TEST_CASE("a hostile script stops at its step limit") {
   }
   CHECK(limited);
 }
+
+TEST_CASE("a script's pick that no id can be is no pick (fuzz_cmd_script: 1.44e23 as an id was undefined behaviour)") {
+  const auto parsed = cc::base::parse_json(
+      R"({"name":"huge pick","steps":["LINE","0,0",{"click":[5,5],"pick":144444444444444444444444},{"click":[1,1],"pick":-3},""]})");
+  REQUIRE(parsed.has_value());
+  const Value r = cc::cmd::run_script(*parsed, words());
+  CHECK(r["model"].as_array().size() == 2);  // the two clicks draw two segments; the picks are ignored
+}

@@ -44,13 +44,23 @@ double num(const Value& v) {
 Pt pt(const Value& a) {
   return a.is_array() && a.as_array().size() >= 2 ? Pt{num(a.as_array()[0]), num(a.as_array()[1])} : Pt{};
 }
+/// An id from a script (a whole number an entity could have), else nothing.
+std::optional<Id> id_of(const Value& v) {
+  if (!v.is_number()) {
+    return std::nullopt;
+  }
+  const double d = v.as_number();
+  if (!std::isfinite(d) || d < 0 || d >= 9e15) {
+    return std::nullopt;
+  }
+  return static_cast<Id>(d);
+}
 std::vector<Id> ids(const Value& a) {
   std::vector<Id> out;
   if (a.is_array()) {
     for (const Value& v : a.as_array()) {
-      const double d = num(v);
-      if (std::isfinite(d) && d >= 0 && d < 9e15) {
-        out.push_back(static_cast<Id>(d));
+      if (const auto id = id_of(v)) {
+        out.push_back(*id);
       }
     }
   }
@@ -76,7 +86,7 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
       } else if (s.is_object() && !s.is_point()) {
         if (const Value* c = s.find("click")) {
           const Value pk = s.get("pick");
-          host.next_pick = pk.is_number() ? std::optional<Id>(static_cast<Id>(num(pk))) : std::nullopt;
+          host.next_pick = id_of(pk);
           (void)eng.click(pt(*c));
         } else if (const Value* cu = s.find("cursor")) {
           host.cur = pt(*cu);

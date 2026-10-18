@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.7b (drafting in the viewer).
+Last updated 2026-10-18 · Change: M4.7c (snaps, grips, selection windows).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -213,4 +213,10 @@ Last updated 2026-10-18 · Change: M4.7b (drafting in the viewer).
   as Enter, Esc, Ctrl+Z / Ctrl+Y), a click answers the waiting prompt, the rubber band and the selection drawn over the
   view (ImGui draw list), noun-verb picks, layers turned on and off in the document as an undo step. Checked on the
   desktop build under Xvfb: LINE by clicks, CIRCLE by a click and a typed radius, RECTANG, Esc, undo.
+- M4.7c: geom.js snapPoints / tangentFrom / grips / gripMove and view.js snap in `libs/cad` snap.hpp (primitives carry
+  geom.js's `box` flag so text boxes and arrowheads are not snapped to); the viewer snaps every point prompt (end, mid,
+  centre, quadrant, intersection, perpendicular, node, insertion by default; F3), ortho (F8), selection windows by a
+  left drag (left → right inside, right → left crossing; idle or at Select objects), grips on the selection (click a
+  grip, click where it goes: one undo step) with the snap marker and the hot grip drawn. Checked under Xvfb.  The gate's fuzz smoke found undefined behaviour in the script runner (a `pick` of 1.44e23 cast to an id): ids from
+  scripts are now range-checked; the input is a corpus entry and a regression test.
 

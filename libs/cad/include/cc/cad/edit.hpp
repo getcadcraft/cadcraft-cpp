@@ -22,6 +22,7 @@ struct Prim {
   double cx = 0, cy = 0, r = 0, a0 = 0, a1 = 0;
   bool full = false;
   bool rev = false;
+  bool box = false;  // a text box, an arrowhead: for picking and bounds, not for snaps
 };
 
 /// geom.js prims(e, blocks): an entity's primitives in world coordinates.

@@ -25,6 +25,7 @@
 #include "cc/cad/edit.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cad/snap.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/docview/drawing.hpp"
 #include "cc/engine/open.hpp"
@@ -83,11 +84,12 @@ class Viewer::CmdHost final : public cmd::Host {
     }
   }
   void prompt(const std::string& text) override { v_.prompt_ = text; }
+  // NOLINTNEXTLINE(readability-make-member-function-const) — point_for keeps the snap it found
   [[nodiscard]] std::optional<cmd::Pt> cursor() const override {
     if (v_.mouse_x_ < v_.cx_ || v_.mouse_y_ < v_.cy_ || v_.space_ >= v_.views_.size()) {
       return std::nullopt;
     }
-    const auto w = v_.world_at(v_.mouse_x_, v_.mouse_y_);
+    const auto w = v_.point_for(v_.world_at(v_.mouse_x_, v_.mouse_y_));
     return cmd::Pt{w[0], w[1]};
   }
   [[nodiscard]] const cmd::IdSet& selection() const override { return sel_; }
@@ -350,6 +352,8 @@ void Viewer::rebuild() {
   }
   hidden_.assign(drawing_.layers.size(), false);
   drawn_version_ = cad_->version();
+  bounds_.clear();
+  grip_.reset();
   redraw_ = std::max(redraw_, 2);
 }
 
@@ -367,22 +371,147 @@ void Viewer::command(std::string_view line) {
   }
 }
 
+bool Viewer::wants_point() const {
+  if (grip_) {
+    return true;
+  }
+  const std::string k = engine_ ? engine_->expects() : std::string();
+  return k == "point" || k == "distance" || k == "angle";
+}
+
+bool Viewer::can_select() const {
+  return engine_ && (!engine_->busy() || engine_->expects() == "select");
+}
+
+std::vector<const base::Value*> Viewer::near_cursor(std::array<double, 2> p, double r) {
+  std::vector<const base::Value*> out;
+  if (!cad_) {
+    return out;
+  }
+  const cad::BlockLookup blocks = [this](const std::string& n) { return cad_->blocks().get(n); };
+  cad_->entities().each([&](const doc::Id& id, const base::Value& e) {
+    if (out.size() > 400 || !cad_->visible(e)) {
+      return;
+    }
+    const base::Value t = e.get("type");
+    if (t == base::Value("xline") || t == base::Value("ray")) {
+      for (const cad::Prim& q : cad::entity_prims(e, nullptr)) {
+        if (cad::dist_to_prim(q, {p[0], p[1]}) <= r) {
+          out.push_back(&e);
+          break;
+        }
+      }
+      return;
+    }
+    auto it = bounds_.find(id);
+    if (it == bounds_.end()) {
+      it = bounds_.emplace(id, cad::entity_bounds(e, blocks)).first;
+    }
+    const cad::Bounds& b = it->second;
+    if (b.valid() && p[0] >= b.min_x - r && p[0] <= b.max_x + r && p[1] >= b.min_y - r && p[1] <= b.max_y + r) {
+      out.push_back(&e);
+    }
+  });
+  return out;
+}
+
+std::array<double, 2> Viewer::point_for(std::array<double, 2> raw) {
+  snap_.reset();
+  if (!cad_ || space_ >= views_.size() || !wants_point()) {
+    return raw;
+  }
+  std::optional<cmd::Pt> base_pt;
+  if (grip_) {
+    base_pt = cmd::Pt{grip_->x, grip_->y};
+  } else if (engine_) {
+    base_pt = engine_->rubber_base;
+  }
+  const std::optional<cad::P2> base = base_pt ? std::optional<cad::P2>(cad::P2{base_pt->x, base_pt->y}) : std::nullopt;
+  if (osnap_) {
+    const double r = 10 / std::max(views_[space_].zoom, 1e-300);
+    const cad::BlockLookup blocks = [this](const std::string& n) { return cad_->blocks().get(n); };
+    snap_ = cad::best_snap(near_cursor(raw, r), {raw[0], raw[1]}, r, kinds_, blocks, base);
+    if (snap_) {
+      return {snap_->x, snap_->y};
+    }
+  }
+  if (ortho_ && base) {
+    const double dx = raw[0] - base->x;
+    const double dy = raw[1] - base->y;
+    return std::abs(dx) >= std::abs(dy) ? std::array<double, 2>{base->x + dx, base->y}
+                                        : std::array<double, 2>{base->x, base->y + dy};
+  }
+  return raw;
+}
+
+void Viewer::canvas_window(double x0, double y0, double x1, double y1) {
+  if (!engine_ || !cmd_host_ || space_ >= views_.size()) {
+    return;
+  }
+  const auto a = world_at(x0, y0);
+  const auto b = world_at(x1, y1);
+  const cmd::Rect r{.min_x = std::min(a[0], b[0]),
+                    .min_y = std::min(a[1], b[1]),
+                    .max_x = std::max(a[0], b[0]),
+                    .max_y = std::max(a[1], b[1])};
+  const bool crossing = x1 < x0;  // right to left: what it touches
+  if (engine_->busy()) {
+    engine_->window(r, crossing);
+  } else {
+    cmd::IdSet sel = cmd_host_->selection();
+    for (const doc::Id id : cmd_host_->pick_window(r, crossing)) {
+      sel.add(id);
+    }
+    cmd_host_->set_selection(std::move(sel));
+  }
+  after_input();
+}
+
 void Viewer::canvas_click(double x, double y, bool right) {
   if (!engine_ || space_ >= views_.size()) {
     return;
   }
   if (right) {
+    grip_.reset();
     engine_->text("");  // a right click is Enter
     after_input();
     return;
   }
-  const auto w = world_at(x, y);
+  const auto raw = world_at(x, y);
+  if (grip_ && cad_) {
+    // the grip picked goes where this click (snapped) says: one undo step
+    const GripEdit ge = *grip_;
+    const auto to = point_for(raw);
+    grip_.reset();
+    if (const base::Value* e = cad_->entities().get(ge.id)) {
+      const base::Value moved = cad::grip_move(*e, ge.key, {to[0], to[1]});
+      cad_->change("GRIP", [&] { (void)cad_->update(ge.id, moved); });
+    }
+    after_input();
+    return;
+  }
   if (engine_->busy()) {
-    (void)engine_->click({w[0], w[1]});
-  } else if (cmd_host_) {
+    const auto p = wants_point() ? point_for(raw) : raw;
+    (void)engine_->click({p[0], p[1]}, cmd::Pt{raw[0], raw[1]});
+  } else if (cmd_host_ && cad_) {
+    // a grip of the selection under the click picks it up
+    const double tol = 6 / std::max(views_[space_].zoom, 1e-300);
+    for (const doc::Id id : cmd_host_->selection()) {
+      const base::Value* e = cad_->entities().get(id);
+      if (e == nullptr || !cad_->editable(*e)) {
+        continue;
+      }
+      for (const cad::Grip& gr : cad::grips(*e)) {
+        if (std::abs(gr.x - raw[0]) <= tol && std::abs(gr.y - raw[1]) <= tol) {
+          grip_ = GripEdit{.id = id, .key = gr.key, .x = gr.x, .y = gr.y};
+          redraw_ = std::max(redraw_, 2);
+          return;
+        }
+      }
+    }
     // noun-verb: a click on an object adds it to the selection (on nothing: clears it)
     cmd::IdSet sel = cmd_host_->selection();
-    if (const auto id = cmd_host_->pick_at({w[0], w[1]})) {
+    if (const auto id = cmd_host_->pick_at({raw[0], raw[1]})) {
       if (!sel.erase(*id)) {
         sel.add(*id);
       }
@@ -403,6 +532,18 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
   }
   if (!doc_ || space_ >= views_.size()) {
     return;
+  }
+  if (e.type == SDL_EVENT_KEY_DOWN && engine_ && (e.key.key == SDLK_F3 || e.key.key == SDLK_F8)) {
+    bool& flag = e.key.key == SDLK_F3 ? osnap_ : ortho_;
+    flag = !flag;
+    printed_.push_back((e.key.key == SDLK_F3 ? words_->t("app.object_snap") : std::string("Ortho")) +
+                       (flag ? " on" : " off"));
+    redraw_ = std::max(redraw_, 2);
+    return;
+  }
+  if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE && grip_) {
+    grip_.reset();
+    redraw_ = std::max(redraw_, 2);
   }
   if (e.type == SDL_EVENT_KEY_DOWN && engine_ && (e.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI)) != 0 &&
       line_[0] == '\0' && !engine_->busy()) {
@@ -430,7 +571,7 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
           v = render::fit(drawing_.spaces[space_], v);
         } else if (e.button.button == SDL_BUTTON_LEFT || e.button.button == SDL_BUTTON_MIDDLE ||
                    e.button.button == SDL_BUTTON_RIGHT) {
-          dragging_ = e.button.button != SDL_BUTTON_RIGHT;
+          dragging_ = e.button.button == SDL_BUTTON_MIDDLE || (e.button.button == SDL_BUTTON_LEFT && !can_select());
           press_ = true;
           moved_ = false;
           press_button_ = e.button.button;
@@ -443,6 +584,8 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
     case SDL_EVENT_MOUSE_BUTTON_UP:
       if (press_ && !moved_ && press_button_ != SDL_BUTTON_MIDDLE) {
         canvas_click(press_x_, press_y_, press_button_ == SDL_BUTTON_RIGHT);
+      } else if (press_ && moved_ && press_button_ == SDL_BUTTON_LEFT && can_select()) {
+        canvas_window(press_x_, press_y_, static_cast<double>(e.button.x), static_cast<double>(e.button.y));
       }
       press_ = false;
       dragging_ = false;
@@ -802,9 +945,54 @@ void Viewer::overlay() {
       }
     }
   }
-  if (engine_ && engine_->busy() && mouse_x_ >= cx_ && mouse_y_ >= cy_ && mouse_x_ < cx_ + cw_ &&
-      mouse_y_ < cy_ + ch_) {
-    const auto w = world_at(mouse_x_, mouse_y_);
+  const bool hover = mouse_x_ >= cx_ && mouse_y_ >= cy_ && mouse_x_ < cx_ + cw_ && mouse_y_ < cy_ + ch_;
+  const ImU32 grip_color = IM_COL32(0x1E, 0x48, 0xC8, 0xFF);
+  const ImU32 hot = IM_COL32(0xE0, 0x40, 0x30, 0xFF);
+  if (engine_ && !engine_->busy() && cmd_host_) {
+    for (const doc::Id id : cmd_host_->selection()) {
+      if (const base::Value* e = cad_->entities().get(id)) {
+        for (const cad::Grip& gr : cad::grips(*e)) {
+          const ImVec2 c = screen(gr.x, gr.y);
+          const bool is_hot = grip_ && grip_->id == id && grip_->key == gr.key;
+          dl->AddRectFilled(ImVec2{c.x - 4, c.y - 4}, ImVec2{c.x + 4, c.y + 4}, is_hot ? hot : grip_color);
+        }
+      }
+    }
+  }
+  if (grip_ && hover) {
+    const GripEdit ge = *grip_;
+    const auto to = point_for(world_at(mouse_x_, mouse_y_));
+    if (const base::Value* e = cad_->entities().get(ge.id)) {
+      draw(cad::grip_move(*e, ge.key, {to[0], to[1]}), action, 1.0F);
+    }
+  }
+  if (press_ && moved_ && press_button_ == SDL_BUTTON_LEFT && can_select()) {
+    const bool crossing = mouse_x_ < press_x_;
+    const ImU32 box = crossing ? IM_COL32(0x30, 0xA0, 0x50, 0xFF) : IM_COL32(0x1E, 0x48, 0xC8, 0xFF);
+    const ImVec2 a{static_cast<float>(press_x_), static_cast<float>(press_y_)};
+    const ImVec2 b{static_cast<float>(mouse_x_), static_cast<float>(mouse_y_)};
+    dl->AddRectFilled(ImVec2{std::min(a.x, b.x), std::min(a.y, b.y)}, ImVec2{std::max(a.x, b.x), std::max(a.y, b.y)},
+                      (box & 0x00FFFFFFU) | 0x30000000U);
+    dl->AddRect(ImVec2{std::min(a.x, b.x), std::min(a.y, b.y)}, ImVec2{std::max(a.x, b.x), std::max(a.y, b.y)}, box);
+  }
+  if (snap_ && hover && wants_point()) {
+    const ImVec2 c = screen(snap_->x, snap_->y);
+    const ImU32 sc = IM_COL32(0xA8, 0x4A, 0x00, 0xFF);  // --layer-orange, as view.js
+    if (snap_->kind == "end") {
+      dl->AddRect(ImVec2{c.x - 5, c.y - 5}, ImVec2{c.x + 5, c.y + 5}, sc, 0.0F, 2.0F);
+    } else if (snap_->kind == "mid") {
+      dl->AddTriangle({c.x, c.y - 6}, {c.x - 6, c.y + 5}, {c.x + 6, c.y + 5}, sc, 2);
+    } else if (snap_->kind == "cen") {
+      dl->AddCircle(c, 6, sc, 16, 2);
+    } else if (snap_->kind == "int") {
+      dl->AddLine({c.x - 5, c.y - 5}, {c.x + 5, c.y + 5}, sc, 2);
+      dl->AddLine({c.x - 5, c.y + 5}, {c.x + 5, c.y - 5}, sc, 2);
+    } else {
+      dl->AddQuad({c.x, c.y - 6}, {c.x + 6, c.y}, {c.x, c.y + 6}, {c.x - 6, c.y}, sc, 2);
+    }
+  }
+  if (engine_ && engine_->busy() && hover) {
+    const auto w = point_for(world_at(mouse_x_, mouse_y_));
     for (const base::Value& e : engine_->preview({w[0], w[1]})) {
       draw(e, action, 1.0F);
     }

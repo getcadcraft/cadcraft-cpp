@@ -333,7 +333,11 @@ void prims(const base::Value& e, const BlockLookup& blocks, int depth, std::vect
       out.push_back(line_prim(p[i].x, p[i].y, p[i + 1].x, p[i + 1].y));
     }
   } else if (t == "text") {
+    const std::size_t from = out.size();
     text_box_prims(e, out);
+    for (std::size_t i = from; i < out.size(); ++i) {
+      out[i].box = true;
+    }
   } else if (t == "hatch") {
     const base::Value loops = g(e, "loops");
     if (loops.is_array()) {
@@ -363,7 +367,11 @@ void prims(const base::Value& e, const BlockLookup& blocks, int depth, std::vect
       sub.clear();
       prims(at, blocks, 0, sub);
       for (const Prim& p : sub) {
+        const std::size_t from = out.size();
         tx_prim(p, m, out);
+        for (std::size_t i = from; i < out.size(); ++i) {
+          out[i].box = true;  // attribute text counts for picking and bounds, not for snaps
+        }
       }
     }
   } else if (t == "dim") {
@@ -375,7 +383,13 @@ void prims(const base::Value& e, const BlockLookup& blocks, int depth, std::vect
       return;
     }
     for (const base::Value& c : parts.as_array()) {
+      // arrowheads and the text box count for picking, not for snaps
+      const bool box = g(c, "type") == base::Value("hatch") || g(c, "type") == base::Value("text");
+      const std::size_t from = out.size();
       prims(c, blocks, depth + 1, out);
+      for (std::size_t i = from; box && i < out.size(); ++i) {
+        out[i].box = true;
+      }
     }
   } else if (t == "viewport") {
     const double hw = num(g(e, "w")) / 2;
@@ -396,7 +410,12 @@ void prims(const base::Value& e, const BlockLookup& blocks, int depth, std::vect
     out.push_back(line_prim(x + dx * s, y + dy * s, x + dx * kFar, y + dy * kFar));
   } else if (t == "mleader") {
     for (const base::Value& c : leader_geometry(e)) {
+      const bool box = g(c, "type") == base::Value("hatch") || g(c, "type") == base::Value("text");
+      const std::size_t from = out.size();
       prims(c, blocks, depth + 1, out);
+      for (std::size_t i = from; box && i < out.size(); ++i) {
+        out[i].box = true;
+      }
     }
   }
 }
