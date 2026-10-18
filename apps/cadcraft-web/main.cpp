@@ -49,6 +49,17 @@ EM_JS(void, cc_web_install, (), {
   c.addEventListener("drop", (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) send(f); });
 });
 EM_JS(void, cc_web_pick, (), { document.getElementById("cc-file").click(); });
+EM_JS(void, cc_web_download, (const char* name, const void* data, int size), {
+  const bytes = HEAPU8.slice(data, data + size);
+  const url = URL.createObjectURL(new Blob([bytes], {type : "application/octet-stream"}));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = UTF8ToString(name);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
 EM_JS(void, cc_web_fetch_sample, (const char* url), {
   const u = UTF8ToString(url);
   fetch(u).then((r) => r.arrayBuffer()).then((a) => {
@@ -195,7 +206,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_open(const std::uint8_t* data, int s
   std::vector<std::byte> bytes(in.size());
   std::ranges::transform(in, bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
   const std::string file = name != nullptr ? name : "drawing";
-  take(*g_app, {.name = file, .path = {}, .bytes = std::move(bytes)});
+  take(*g_app, {.name = file, .path = {}, .bytes = std::move(bytes), .save_target = false});
 }
 
 int main(int /*argc*/, char** /*argv*/) {
@@ -227,6 +238,9 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->gpu = std::make_unique<cc::ui::Gpu>(std::move(*gpu));
         cc::ui::Services services;
         services.pick_open = [] { cc_web_pick(); };
+        services.download = [](const std::string& name, std::span<const std::byte> bytes) {
+          cc_web_download(name.c_str(), bytes.data(), static_cast<int>(bytes.size()));
+        };
         g_app->host = std::make_unique<cc::ui::Host>(g_app->window, *g_app->gpu, services, "/assets", "en");
       });
   if (sample) {  // while the device is on its way

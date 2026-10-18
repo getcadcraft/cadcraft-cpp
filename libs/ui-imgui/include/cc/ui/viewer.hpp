@@ -12,6 +12,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +39,11 @@ namespace cc::ui {
 /// Platform services the viewer asks for (AGENTS.md section 7): never called directly, always through the host.
 struct Services {
   std::function<void()> pick_open;  // show the platform's file picker; the choice arrives through the inbox
+  /// Desktop: the save dialog for a file `name` of kind `ext` ("dwg" / "dxf"); the path chosen arrives through the
+  /// inbox as a save target. Unset on the web (the file downloads).
+  std::function<void(const std::string& name, const std::string& ext)> pick_save;
+  /// Web: the bytes handed to the browser as a download named `name`.
+  std::function<void(const std::string& name, std::span<const std::byte> bytes)> download;
 };
 
 /// Files handed to the viewer from another thread (a picker callback, a drop): taken on the UI thread.
@@ -47,6 +53,7 @@ class Inbox {
     std::string name;
     std::string path;              // desktop: a path to open
     std::vector<std::byte> bytes;  // web: the file's bytes
+    bool save_target = false;      // a path chosen in the save dialog, for the save waiting on it
   };
   void post(Item item);
   [[nodiscard]] std::vector<Item> take();
@@ -111,6 +118,13 @@ class Viewer {
   void command_line();
   void overlay();
   void canvas_click(double x, double y, bool right);
+  // saving (cadcraft.js saveFile / saveAs)
+  [[nodiscard]] std::string save_format() const;
+  [[nodiscard]] std::string dwg_version() const;
+  [[nodiscard]] std::string format_label(const std::string& format) const;
+  void save(std::string format, bool as);
+  void save_to(const std::string& path);
+  void save_as_dialog();
   void canvas_window(double x0, double y0, double x1, double y1);
   [[nodiscard]] bool wants_point() const;
   [[nodiscard]] bool can_select() const;
@@ -157,8 +171,19 @@ class Viewer {
     std::string key;
     double x = 0, y = 0;
   };
-  std::optional<GripEdit> grip_;  // a grip picked: the next click moves it there
-  bool press_ = false;            // a button down on the canvas; `moved_` once it went beyond a click
+  std::optional<GripEdit> grip_;            // a grip picked: the next click moves it there
+  std::string source_path_;                 // the file the drawing came from (desktop), for Save in place
+  std::string last_format_, last_version_;  // the format and DWG version chosen last (Save as)
+  struct PendingSave {
+    std::string format, name;
+    std::vector<std::byte> bytes;
+    base::Array notes;
+    std::uint64_t version = 0;
+  };
+  std::optional<PendingSave> pending_save_;  // a save waiting for the dialog's path
+  bool save_as_open_ = false;
+  int save_as_format_ = 0, save_as_version_ = 5;
+  bool press_ = false;  // a button down on the canvas; `moved_` once it went beyond a click
   bool moved_ = false;
   int press_button_ = 0;
   double press_x_ = 0, press_y_ = 0;

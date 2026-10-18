@@ -39,13 +39,22 @@ std::string locale_from_env() {
   return lang && lang->starts_with("es") ? "es-MX" : "en";
 }
 
+void SDLCALL save_picked(void* userdata, const char* const* files, int /*filter*/) {
+  if (userdata == nullptr) {
+    return;
+  }
+  // a cancelled dialog still answers: the save waiting on it then says "Not saved."
+  const std::string path = files != nullptr && *files != nullptr ? std::string(*files) : std::string();
+  static_cast<cc::ui::Inbox*>(userdata)->post({.name = {}, .path = path, .bytes = {}, .save_target = true});
+}
+
 void SDLCALL picked(void* userdata, const char* const* files, int /*filter*/) {
   if (files == nullptr || *files == nullptr || userdata == nullptr) {
     return;  // cancelled, or the dialog failed
   }
   const std::string path = *files;
   static_cast<cc::ui::Inbox*>(userdata)->post(
-      {.name = std::filesystem::path(path).filename().string(), .path = path, .bytes = {}});
+      {.name = std::filesystem::path(path).filename().string(), .path = path, .bytes = {}, .save_target = false});
 }
 
 int run(std::span<char*> argv) {
@@ -83,10 +92,16 @@ int run(std::span<char*> argv) {
     static constexpr std::array<SDL_DialogFileFilter, 1> kFilters{{{"DWG, DXF", "dwg;dxf"}}};
     cc::ui::Services services;
     services.pick_open = [&] { SDL_ShowOpenFileDialog(picked, inbox, window, kFilters.data(), 1, nullptr, false); };
+    static constexpr std::array<SDL_DialogFileFilter, 1> kDwg{{{"DWG", "dwg"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kDxf{{{"DXF", "dxf"}}};
+    services.pick_save = [&](const std::string& name, const std::string& ext) {
+      SDL_ShowSaveFileDialog(save_picked, inbox, window, ext == "dwg" ? kDwg.data() : kDxf.data(), 1, name.c_str());
+    };
     cc::ui::Host host(window, *gpu, services, assets_dir(argv[0]), locale);
     inbox = &host.viewer().inbox();
     if (!open.empty()) {
-      inbox->post({.name = std::filesystem::path(open).filename().string(), .path = open, .bytes = {}});
+      inbox->post(
+          {.name = std::filesystem::path(open).filename().string(), .path = open, .bytes = {}, .save_target = false});
     }
     bool running = true;
     while (running) {

@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.7c (snaps, grips, selection windows).
+Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -219,4 +219,9 @@ Last updated 2026-10-18 · Change: M4.7c (snaps, grips, selection windows).
   left drag (left → right inside, right → left crossing; idle or at Select objects), grips on the selection (click a
   grip, click where it goes: one undo step) with the snap marker and the hot grip drawn. Checked under Xvfb.  The gate's fuzz smoke found undefined behaviour in the script runner (a `pick` of 1.44e23 cast to an id): ids from
   scripts are now range-checked; the input is a corpus entry and a regression test.
+- M4.7d: Save and Save as in the viewer, as cadcraft.js saveFile / saveAs: the drawing's own format and DWG version
+  (or the last chosen), written in place (atomic write) on the desktop when it came from a file of that kind, else the
+  save dialog (`Services::pick_save`, SDL's dialog; the path comes back through the inbox); on the web a download
+  (`Services::download`, EM_JS glue). Save as: DWG 2000–2018, DXF 2000, DXF R12. The report's notes go to the command
+  history. Checked under Xvfb: a circle drawn, Ctrl+S, the file reopened by the CLI with the circle in it. **M4 done.**
 

@@ -20,6 +20,7 @@
 #include <imgui.h>
 
 #include "cc/base/file.hpp"
+#include "cc/base/js.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/edit.hpp"
@@ -31,6 +32,8 @@
 #include "cc/engine/open.hpp"
 #include "cc/render/scene.hpp"
 #include "cc/render/view.hpp"
+#include "cc/save/dwg.hpp"
+#include "cc/save/dxf.hpp"
 
 namespace cc::ui {
 
@@ -304,6 +307,7 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
 }
 
 void Viewer::open_item(Inbox::Item item) {
+  source_path_ = item.path;
   auto d = item.path.empty() ? engine::open_bytes(item.name, item.bytes) : engine::open_file(item.path);
   if (!d) {
     message_ = item.name + ": " + d.error().message;
@@ -315,8 +319,211 @@ void Viewer::open_item(Inbox::Item item) {
 
 void Viewer::take_inbox() {
   for (Inbox::Item& it : inbox_.take()) {
-    open_item(std::move(it));
+    if (it.save_target) {
+      save_to(it.path);
+    } else {
+      open_item(std::move(it));
+    }
   }
+}
+
+namespace {
+bool ends_with_ci(std::string_view s, std::string_view tail) {
+  return s.size() >= tail.size() && base::js_to_lower(s.substr(s.size() - tail.size())) == tail;
+}
+}  // namespace
+
+std::string Viewer::save_format() const {
+  if (!cad_) {
+    return "dwg";
+  }
+  const base::Value f = cad_->meta.get("saveFormat");
+  if (f == base::Value("dwg") || f == base::Value("dxf") || f == base::Value("dxf2000")) {
+    return f.as_string();
+  }
+  const std::string src = base::js_string(cad_->meta.get("source"));
+  if (ends_with_ci(src, ".dxf")) {
+    // a newer DXF saves as DXF 2000
+    const std::string v = base::js_string(cad_->meta.get("version"));
+    return v.size() == 6 && v.starts_with("AC10") && v >= "AC1015" ? "dxf2000" : "dxf";
+  }
+  if (ends_with_ci(src, ".dwg")) {
+    return "dwg";
+  }
+  return last_format_.empty() ? "dwg" : last_format_;
+}
+
+std::string Viewer::dwg_version() const {
+  if (cad_) {
+    if (std::string k = save::dwg_version_key(base::js_string(cad_->meta.get("dwgVersion"))); !k.empty()) {
+      return k;
+    }
+    if (ends_with_ci(base::js_string(cad_->meta.get("source")), ".dwg")) {
+      if (std::string k = save::dwg_version_key(base::js_string(cad_->meta.get("version"))); !k.empty()) {
+        return k;
+      }
+    }
+  }
+  return last_version_.empty() ? "2000" : last_version_;
+}
+
+std::string Viewer::format_label(const std::string& format) const {
+  if (format == "dwg") {
+    return words_->t("save.format.dwg", {{"version", words_->t("dwg.version", {{"v", dwg_version()}})}});
+  }
+  if (format == "dxf2000") {
+    return words_->t("save.format.dxf2000");
+  }
+  return "DXF R12";
+}
+
+void Viewer::save(std::string format, bool as) {
+  if (!cad_ || !cmd_host_) {
+    return;
+  }
+  if (engine_ && engine_->busy()) {
+    cmd_host_->print(words_->t("app.finish_cancel_current_command"));
+    return;
+  }
+  if (format != "dwg" && format != "dxf" && format != "dxf2000") {
+    format = "dwg";
+  }
+  PendingSave ps;
+  ps.format = format;
+  try {
+    base::Value report;
+    if (format == "dwg") {
+      save::DwgSaveOptions o;
+      o.version = dwg_version();
+      save::DwgSaveResult r = save::save_dwg(*cad_, o, *words_);
+      ps.bytes.resize(r.bytes.size());
+      std::ranges::transform(r.bytes, ps.bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
+      report = r.report;
+    } else {
+      save::DxfSaveResult r =
+          format == "dxf2000" ? save::write_dxf2000(*cad_, *words_) : save::write_dxf(*cad_, *words_);
+      ps.bytes.resize(r.text.size());
+      std::ranges::transform(r.text, ps.bytes.begin(), [](char c) { return static_cast<std::byte>(c); });
+      report = r.report;
+    }
+    if (const base::Value notes = report.get("notes"); notes.is_array()) {
+      ps.notes = notes.as_array();
+    }
+  } catch (const std::exception& e) {
+    cmd_host_->print(words_->t(format == "dwg" ? "app.save.failed.dwg" : "app.save.failed",
+                               {{"format", format_label(format)}, {"why", e.what()}}));
+    return;
+  }
+  const base::Value nm = cad_->meta.get("name");
+  ps.name = (nm.truthy() ? base::js_string(nm) : std::string("Drawing1")) + (format == "dwg" ? ".dwg" : ".dxf");
+  ps.version = cad_->version();
+  const std::string ext = format == "dwg" ? ".dwg" : ".dxf";
+  cad_->meta.set("saveFormat", format);  // later saves use this format (put back when nothing is saved)
+  if (services_.pick_save) {
+    pending_save_ = std::move(ps);
+    if (!as && !source_path_.empty() && ends_with_ci(source_path_, ext)) {
+      save_to(source_path_);  // the drawing's own file, in place
+    } else {
+      services_.pick_save(pending_save_->name, format == "dwg" ? "dwg" : "dxf");
+    }
+    return;
+  }
+  if (services_.download) {
+    services_.download(ps.name, ps.bytes);
+    std::string line = words_->t(format == "dxf" ? "app.save.done.dxf" : "app.save.done",
+                                 {{"file", ps.name}, {"format", format_label(format)}});
+    const std::string src = base::js_string(cad_->meta.get("source"));
+    if (!src.empty() && src != "undefined" && src != ps.name) {
+      line += " " + words_->t("app.save.original_unchanged", {{"file", src}});
+    }
+    cmd_host_->print(line);
+    for (const base::Value& n : ps.notes) {
+      cmd_host_->print("  " + base::js_string(n));
+    }
+    if (cad_->version() == ps.version) {
+      cad_->mark_saved();
+    }
+  }
+}
+
+void Viewer::save_to(const std::string& path) {
+  if (!pending_save_ || !cad_ || !cmd_host_) {
+    return;
+  }
+  PendingSave ps = std::move(*pending_save_);
+  pending_save_.reset();
+  if (path.empty()) {
+    cmd_host_->print(words_->t("app.not_saved"));
+    return;
+  }
+  if (const auto ok = base::write_file_atomic(path, ps.bytes); !ok) {
+    cmd_host_->print(words_->t("app.save.failed", {{"format", format_label(ps.format)}, {"why", ok.error().message}}));
+    return;
+  }
+  source_path_ = path;
+  cmd_host_->print(words_->t("app.save.written", {{"file", path}, {"format", format_label(ps.format)}}));
+  for (const base::Value& n : ps.notes) {
+    cmd_host_->print("  " + base::js_string(n));
+  }
+  if (cad_->version() == ps.version) {
+    cad_->mark_saved();
+  }
+  redraw_ = std::max(redraw_, 2);
+}
+
+void Viewer::save_as_dialog() {
+  if (save_as_open_) {
+    ImGui::OpenPopup("##saveas");
+    save_as_open_ = false;
+  }
+  if (!ImGui::BeginPopupModal("##saveas", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    return;
+  }
+  ImGui::TextUnformatted(words_->t("app.save_copy").c_str());
+  ImGui::Separator();
+  const std::array<std::string, 3> keys = {"dwg", "dxf2000", "dxf"};
+  for (int i = 0; i < 3; ++i) {
+    const std::string label = format_label(keys.at(static_cast<std::size_t>(i)));
+    ImGui::RadioButton(label.c_str(), &save_as_format_, i);
+  }
+  if (save_as_format_ == 0) {
+    const auto versions = save::dwg_versions();
+    std::vector<std::string> names;
+    for (const save::DwgVersion& v : versions) {
+      names.push_back(words_->t("dwg.version", {{"v", std::string(v.key)}}));
+    }
+    save_as_version_ = std::clamp(save_as_version_, 0, static_cast<int>(names.size()) - 1);
+    ImGui::SetNextItemWidth(200);
+    if (ImGui::BeginCombo(words_->t("save.version").c_str(),
+                          names.at(static_cast<std::size_t>(save_as_version_)).c_str())) {
+      for (int i = 0; std::cmp_less(i, names.size()); ++i) {
+        if (ImGui::Selectable(names.at(static_cast<std::size_t>(i)).c_str(), i == save_as_version_)) {
+          save_as_version_ = i;
+        }
+      }
+      ImGui::EndCombo();
+    }
+  }
+  ImGui::Separator();
+  if (ImGui::Button(words_->t("ui.save").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+    const std::string& format = keys.at(static_cast<std::size_t>(save_as_format_));
+    last_format_ = format;
+    if (format == "dwg" && cad_) {
+      const std::string v(save::dwg_versions()[static_cast<std::size_t>(save_as_version_)].key);
+      last_version_ = v;
+      cad_->meta.set("dwgVersion", v);
+    }
+    ImGui::CloseCurrentPopup();
+    save(format, true);
+  }
+  ImGui::SameLine();
+  if (ImGui::Button(words_->t("dlg.qs.cancel").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+    if (cmd_host_) {
+      cmd_host_->print(words_->t("app.not_saved"));
+    }
+    ImGui::CloseCurrentPopup();
+  }
+  ImGui::EndPopup();
 }
 
 void Viewer::set_space(std::size_t s) {
@@ -547,6 +754,15 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
   }
   if (e.type == SDL_EVENT_KEY_DOWN && engine_ && (e.key.mod & (SDL_KMOD_CTRL | SDL_KMOD_GUI)) != 0 &&
       line_[0] == '\0' && !engine_->busy()) {
+    if (e.key.key == SDLK_S) {
+      if ((e.key.mod & SDL_KMOD_SHIFT) != 0) {
+        save_as_open_ = true;
+      } else {
+        save(save_format(), false);
+      }
+      redraw_ = std::max(redraw_, 2);
+      return;
+    }
     // Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y: the UNDO and REDO commands (the command line's own box would take them)
     if (e.key.key == SDLK_Z) {
       engine_->run((e.key.mod & SDL_KMOD_SHIFT) != 0 ? "REDO" : "UNDO");
@@ -789,6 +1005,12 @@ void Viewer::ui(float dpr) {
       if (ImGui::MenuItem(words_->t("ui.open").c_str(), "Ctrl+O") && services_.pick_open) {
         services_.pick_open();
       }
+      if (ImGui::MenuItem(words_->t("ui.save").c_str(), "Ctrl+S", false, cad_ != nullptr)) {
+        save(save_format(), false);
+      }
+      if (ImGui::MenuItem(words_->t("app.save_copy").c_str(), "Ctrl+Shift+S", false, cad_ != nullptr)) {
+        save_as_open_ = true;
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu(words_->t("toolbar.group.view").c_str())) {
@@ -820,6 +1042,7 @@ void Viewer::ui(float dpr) {
   if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && ImGui::IsKeyPressed(ImGuiKey_O) && services_.pick_open) {
     services_.pick_open();
   }
+  save_as_dialog();
   layers_panel();
   // the space tabs, above the canvas
   const ImGuiViewport* vp = ImGui::GetMainViewport();
