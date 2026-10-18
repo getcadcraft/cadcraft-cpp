@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.6 (the command line, OFFSET / TRIM / EXTEND).
+Last updated 2026-10-18 · Change: M4.7a (what a document draws).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -202,4 +202,9 @@ Last updated 2026-10-18 · Change: M4.6 (the command line, OFFSET / TRIM / EXTEN
   extensionPart, inWindow; geom.cpp's primitives now shared through src/prims.hpp, a bulged arc knows it runs clockwise).
   **45 / 45 command scripts the same as the 0.5 Engine.** Counts printed through the catalog's plural forms (`tn`), as
   the JS's t() picks them.
+- M4.7a: what a document draws — `libs/docview` (L4): walk.js with doc.js resolveColor, linetypes.js resolveLt /
+  resolveLw / dashPrims (patternOf now `doc::pattern_of`), hatch.js hatchLines, walk.js polyBands and maskLoop;
+  `cadcraft-cli walk`; tools/parity/walk.mjs compares every event (colour, lineweight, alpha, the dashed primitives,
+  fills, placed texts, points, viewports, masks, construction lines) with the frozen 0.5 walk: **108 / 108 corpus
+  drawings draw the same**; golden test on the public fixtures.
 

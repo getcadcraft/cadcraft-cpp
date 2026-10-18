@@ -1,6 +1,6 @@
 # Gaps
 
-Last updated 2026-10-18 · Change: the command line (M4.6): what its commands leave out (#16).
+Last updated 2026-10-18 · Change: what a document draws (M4.7a): pictures, clipped references, viewport layer overrides (#17).
 
 What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it matters.
 
@@ -22,4 +22,5 @@ What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it 
 | 14 | The DWG writer starts every write from the loaded class table. The JS writer keeps the classes of custom objects (`RAW:<name>`) it met in earlier writes of the same page session, so a second save of another drawing in one JS session can name such a class as the first drawing did; the parity harness resets the JS table before each write (one save = one fresh write) | 2026-10-17 | Kept: a fresh table per write is what a single save does |
 | 15 | DWG save: a dynamic block whose visibility states were edited (dyn-blocks.js editedVisibility, the block editor) is saved plain — the fork has no block editor yet, so no drawing it opens has such a block | 2026-10-18 | With the block editor |
 | 16 | The command line (libs/cmd, M4.6) has LINE, PLINE, CIRCLE, XLINE, RAY, ARC, RECTANG, POLYGON, TEXT, ERASE, MOVE, COPY, ROTATE, SCALE, MIRROR, OFFSET, TRIM, EXTEND, UNDO, REDO of commands.js's 108 commands. Left out so far: tangent circles (CIRCLE T / TTT, TTR: tancircle.js), the deferred tangent snap a point can carry (DR.3), the F(ence) selection option, a dragged path or lasso as input, constraints kept through edits (ckeep.js: the document keeps none yet, #13) | 2026-10-18 | Each comes with its command's port; the rest of the commands with M4.7 |
+| 17 | Drawing a document (libs/docview walk): pictures (pictures.js out.picture; a picture's frame and name are drawn), clipped references (XCLIP: xclip.js clipOut draws only what is inside), per-viewport layer overrides (VP.3) are not ported. No corpus drawing has a clipped reference or overrides (108/108 draw the same) | 2026-10-18 | With the viewer's sheets (M4.7b) |
 | known issue | Screen readers: Dear ImGui has no accessibility tree | 2026-10-15 | Owner, 2026-10-15: known issue, skipped for now. Never claim screen-reader support. |

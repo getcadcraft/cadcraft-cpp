@@ -54,3 +54,9 @@ the undo / redo labels, canonical (`commands/<file name>`). Made with `node tool
 --golden-out <dir>/commands`, then the same `tar` line with `commands`. The test `cmd.golden: the command scripts …`
 replays the scripts and compares.
 
+`js-0.5-walk.tar.gz` — CadCraft 0.5's walk.js (what the app draws) over the model and every sheet of the four public
+DWG fixtures opened as the app opens them: every event in order (strokes with their dashed primitives, fills, texts,
+points, viewports, masks, construction lines), canonical (`walk/<file>.json`). Made with `node tools/parity/walk.mjs
+build/corpus/fixtures --golden-out <dir>/walk`, then the same `tar` line with `walk`. The test `docview.golden: …`
+compares; the full check (108 drawings) is `tools/parity/walk.mjs`.
+

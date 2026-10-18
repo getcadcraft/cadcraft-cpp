@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-18 · Change: M4.6 done (the command line, 20 commands at parity, 45/45 scripts); M4.7 (drafting in the viewer) next.
+Last updated 2026-10-18 · Change: M4.7a done (what a document draws: walk.js, 108/108 corpus drawings); M4.7b (the viewer shows the document) next.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -88,4 +88,4 @@ parity on the corpus with no new test files: corpus DWG → read (M2) → import
 | M4.4 | `dwg-save.js` port (document → writer model) | corpus DWG → import → save: bytes = JS, six versions; and the saved files read back by our reader — **done 2026-10-18: 648/648 byte-identical** |
 | M4.5 | DXF save (dxf.js writeDxf R12, dxf2000.js writeDxf2000) | bytes = JS on the corpus — **done 2026-10-18: 216/216 byte-identical** (108 DWGs × R12 and R2000) |
 | M4.6 | Commands as coroutines (LINE, PLINE, CIRCLE, ARC, TEXT, MOVE, COPY, ROTATE, SCALE, ERASE, OFFSET, TRIM, EXTEND, UNDO/REDO) through `Session::execute`, scripted input; the CLI runs them headless | the JS command tests ported; command scripts give the same drawing JSON — **M4.6a done 2026-10-18**: libs/cmd, the engine and 17 commands (LINE PLINE CIRCLE XLINE RAY ARC RECTANG POLYGON TEXT ERASE MOVE COPY ROTATE SCALE MIRROR UNDO REDO), 28/28 scripts the same as the 0.5 Engine (prints, prompts, model, undo labels); **M4.6b done 2026-10-18**: OFFSET, TRIM (Quick / Standard, fence, crossing, edge mode, erase), EXTEND, on geom.js's editing geometry (libs/cad edit.hpp) — 45/45 scripts |
-| M4.7 | Drafting in the viewer: command line, prompts in the status bar, snaps, grips; Save / Save as (desktop picker, web download) | screenshots against the 0.5 app; save → reopen |
+| M4.7 | Drafting in the viewer: command line, prompts in the status bar, snaps, grips; Save / Save as (desktop picker, web download) | screenshots against the 0.5 app; save → reopen — **M4.7a done 2026-10-18**: libs/docview, walk.js (what a document draws: colours, linetype dashes, pattern hatches, widths, masks), 108/108 corpus drawings draw the same event for event; next M4.7b the viewer on the document, M4.7c the command line in the UI, M4.7d snaps and grips, M4.7e Save / Save as |

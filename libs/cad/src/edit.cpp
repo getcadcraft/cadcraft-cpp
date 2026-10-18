@@ -260,6 +260,23 @@ std::vector<P2> intersect(const Prim& p, const Prim& q, bool ext1, bool ext2) {
   return out;
 }
 
+std::vector<Prim> tx_prims(const std::vector<Prim>& ps, const Mat2& m) {
+  std::vector<Prim> out;
+  out.reserve(ps.size());
+  for (const Prim& p : ps) {
+    detail::tx_prim(p, m, out);
+  }
+  return out;
+}
+
+Mat2 insert_matrix(const Value& e, const Value& blk) {
+  return detail::insert_matrix(e, blk);
+}
+
+std::vector<P2> ellipse_points(const Value& e, double steps) {
+  return detail::ellipse_points(e, steps);
+}
+
 std::vector<Prim> entity_prims(const Value& e, const BlockLookup& blocks) {
   return prims_of(e, blocks);
 }

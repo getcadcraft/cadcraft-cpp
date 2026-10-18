@@ -22,6 +22,8 @@ P2 prim_point(const Prim& p, double t);
 Prim line_prim(double x1, double y1, double x2, double y2);
 /// geom.js bulgeArc(p, q, b)
 Prim bulge_arc(double px, double py, double qx, double qy, double b);
+/// geom.js txPrim(p, m) appended to out
+void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out);
 /// geom.js polyPrims(e)
 void poly_prims(const base::Value& e, std::vector<Prim>& out);
 /// geom.js ellipsePoints(e, steps)

@@ -60,6 +60,7 @@
 #include "cc/cad/import.hpp"
 #include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
+#include "cc/docview/walk.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/dwg/read.hpp"
 #include "cc/dwg/write.hpp"
@@ -89,6 +90,7 @@ void usage(std::FILE* out) {
              "                                      write the drawing as a DWG of that version; prints the report\n"
              "  dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]\n"
              "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
+             "  walk <in.dwg>                         what the drawing draws (walk.js events of each space, JSON)\n"
              "  script <scripts.json>                 command scripts on a fresh drawing (one JSON line each)\n"
              "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
              "  version                             print the version\n");
@@ -415,6 +417,43 @@ int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
     js += '\n';
     (void)std::fwrite(js.data(), 1, js.size(), stdout);
   }
+  return 0;
+}
+
+int cmd_walk(const std::filesystem::path& in, std::string_view argv0) {
+  const auto bytes = cc::base::read_file(in, kMaxFile);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+  if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
+    print_error_json("invalid", "unreadable");
+    return 1;
+  }
+  const std::span<const std::byte> head =
+      std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
+  cc::doc::Doc d;
+  d.load(cc::cad::import_dwg(model, cc::base::as_text(head), *words), *words);
+  cc::base::Array lays;
+  for (const cc::doc::Layout& l : d.layouts()) {
+    lays.push_back(cc::docview::walk_events(d, *l.entities));
+  }
+  std::string js;
+  cc::base::write_json(
+      cc::base::make_object({{"model", cc::docview::walk_events(d, *d.model())}, {"layouts", std::move(lays)}}), js);
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
   return 0;
 }
 
@@ -746,6 +785,9 @@ int run(const std::vector<std::string_view>& args) {
     }
     return cmd_dxf_save(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), bench,
                         args[0]);
+  }
+  if (cmd == "walk" && args.size() == 3) {
+    return cmd_walk(std::filesystem::path(args[2]), args[0]);
   }
   if (cmd == "script" && args.size() == 3) {
     return cmd_script(std::filesystem::path(args[2]), args[0]);

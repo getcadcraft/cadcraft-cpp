@@ -26,6 +26,12 @@ struct Prim {
 
 /// geom.js prims(e, blocks): an entity's primitives in world coordinates.
 [[nodiscard]] std::vector<Prim> entity_prims(const base::Value& e, const BlockLookup& blocks);
+/// geom.js txPrim over a list: primitives through a matrix (an arc under a shear or stretch as short lines).
+[[nodiscard]] std::vector<Prim> tx_prims(const std::vector<Prim>& ps, const Mat2& m);
+/// geom.js insertMatrix(e, blk): a reference's block → world matrix.
+[[nodiscard]] Mat2 insert_matrix(const base::Value& e, const base::Value& blk);
+/// geom.js ellipsePoints(e, steps): points along an ellipse (or its arc).
+[[nodiscard]] std::vector<P2> ellipse_points(const base::Value& e, double steps = 72);
 /// geom.js primParam(p, q, clamp): the parameter (0 … 1) of the point on p nearest q.
 [[nodiscard]] double prim_param(const Prim& p, P2 q, bool clamp = true);
 /// geom.js distToPrim(p, q)

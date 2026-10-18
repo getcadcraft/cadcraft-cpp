@@ -84,6 +84,7 @@ if(CC_BUILD_RENDER)
 endif()
 add_subdirectory(libs/importer)   # L4
 add_subdirectory(libs/save)       # L4
+add_subdirectory(libs/docview)    # L4
 add_subdirectory(libs/engine)     # L5
 add_subdirectory(libs/cmd)        # L5
 if(CC_BUILD_GUI)

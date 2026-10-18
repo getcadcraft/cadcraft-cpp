@@ -182,7 +182,7 @@ static bool m_similar(const Mat& m, double& s, bool& flip) {
 }
 
 /// geom.js txPrim(p, m)
-static void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out) {
+void tx_prim(const Prim& p, const Mat& m, std::vector<Prim>& out) {
   if (!p.arc) {
     const P2 a = m_apply(m, p.x1, p.y1);
     const P2 b = m_apply(m, p.x2, p.y2);
