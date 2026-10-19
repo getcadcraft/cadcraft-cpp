@@ -110,6 +110,12 @@ class Host {
   virtual void save_as() {}
   /// PLOT: false when the host cannot plot.
   virtual bool plot() { return false; }
+  // the Properties panel (propcmds.js: host.props): open, fold away, Quick Properties on / off, a point picked for it
+  virtual void props_open() {}
+  virtual void props_close() {}
+  virtual void props_toggle_quick() {}
+  [[nodiscard]] virtual std::string props_pick_label() const { return {}; }
+  virtual void props_picked(Pt p) { (void)p; }
 };
 
 /// A prompt option: `key` to type, `label` shown (translated), `en` the English label (scripts type English words).
@@ -167,7 +173,8 @@ struct CommandDef {
   CommandFn fn;
   bool no_repeat = false;
   bool keep_selection = false;
-  std::string help;  // a language key
+  bool hidden = false;  // a _COMMAND the panels run: never listed
+  std::string help;     // a language key
 };
 
 /// The awaitable a prompt returns.

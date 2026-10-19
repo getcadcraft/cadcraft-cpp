@@ -11,6 +11,7 @@
 // Not ported yet (docs/gaps.md): dynamic-block parameters (Custom), sections added by add-ons.
 #pragma once
 
+#include <array>
 #include <functional>
 #include <map>
 #include <optional>
@@ -48,6 +49,18 @@ struct ReadResult {
 [[nodiscard]] std::string edit_text(double v);
 /// propexpr.js mmPerUnit(ctx): millimetres in one drawing unit (or the sheet's paper unit), or nothing.
 [[nodiscard]] std::optional<double> mm_per_unit(const ReadCtx& ctx);
+
+// ---- linetypes.js
+
+/// LINEWEIGHTS: the lineweights a person can choose, in mm.
+inline constexpr std::array<double, 24> kLineweights{0,   0.05, 0.09, 0.13, 0.15, 0.18, 0.2, 0.25,
+                                                     0.3, 0.35, 0.4,  0.5,  0.53, 0.6,  0.7, 0.8,
+                                                     0.9, 1,    1.06, 1.2,  1.4,  1.58, 2,   2.11};
+/// linetypeNames(doc): Continuous, the drawing's own, the standard ones.
+[[nodiscard]] std::vector<std::string> linetype_names(const doc::Doc& d);
+/// ltLabel(name) / lwLabel(mm): what a linetype or a lineweight is called.
+[[nodiscard]] std::string lt_label(const i18n::Catalog& words, const base::Value& n);
+[[nodiscard]] std::string lw_label(const i18n::Catalog& words, const base::Value& w);
 
 namespace props {
 

@@ -267,6 +267,7 @@ const std::vector<CommandDef>& command_table() {
     add_select(t);
     add_views(t);
     add_layers(t);
+    add_props(t);
     return t;
   }();
   return kTable;

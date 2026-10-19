@@ -25,6 +25,7 @@
 #include "cc/cad/geom.hpp"
 #include "cc/cad/snap.hpp"
 #include "cc/cmd/engine.hpp"
+#include "cc/cmd/props.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/engine/open.hpp"
@@ -108,6 +109,10 @@ class Viewer {
   [[nodiscard]] const doc::Doc* document() const noexcept { return cad_.get(); }
   /// The prompt the command line shows ("" between commands).
   [[nodiscard]] const std::string& prompt() const noexcept { return prompt_; }
+  /// True while the Properties panel is open (PROPERTIES / PROPERTIESCLOSE, its close button).
+  [[nodiscard]] bool properties_open() const noexcept { return props_open_; }
+  /// True while Quick Properties is on (QPMODE).
+  [[nodiscard]] bool quick_properties() const noexcept { return qp_on_; }
   /// The canvas colour (the host clears to it).
   [[nodiscard]] render::Rgba background() const;
 
@@ -137,7 +142,21 @@ class Viewer {
   void set_space(std::size_t s);
   void apply_theme() const;
   void layers_panel();
+  void editable_layers();
   void status_bar();
+  // the Properties panel and Quick Properties (props_panel.cpp)
+  void props_panel();
+  void quick_props();
+  [[nodiscard]] std::vector<doc::Id> props_selection() const;
+  [[nodiscard]] cmd::props::Ctx props_ctx(const std::vector<doc::Id>& ids) const;
+  [[nodiscard]] std::string prop_show(const cmd::props::Def& d, double v) const;
+  void prop_apply(const std::string& group, const std::vector<doc::Id>& ids, const std::string& key,
+                  const base::Value& raw);
+  void prop_field(const cmd::props::Def& d, const cmd::props::Ctx& ctx, const std::string& group,
+                  const std::vector<doc::Id>& ids, const std::string& uid);
+  void prop_rows(const std::vector<cmd::props::Def>& defs, const cmd::props::Ctx& ctx, const std::string& group,
+                 const std::vector<doc::Id>& ids, const std::string& prefix, bool pick);
+  void props_picked(double x, double y);
   void finger(const SDL_Event& e);
   void set_touch(bool on);
   // the chrome's sizes (window points): larger in the touch layout
@@ -145,6 +164,14 @@ class Viewer {
   [[nodiscard]] float tabs_height() const noexcept { return touch_ ? 48.0F : 30.0F; }
   [[nodiscard]] float status_height() const noexcept { return touch_ ? 32.0F : 24.0F; }
   [[nodiscard]] float command_height() const noexcept { return touch_ ? 120.0F : 72.0F; }
+  [[nodiscard]] float props_width() const noexcept {
+    if (!props_open_) {
+      return 0.0F;
+    }
+    return touch_ ? 340.0F : 300.0F;
+  }
+  /// The width between the layers panel and the Properties panel (the tabs, the canvas, the command line).
+  [[nodiscard]] float middle_width(float total) const noexcept { return total - layers_width() - props_width(); }
 
   Services services_;
   Inbox inbox_;
@@ -219,6 +246,20 @@ class Viewer {
     bool alone = false;  // no second finger joined
   };
   Tap tap_, last_tap_;
+  // the Properties panel: ids only (looked up again on every edit), the group shown, the field being typed in
+  bool props_open_ = false, qp_on_ = false;
+  std::string props_sig_, props_group_, qp_for_, qp_dismissed_;
+  float qp_x_ = 0, qp_y_ = 0;
+  int props_vertex_ = 0;
+  std::optional<doc::Id> props_vertex_of_;
+  std::string prop_active_;  // the ImGui id of the field being edited
+  std::array<char, 2048> prop_buf_{};
+  bool prop_focus_ = false;
+  struct PropPick {  // a point's pick button: _PROPPICK asks for the point, then both axes change in one step
+    std::string group, name, label;
+    std::vector<doc::Id> ids;
+  };
+  std::optional<PropPick> prop_pick_;
   Stats stats_;
   std::uint64_t frame_start_ = 0;
 };

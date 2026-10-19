@@ -1237,5 +1237,39 @@
     ]
    }
   ]
+ },
+ {
+  "name": "properties commands: open, close, quick properties, the pick button keeps the selection",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   {
+    "select": [
+     1
+    ]
+   },
+   "PROPERTIES",
+   "PR",
+   "CH",
+   "PRCLOSE",
+   "QP",
+   "QPMODE",
+   "_PROPPICK",
+   {
+    "click": [
+     5,
+     5
+    ]
+   },
+   "_PROPPICK",
+   {
+    "esc": true
+   },
+   "PROPPICK",
+   "ERASE",
+   ""
+  ]
  }
 ]

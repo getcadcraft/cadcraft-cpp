@@ -48,6 +48,7 @@ void add_inquiry(std::vector<CommandDef>& t);
 void add_select(std::vector<CommandDef>& t);
 void add_views(std::vector<CommandDef>& t);
 void add_layers(std::vector<CommandDef>& t);
+void add_props(std::vector<CommandDef>& t);
 
 /// commands.js undoInside(c): undo the command's last step (U at a prompt).
 void undo_inside(Ctx& c);

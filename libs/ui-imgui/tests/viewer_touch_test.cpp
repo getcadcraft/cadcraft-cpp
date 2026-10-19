@@ -4,6 +4,7 @@
 // on and a real mouse switches it off.
 #include <cmath>
 #include <cstddef>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -11,8 +12,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <imgui.h>
 
+#include "cc/base/value.hpp"
+#include "cc/doc/doc.hpp"
 #include "cc/engine/open.hpp"
+#include "cc/i18n/i18n.hpp"
 #include "cc/render/view.hpp"
+#include "cc/save/dwg.hpp"
 #include "cc/ui/gpu.hpp"
 #include "cc/ui/viewer.hpp"
 
@@ -138,4 +143,61 @@ TEST_CASE("touch: layout, pinch, two-finger pan, double tap") {
   frame(viewer);
   CHECK_FALSE(viewer.touch_layout());
   CHECK(ImGui::GetFrameHeight() < 30.0F);
+}
+
+TEST_CASE("properties: PROPERTIES opens the panel, a typed value edits the selection, QPMODE toggles") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  // a drawing with one line, saved as a DWG so it opens as an editable document
+  cc::doc::Doc src;
+  src.change("LINE", [&] {
+    (void)src.add(cc::base::make_object({{"type", "line"}, {"x1", 0}, {"y1", 0}, {"x2", 10}, {"y2", 0}}));
+  });
+  const cc::i18n::Catalog words;
+  cc::save::DwgSaveOptions opts;
+  opts.version = "2018";
+  opts.created_ms = 0;
+  const auto saved = cc::save::save_dwg(src, opts, words);
+  REQUIRE_FALSE(saved.bytes.empty());
+  std::vector<std::byte> dwg(saved.bytes.size());
+  for (std::size_t i = 0; i < dwg.size(); ++i) {
+    dwg[i] = static_cast<std::byte>(saved.bytes[i]);
+  }
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, {}, CC_ASSETS_DIR, "en");
+  auto d = cc::engine::open_bytes("t.dwg", dwg);
+  REQUIRE(d);
+  viewer.show(std::move(*d));
+  frame(viewer);
+  REQUIRE(viewer.document() != nullptr);
+  CHECK_FALSE(viewer.properties_open());
+
+  viewer.command("PROPERTIES");
+  frame(viewer);
+  CHECK(viewer.properties_open());
+  frame(viewer);  // the canvas shrinks for the panel
+  viewer.command("PRCLOSE");
+  frame(viewer);
+  CHECK_FALSE(viewer.properties_open());
+  viewer.command("PR");
+  frame(viewer);
+  CHECK(viewer.properties_open());
+
+  viewer.command("QP");
+  frame(viewer);
+  CHECK(viewer.quick_properties());
+  viewer.command("QPMODE");
+  CHECK_FALSE(viewer.quick_properties());
+
+  // the pick button's command asks for a point and leaves the selection alone
+  viewer.command("SELECTALL");
+  viewer.command("_PROPPICK");
+  CHECK(viewer.prompt().contains("Specify"));
+  viewer.command("5,5");  // nothing waits for it (no field's button was pressed): no change
+  frame(viewer);
+  const auto undo = viewer.document()->undo_labels();
+  CHECK((undo.empty() || undo.back() != "PROPERTIES"));
+  frame(viewer);
 }

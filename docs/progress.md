@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-19 · Change: M5.5b (the properties model).
+Last updated 2026-10-19 · Change: M5.5c (the Properties panel, the layers panel's switches).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -296,4 +296,15 @@ Last updated 2026-10-19 · Change: M5.5b (the properties model).
   groupsOf, defsFor, valueOf, applyValue as one PROPERTIES step with locked objects counted and an error refusing
   the whole change). The harness takes { props } (every field of a group with its shared value) and { prop, value }
   steps on both sides. Command parity 132/132 (8 new scripts in tests/commands/props.json).
+- M5.5c: PROPERTIES (PR, PROPS, CH, MO, DDMODIFY), PROPERTIESCLOSE, QPMODE (QP) and the hidden _PROPPICK
+  (propcmds.js; libs/cmd/src/propcmds.cpp; cmd::Host gained the props_* hooks; CommandDef.hidden keeps _COMMANDS out
+  of lists). The viewer's Properties panel (libs/ui-imgui/src/props_panel.cpp) on the right: the selection's groups,
+  the sections, one control per field kind (typed values read as propexpr.js reads them, choices, layers, colours,
+  linetypes, lineweights, transparency, materials, the polyline vertex stepper), "Varies", a pick button per point
+  (both axes in one undo step), and Quick Properties by the cursor. The layers panel: "0" first then natural order,
+  the current layer highlighted (a click makes another current), and the on / freeze / lock / plot switches drawn
+  in code — each one undo step as in 0.5. linetypeNames / ltLabel / lwLabel are shared in libs/cmd/src/linetypes.cpp.
+  Command parity 133/133. Checked under Xvfb with dwg-samples/example_2018.dwg: SELECTALL, PR, the linetype scale
+  typed for all 58 objects, the Arc group's Geometry section. From here every fork build, gate and harness runs in
+  forkrust.slice (2.5 cores, nice 19, -j3) — the owner's rule for the VPS; the full gate passes that way.
 

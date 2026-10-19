@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-19 · Change: M5.5 split into the properties model (M5.5b) and the panel (M5.5c).
+Last updated 2026-10-19 · Change: M5.5b and M5.5c done.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -109,8 +109,8 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.4b | selection: SELECT, QSELECT, SELECTSIMILAR, FIND |
 | M5.4c | views: ZOOM, NAMEDVIEW, UCS and the turned views, PLAN |
 | M5.5a | the layer tools (layertools.js): LAYISO … LAYDEL, RENAME, COUNT, LINETYPE, LTSCALE, LWEIGHT, XREF ? |
-| M5.5b | the properties model: expr.js, propexpr.js (typed values), propdefs.js (every type's fields, shared values, one undo step) |
-| M5.5c | PROPERTIES / PROPERTIESCLOSE / QPMODE / _PROPPICK and the properties panel, the layers panel's switches |
+| M5.5b | the properties model: expr.js, propexpr.js (typed values), propdefs.js (every type's fields, shared values, one undo step) — **done 2026-10-19** |
+| M5.5c | PROPERTIES / PROPERTIESCLOSE / QPMODE / _PROPPICK and the properties panel, the layers panel's switches — **done 2026-10-19** |
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands |
 | M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets |

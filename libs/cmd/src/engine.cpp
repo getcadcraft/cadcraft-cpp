@@ -523,7 +523,9 @@ const CommandDef* Engine::lookup(std::string_view name) {
 std::vector<const CommandDef*> Engine::commands() {
   std::vector<const CommandDef*> out;
   for (const CommandDef& c : detail::command_table()) {
-    out.push_back(&c);
+    if (!c.hidden) {
+      out.push_back(&c);
+    }
   }
   return out;
 }

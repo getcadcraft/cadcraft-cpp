@@ -74,6 +74,52 @@ std::unique_ptr<text::Font> load_font(const std::string& assets, int limit) {
   return f ? std::move(*f) : nullptr;
 }
 
+enum class Flag : std::uint8_t { on, frozen, locked, plot };
+
+/// A layer switch: an 18 px icon button (drawn in code: eye, snowflake, padlock, printer), pressed = `active`.
+bool flag_button(const char* id, Flag f, bool active, const std::string& tip, float size) {
+  const ImVec2 p = ImGui::GetCursorScreenPos();
+  const bool hit = ImGui::InvisibleButton(id, {size, size});
+  if (ImGui::IsItemHovered()) {
+    ImGui::SetTooltip("%s", tip.c_str());  // NOLINT(cppcoreguidelines-pro-type-vararg)
+  }
+  ImDrawList* dl = ImGui::GetWindowDrawList();
+  const ImU32 ink = ImGui::GetColorU32(active ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+  const float s = size / 20.0F;  // the 20 × 20 design grid
+  const auto at = [&](float x, float y) { return ImVec2{p.x + x * s, p.y + y * s}; };
+  switch (f) {
+    case Flag::on:  // an eye; struck through when the layer is off
+      dl->AddBezierQuadratic(at(3, 10), at(10, 3), at(17, 10), ink, 1.2F);
+      dl->AddBezierQuadratic(at(3, 10), at(10, 17), at(17, 10), ink, 1.2F);
+      dl->AddCircleFilled(at(10, 10), 2.2F * s, ink);
+      if (active) {
+        dl->AddLine(at(4, 16), at(16, 4), ink, 1.4F);
+      }
+      break;
+    case Flag::frozen:  // a snowflake
+      for (int i = 0; i < 3; ++i) {
+        const float a = static_cast<float>(i) * 1.0471976F;
+        dl->AddLine(at(10 - 6 * std::cos(a), 10 - 6 * std::sin(a)), at(10 + 6 * std::cos(a), 10 + 6 * std::sin(a)), ink,
+                    1.2F);
+      }
+      break;
+    case Flag::locked:  // a padlock, open when unlocked
+      dl->AddRect(at(5, 9), at(15, 16), ink, 1.0F, 1.2F);
+      dl->PathArcTo(at(10, active ? 9 : 7), 3.5F * s, std::numbers::pi_v<float>, 2 * std::numbers::pi_v<float>, 8);
+      dl->PathStroke(ink, 1.2F);
+      break;
+    case Flag::plot:  // a printer, struck through when the layer does not plot
+      dl->AddRect(at(6, 3), at(14, 8), ink, 0, 1.2F);
+      dl->AddRect(at(3, 8), at(17, 14), ink, 1.0F, 1.2F);
+      dl->AddRect(at(6, 12), at(14, 17), ink, 0, 1.2F);
+      if (active) {
+        dl->AddLine(at(4, 17), at(16, 3), ink, 1.4F);
+      }
+      break;
+  }
+  return hit;
+}
+
 }  // namespace
 
 /// What the command line asks of the viewer: prints, the prompt, the selection, picks under the cursor.
@@ -205,6 +251,18 @@ class Viewer::CmdHost final : public cmd::Host {
     });
     return out;
   }
+  // the Properties panel (propcmds.js)
+  void props_open() override { v_.props_open_ = true; }
+  void props_close() override { v_.props_open_ = false; }
+  void props_toggle_quick() override {
+    v_.qp_on_ = !v_.qp_on_;
+    v_.qp_dismissed_.clear();
+    v_.message_ = v_.words_->t(v_.qp_on_ ? "props.qp.on" : "props.qp.off");
+  }
+  [[nodiscard]] std::string props_pick_label() const override {
+    return v_.prop_pick_ ? v_.prop_pick_->label : std::string();
+  }
+  void props_picked(cmd::Pt p) override { v_.props_picked(p.x, p.y); }
   void preview(const base::Array& entities) override {
     v_.preview_ = entities;
     v_.redraw_ = std::max(v_.redraw_, 2);
@@ -628,6 +686,18 @@ void Viewer::rebuild() {
   redraw_ = std::max(redraw_, 2);
 }
 
+std::vector<doc::Id> Viewer::props_selection() const {
+  std::vector<doc::Id> ids;
+  if (cad_ && cmd_host_) {
+    for (const doc::Id id : cmd_host_->selection()) {
+      if (cad_->entities().get(id) != nullptr) {
+        ids.push_back(id);
+      }
+    }
+  }
+  return ids;
+}
+
 void Viewer::after_input() {
   if (cad_ && cad_->version() != drawn_version_) {
     rebuild();
@@ -1010,35 +1080,107 @@ void Viewer::layers_panel() {
       redraw_ = 2;
     }
     ImGui::Separator();
-    const auto& layers = drawing_.layers;
-    ImGuiListClipper clip;
-    clip.Begin(static_cast<int>(layers.size()));
-    while (clip.Step()) {
-      for (int i = clip.DisplayStart; i < clip.DisplayEnd; ++i) {
-        const auto idx = static_cast<std::size_t>(i);
-        bool on = !hidden_[idx];
-        ImGui::PushID(i);
-        const render::Rgba c =
-            render::draw_color(layers[idx].color, dark_ ? render::Theme::model() : render::Theme::light(), false);
-        ImGui::ColorButton("##c", im(c), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoBorder, {12, 12});
-        ImGui::SameLine();
-        if (ImGui::Checkbox(layers[idx].name.c_str(), &on)) {
-          if (cad_) {
-            const std::string name = layers[idx].name;
-            cad_->change("LAYER", [&] { cad_->set_layer(name, base::make_object({{"on", on}})); });
-            after_input();
-          } else {
+    if (cad_) {
+      editable_layers();
+    } else {
+      const auto& layers = drawing_.layers;  // a DXF, view-only: the switch shows or hides a layer here
+      ImGuiListClipper clip;
+      clip.Begin(static_cast<int>(layers.size()));
+      while (clip.Step()) {
+        for (int i = clip.DisplayStart; i < clip.DisplayEnd; ++i) {
+          const auto idx = static_cast<std::size_t>(i);
+          bool on = !hidden_[idx];
+          ImGui::PushID(i);
+          const render::Rgba c =
+              render::draw_color(layers[idx].color, dark_ ? render::Theme::model() : render::Theme::light(), false);
+          ImGui::ColorButton("##c", im(c), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoBorder, {12, 12});
+          ImGui::SameLine();
+          if (ImGui::Checkbox(layers[idx].name.c_str(), &on)) {
             hidden_[idx] = !on;
+            redraw_ = 2;
           }
-          redraw_ = 2;
+          ImGui::PopID();
         }
-        ImGui::PopID();
       }
     }
   } else {
     ImGui::TextWrapped("%s", words_->t("ui.drop_dwg_dxf_open").c_str());  // NOLINT(cppcoreguidelines-pro-type-vararg)
   }
   ImGui::End();
+}
+
+/// The drawing's layers (cadcraft.js renderLayers): "0" first, then by name; the current one marked; a click on a name
+/// makes it current; the switches turn a layer off, freeze, lock or keep it from plotting — each one undo step.
+void Viewer::editable_layers() {
+  std::vector<base::Value> list;
+  cad_->layers().each([&](const std::string&, const base::Value& l) { list.push_back(l); });
+  std::ranges::stable_sort(list, [](const base::Value& a, const base::Value& b) {
+    const std::string na = base::js_string(a.get("name"));
+    const std::string nb = base::js_string(b.get("name"));
+    if (na == "0" || nb == "0") {
+      return na == "0" && nb != "0";
+    }
+    return base::js_locale_compare_numeric(na, nb) < 0;
+  });
+  const std::string cur = base::js_string(cad_->current.get("layer"));
+  const float flag = touch_ ? 40.0F : 18.0F;
+  const std::size_t n = list.size();
+  ImGuiListClipper clip;
+  clip.Begin(static_cast<int>(n));
+  while (clip.Step()) {
+    for (int i = clip.DisplayStart; i < clip.DisplayEnd; ++i) {
+      const base::Value& l = list[static_cast<std::size_t>(i)];
+      const std::string name = base::js_string(l.get("name"));
+      const bool on = !(l.get("on") == base::Value(false));
+      const bool frozen = l.get("frozen").truthy();
+      const bool locked = l.get("locked").truthy();
+      const bool noplot = l.get("plot") == base::Value(false);
+      ImGui::PushID(i);
+      std::optional<std::pair<std::string, base::Value>> patch;
+      if (flag_button("##on", Flag::on, !on, words_->t(on ? "app.turn_off" : "app.turn_on"), flag)) {
+        if (name == cur && on) {
+          message_ = words_->t("app.current_layer_make_another");
+        } else {
+          patch = std::pair{std::string("on"), base::Value(!on)};
+        }
+      }
+      ImGui::SameLine(0, 2);
+      if (flag_button("##frz", Flag::frozen, frozen, words_->t(frozen ? "app.layer.thaw" : "app.layer.freeze"), flag)) {
+        patch = std::pair{std::string("frozen"), base::Value(!frozen)};
+      }
+      ImGui::SameLine(0, 2);
+      if (flag_button("##lock", Flag::locked, locked, words_->t(locked ? "app.layer.unlock" : "app.layer.lock"),
+                      flag)) {
+        patch = std::pair{std::string("locked"), base::Value(!locked)};
+      }
+      ImGui::SameLine(0, 2);
+      if (flag_button("##plot", Flag::plot, noplot, words_->t(noplot ? "app.plot_layer" : "app.do_not_plot_layer"),
+                      flag)) {
+        patch = std::pair{std::string("plot"), base::Value(noplot)};
+      }
+      ImGui::SameLine();
+      const auto drawn = std::ranges::find_if(drawing_.layers, [&name](const auto& dl) { return dl.name == name; });
+      const render::Rgba c = render::draw_color(drawn != drawing_.layers.end() ? drawn->color : std::string_view("7"),
+                                                dark_ ? render::Theme::model() : render::Theme::light(), false);
+      ImGui::ColorButton("##c", im(c), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoBorder, {12, 12});
+      ImGui::SameLine();
+      if (ImGui::Selectable(name.c_str(), name == cur, 0, {0, flag}) && name != cur) {  // highlighted: the current one
+        cad_->set_layer(name, base::Value::object(), true);  // turns it on and thaws it too; one undo step
+        message_ = words_->t("app.layer.current_status", {{"name", name}});
+        after_input();
+      }
+      if (!on || frozen) {
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", words_->t(frozen ? "app.layer.freeze" : "app.turn_on").c_str());  // NOLINT
+      }
+      ImGui::PopID();
+      if (patch) {
+        cad_->set_layer(name, base::make_object({{patch->first, patch->second}}));
+        after_input();
+        redraw_ = 2;
+      }
+    }
+  }
 }
 
 void Viewer::status_bar() {
@@ -1120,7 +1262,7 @@ void Viewer::ui(float dpr) {
   // the space tabs, above the canvas
   const ImGuiViewport* vp = ImGui::GetMainViewport();
   ImGui::SetNextWindowPos({vp->WorkPos.x + layers_width(), vp->WorkPos.y});
-  ImGui::SetNextWindowSize({vp->WorkSize.x - layers_width(), tabs_height()});
+  ImGui::SetNextWindowSize({middle_width(vp->WorkSize.x), tabs_height()});
   ImGui::Begin("##spaces", nullptr,
                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
   if (doc_ && ImGui::BeginTabBar("spaces", ImGuiTabBarFlags_FittingPolicyScroll)) {
@@ -1137,10 +1279,12 @@ void Viewer::ui(float dpr) {
   ImGui::End();
   status_bar();
   command_line();
+  props_panel();  // after the command line: a field it focuses wins over the command line's focus
+  quick_props();
   // the canvas: what is left
   cx_ = static_cast<double>(vp->WorkPos.x + layers_width());
   cy_ = static_cast<double>(vp->WorkPos.y + tabs_height());
-  cw_ = std::max(1.0, static_cast<double>(vp->WorkSize.x - layers_width()));
+  cw_ = std::max(1.0, static_cast<double>(middle_width(vp->WorkSize.x)));
   ch_ = std::max(
       1.0, static_cast<double>(vp->WorkSize.y - tabs_height() - status_height() - (engine_ ? command_height() : 0.0F)));
   for (render::View& v : views_) {
@@ -1167,7 +1311,7 @@ void Viewer::command_line() {
   const ImGuiViewport* vp = ImGui::GetMainViewport();
   const float h = command_height();
   ImGui::SetNextWindowPos({vp->WorkPos.x + layers_width(), vp->WorkPos.y + vp->WorkSize.y - status_height() - h});
-  ImGui::SetNextWindowSize({vp->WorkSize.x - layers_width(), h});
+  ImGui::SetNextWindowSize({middle_width(vp->WorkSize.x), h});
   ImGui::Begin("##command", nullptr,
                ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
   // the last lines it printed, then the prompt and what is being typed

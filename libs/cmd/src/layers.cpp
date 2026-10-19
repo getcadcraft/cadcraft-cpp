@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "cc/base/js.hpp"
+#include "cc/cmd/props.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -764,64 +765,12 @@ Task<void> count_cmd(Ctx& c) {
   }
 }
 
-// ---- linetypes and lineweights (linetypes.js)
-
-constexpr std::array<double, 24> kLineweights{0,    0.05, 0.09, 0.13, 0.15, 0.18, 0.2,  0.25, 0.3, 0.35, 0.4, 0.5,
-                                              0.53, 0.6,  0.7,  0.8,  0.9,  1,    1.06, 1.2,  1.4, 1.58, 2,   2.11};
-
-/// linetypes.js linetypeNames(doc): Continuous, the drawing's, the standard ones
-std::vector<std::string> linetype_names(const Ctx& c) {
-  std::vector<std::string> out{"Continuous"};
-  const auto add = [&out](const std::string& n) {
-    if (std::ranges::none_of(out,
-                             [&n](const std::string& x) { return base::js_to_upper(x) == base::js_to_upper(n); })) {
-      out.push_back(n);
-    }
-  };
-  c.doc.linetypes.each([&](const std::string& n, const Value&) { add(n); });
-  for (const char* b : {"DASHED", "HIDDEN", "CENTER", "PHANTOM", "DOT", "DASHDOT", "BORDER", "DIVIDE"}) {
-    for (const char* suffix : {"", "2", "X2"}) {
-      const std::string n = std::string(b) + suffix;
-      if (std::ranges::none_of(out, [&n](const std::string& x) { return base::js_to_upper(x) == n; })) {
-        out.push_back(n);
-      }
-    }
-  }
-  return out;
-}
-/// linetypes.js ltLabel(name)
-std::string lt_label(const Ctx& c, const Value& n) {
-  if (n.is_undefined() || n.is_null() || (n.is_string() && base::js_to_lower(n.as_string()) == "bylayer")) {
-    return c.t("lt.bylayer");
-  }
-  if (n.is_string() && base::js_to_lower(n.as_string()) == "byblock") {
-    return c.t("lt.byblock");
-  }
-  if (!n.truthy() || (n.is_string() && base::js_to_lower(n.as_string()) == "continuous")) {
-    return c.t("lt.continuous");
-  }
-  return base::js_string(n);
-}
-/// linetypes.js lwLabel(mm)
-std::string lw_label(const Ctx& c, const Value& w) {
-  if (w.is_undefined() || w.is_null() || w == Value(-1)) {
-    return c.t("lt.bylayer");
-  }
-  if (w == Value(-2)) {
-    return c.t("lt.byblock");
-  }
-  if (w == Value(-3)) {
-    return c.t("lw.default");
-  }
-  return c.t("lw.mm", {{"mm", base::js_to_fixed(base::js_to_number(w), 2)}});
-}
-
 Task<void> linetype_cmd(Ctx& c) {
-  const std::vector<std::string> names = linetype_names(c);
+  const std::vector<std::string> names = cmd::linetype_names(c.doc);
   for (;;) {
     const Value cur = c.doc.current.get("linetype");
-    const std::string v(base::js_trim(text_of(
-        co_await c.string(c.t("cmd.linetype.prompt", {{"cur", cur.truthy() ? lt_label(c, cur) : "ByLayer"}})))));
+    const std::string v(base::js_trim(text_of(co_await c.string(
+        c.t("cmd.linetype.prompt", {{"cur", cur.truthy() ? cmd::lt_label(c.words, cur) : "ByLayer"}})))));
     if (v.empty()) {
       co_return;
     }
@@ -852,7 +801,7 @@ Task<void> linetype_cmd(Ctx& c) {
       continue;
     }
     c.doc.current.set("linetype", *hit);
-    c.print(c.t("cmd.linetype.done", {{"name", hit->truthy() ? lt_label(c, *hit) : "ByLayer"}}));
+    c.print(c.t("cmd.linetype.done", {{"name", hit->truthy() ? cmd::lt_label(c.words, *hit) : "ByLayer"}}));
     co_return;
   }
 }
@@ -879,7 +828,7 @@ Task<void> lweight_cmd(Ctx& c) {
   for (;;) {
     const Value cur = c.doc.current.get("lineweight");
     const std::string s(
-        base::js_trim(text_of(co_await c.string(c.t("cmd.lweight.prompt", {{"cur", lw_label(c, cur)}})))));
+        base::js_trim(text_of(co_await c.string(c.t("cmd.lweight.prompt", {{"cur", cmd::lw_label(c.words, cur)}})))));
     if (s.empty()) {
       co_return;
     }
@@ -894,8 +843,8 @@ Task<void> lweight_cmd(Ctx& c) {
     } else {
       const double n = base::js_parse_float(s);
       if (std::isfinite(n) && n >= 0 && n <= 2.11) {
-        double best = kLineweights[0];
-        for (const double w : kLineweights) {
+        double best = cmd::kLineweights[0];
+        for (const double w : cmd::kLineweights) {
           if (std::abs(w - n) < std::abs(best - n)) {
             best = w;
           }
@@ -908,7 +857,7 @@ Task<void> lweight_cmd(Ctx& c) {
       continue;
     }
     c.doc.current.set("lineweight", *v);
-    c.print(c.t("cmd.lweight.done", {{"lw", lw_label(c, *v)}}));
+    c.print(c.t("cmd.lweight.done", {{"lw", cmd::lw_label(c.words, *v)}}));
     co_return;
   }
 }
