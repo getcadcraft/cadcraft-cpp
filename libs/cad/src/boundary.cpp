@@ -135,7 +135,8 @@ bool in_ring(P2 q, const std::vector<std::size_t>& ring, const std::vector<Vert>
 std::optional<base::Array> loops_of(const Value& e) {
   const std::string t = detail::str(g(e, "type"));
   if (t == "circle") {
-    return base::Array{to_array(arc_points(num(g(e, "cx")), num(g(e, "cy")), num(g(e, "r")), 0, kTau, false))};
+    // array_of, not Array{Array}: MSVC takes a braced list of one Array as a copy of it
+    return base::array_of(to_array(arc_points(num(g(e, "cx")), num(g(e, "cy")), num(g(e, "r")), 0, kTau, false)));
   }
   if (t == "poly" && g(e, "closed").truthy() && detail::len(g(e, "pts")) >= 2) {
     std::vector<Prim> ps;
@@ -154,7 +155,7 @@ std::optional<base::Array> loops_of(const Value& e) {
     if (flat.size() < 6) {
       return std::nullopt;
     }
-    return base::Array{to_array(flat)};
+    return base::array_of(to_array(flat));
   }
   if (t == "ellipse" && num(g(e, "t1")) - num(g(e, "t0")) >= kTau - 1e-9) {
     const std::vector<P2> pts = ellipse_points(e, 144);
@@ -163,7 +164,7 @@ std::optional<base::Array> loops_of(const Value& e) {
       flat.push_back(pts[i].x);
       flat.push_back(pts[i].y);
     }
-    return base::Array{to_array(flat)};
+    return base::array_of(to_array(flat));
   }
   return std::nullopt;
 }

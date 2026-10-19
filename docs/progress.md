@@ -249,4 +249,6 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   pointer in the UCS, H / V / R, T text), DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR (two lines: dims.js
   angularFromLines, an arc, a circle, three points), DIMCONTINUE, DIMBASELINE (with U), the DIMSCALE … DIMEXO settings
   and DIMLUNIT. Command parity 95/95 (7 new scripts in tests/commands/dims.json).
+- M5.2a: MSVC took `Array{Array}` in hatch.js loopsOf as a copy of the inner array (the trap noted at M4.3): loops
+  are made with base::array_of. CI's MSVC job was red on M5.1d (cmd.golden, the hatch scripts).
 
