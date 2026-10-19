@@ -149,9 +149,10 @@ Task<void> ask_trim_mode(Ctx& c) {
 }
 
 /// commands.js polyCornerCmd: the P option, every corner of one polyline
+// (by value: the coroutine's frame keeps its own copies, nothing refers to the caller's temporaries)
 Task<void> poly_corner_cmd(Ctx& c, bool fillet, std::vector<Option> options,
-                           const std::function<Task<void>(Ctx&, const std::string&)>& ask,
-                           const std::function<double()>& radius, const std::function<cad::ChamferSpec()>& spec) {
+                           std::function<Task<void>(Ctx&, const std::string&)> ask, std::function<double()> radius,
+                           std::function<cad::ChamferSpec()> spec) {
   for (;;) {
     const Pick p = co_await corner_pick(c, c.t("cmd.corner.poly"), options, false);
     if (p.kind == Pick::Kind::nothing) {
@@ -207,11 +208,10 @@ Task<void> fillet_cmd(Ctx& c) {
   const std::function<Task<void>(Ctx&, const std::string&)> ask_opt =
       [](Ctx& cc, const std::string& /*o*/) -> Task<void> { co_await ask_radius(cc); };
   for (;;) {
-    const Pick a = co_await corner_pick(
-        c, c.t("cmd.fillet.first"),
-        {c.opt("U", c.t("opt.undo")), c.opt("P", c.t("opt.polyline")), c.opt("R", c.t("opt.radius")),
-         c.opt("T", c.t("opt.trim")), c.opt("M", c.t("opt.multiple"))},
-        true);
+    std::vector<Option> first_opts = {c.opt("U", c.t("opt.undo")), c.opt("P", c.t("opt.polyline")),
+                                      c.opt("R", c.t("opt.radius")), c.opt("T", c.t("opt.trim")),
+                                      c.opt("M", c.t("opt.multiple"))};
+    const Pick a = co_await corner_pick(c, c.t("cmd.fillet.first"), std::move(first_opts), true);
     if (a.kind == Pick::Kind::nothing) {
       co_return;
     }
@@ -247,7 +247,8 @@ Task<void> fillet_cmd(Ctx& c) {
     });
     Pick b;
     for (;;) {
-      b = co_await corner_pick(c, c.t("cmd.fillet.second"), {c.opt("R", c.t("opt.radius"))}, false);
+      std::vector<Option> second_opts = {c.opt("R", c.t("opt.radius"))};
+      b = co_await corner_pick(c, c.t("cmd.fillet.second"), std::move(second_opts), false);
       if (b.kind == Pick::Kind::option && b.option == "R") {
         co_await ask_radius(c);
         continue;

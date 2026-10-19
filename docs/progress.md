@@ -261,4 +261,7 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   attribute definitions as texts), BCLOSE saves it as one undo step (squashed) or discards every edit made in it;
   BVSTATE / BVHIDE / BVSHOW say what they need (visibility states are not ported). The command harness now compares
   the block definitions too (tools/parity/commands.mjs, cadcraft-cli script): 103/103 scripts.
+- M5.3c: GCC 14 found two more in CI: annotate.cpp ranged over `poly.get("pts").as_array()` (get() copies: a dangling
+  temporary, a real bug) and flagged FILLET's option list built inside a co_await (kept in named locals now; the P
+  option's helper takes its functions by value).
 

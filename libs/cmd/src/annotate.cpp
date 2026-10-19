@@ -283,7 +283,8 @@ Task<void> arraypolar_cmd(Ctx& c) {
 
 std::vector<cad::P2> pts_of(const Value& poly) {
   std::vector<cad::P2> out;
-  for (const Value& p : poly.get("pts").as_array()) {
+  const Value pts = poly.get("pts");  // get() copies: keep it alive for the loop
+  for (const Value& p : pts.as_array()) {
     out.push_back({base::js_to_number(p.get("x")), base::js_to_number(p.get("y"))});
   }
   return out;
