@@ -261,6 +261,7 @@ const std::vector<CommandDef>& command_table() {
     add_corner(t);
     add_annotate(t);
     add_hatch(t);
+    add_dims(t);
     return t;
   }();
   return kTable;

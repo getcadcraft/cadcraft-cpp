@@ -1,0 +1,43 @@
+[
+  {"name": "dimlinear: picked points, horizontal and vertical by the pointer, H / V / R, text", "steps": [
+    "DIMLINEAR", "0,0", "10,5", "5,10",
+    "DLI", "0,0", "10,5", "15,2",
+    "DIMLIN", "0,20", "10,25", "H", "5,30",
+    "DIMLINEAR", "0,40", "10,45", "V", "-5,42",
+    "DIMLINEAR", "0,60", "10,65", "R", "30", "T", "<> mm", "5,70",
+    "DIMLINEAR", "0,80", "10,80", "T", "  ", "5,85"]},
+  {"name": "dimlinear: an object's ends (S, Enter): line, arc, circle, polyline", "steps": [
+    "LINE", "0,0", "10,0", "", "ARC", "20,0", "25,5", "30,0", "CIRCLE", "50,0", "5", "PLINE", "60,0", "70,0", "70,10", "",
+    "TEXT", "0,-20", "2.5", "0", "x", "",
+    "DIMLINEAR", "", {"click": [5, 0], "pick": 1}, "5,-5",
+    "DIMLINEAR", "S", {"click": [25, 5], "pick": 2}, "25,10",
+    "DIMLINEAR", "S", {"click": [55, 0], "pick": 3}, "50,10",
+    "DIMLINEAR", "", {"click": [0, -20], "pick": 5}, {"click": [70, 5], "pick": 4}, "80,5"]},
+  {"name": "dimaligned, dimradius, dimdiameter", "steps": [
+    "DIMALIGNED", "0,0", "10,10", "0,10",
+    "DAL", "0,0", "0,0",
+    "CIRCLE", "50,0", "5", "ARC", "C", "80,0", "85,0", "80,5", "LINE", "0,30", "5,30", "",
+    "DIMRADIUS", {"click": [0, 30], "pick": 4}, {"click": [55, 0], "pick": 2}, "60,5",
+    "DIMDIAMETER", {"click": [85, 0], "pick": 3}, "50,0", "80,0"]},
+  {"name": "dimangular: two lines, an arc, a circle, three points, parallel", "steps": [
+    "LINE", "0,0", "10,0", "", "LINE", "0,0", "10,10", "", "ARC", "C", "50,0", "55,0", "50,5", "CIRCLE", "80,0", "5", "LINE", "0,20", "10,20", "",
+    "DIMANGULAR", {"click": [5, 0], "pick": 1}, {"click": [5, 0], "pick": 1}, {"click": [5, 5], "pick": 2}, "8,3",
+    "DAN", {"click": [55, 0], "pick": 3}, "57,7",
+    "DIMANG", {"click": [85, 0], "pick": 4}, "80,5", "90,5",
+    "DIMANGULAR", "", "0,0", "10,0", "0,10", "3,3",
+    "DIMANGULAR", "", "0,0", "10,0", "0,10", "0,0", "-3,-3",
+    "DIMANGULAR", {"click": [5, 0], "pick": 1}, {"click": [5, 20], "pick": 5}]},
+  {"name": "dimcontinue and dimbaseline from the last dimension, undo", "steps": [
+    "DIMLINEAR", "0,0", "10,0", "5,5",
+    "DIMCONTINUE", "20,0", "30,0", "U", "U", "U", "25,0", "",
+    "DIMLINEAR", "0,20", "10,20", "5,25",
+    "DIMBASELINE", "20,20", "30,20", "",
+    "DIMALIGNED", "0,40", "10,50", "0,50", "DCO", "20,60", ""]},
+  {"name": "dimcontinue: pick the dimension when the last is not linear", "steps": [
+    "CIRCLE", "50,0", "5", "DIMLINEAR", "0,0", "10,0", "5,5", "DIMRADIUS", {"click": [55, 0], "pick": 1}, "60,5",
+    "DIMCONTINUE", {"click": [50, 0], "pick": 1}, {"click": [5, 5], "pick": 2}, "20,0", ""]},
+  {"name": "dimension settings and DIMLUNIT", "steps": [
+    "DIMSCALE", "2", "DIMTXT", "3", "DIMASZ", "-1", "DIMDEC", "3.6", "DIMGAP", "1", "DIMEXE", "", "DIMEXO", "0.5", "DIMSCALE", "0",
+    "DIMLUNIT", "4", "DIMLUNIT", "7", "DIMLUNIT", "6", "DIMLUNIT", "2.5",
+    "DIMLUNIT", "4", "DIMLINEAR", "0,0", "100,0", "50,10"]}
+]

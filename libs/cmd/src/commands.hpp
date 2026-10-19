@@ -42,6 +42,7 @@ void add_reshape(std::vector<CommandDef>& t);
 void add_corner(std::vector<CommandDef>& t);
 void add_annotate(std::vector<CommandDef>& t);
 void add_hatch(std::vector<CommandDef>& t);
+void add_dims(std::vector<CommandDef>& t);
 
 /// commands.js undoInside(c): undo the command's last step (U at a prompt).
 void undo_inside(Ctx& c);

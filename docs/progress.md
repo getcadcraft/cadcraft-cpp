@@ -245,4 +245,8 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   graph with the JS's grid hash, vertex snapping, faces and islands): pick inside, S select closed objects, P / ? /
   SC / A / U, SOLID, the too-dense warning (docview hatch_lines). Command parity 88/88 (6 new scripts in
   tests/commands/hatch.json).
+- M5.2: dimensions (libs/cmd/src/dims.cpp): DIMLINEAR (picked points or an object's ends, horizontal / vertical by the
+  pointer in the UCS, H / V / R, T text), DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR (two lines: dims.js
+  angularFromLines, an arc, a circle, three points), DIMCONTINUE, DIMBASELINE (with U), the DIMSCALE … DIMEXO settings
+  and DIMLUNIT. Command parity 95/95 (7 new scripts in tests/commands/dims.json).
 
