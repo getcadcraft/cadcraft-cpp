@@ -124,6 +124,20 @@ struct JoinResult {
 /// objects; nothing for other objects (or a reference to a missing block).
 [[nodiscard]] std::optional<base::Array> explode_entity(const base::Value& e, const BlockLookup& blocks);
 
+// ---- cloud.cpp: revision clouds
+
+/// An object's outline as points (arcs and curves in short pieces).
+struct Path {
+  std::vector<P2> pts;
+  bool closed = false;
+};
+/// geom.js pathOf(e): nothing for objects without an outline.
+[[nodiscard]] std::optional<Path> path_of(const base::Value& e);
+/// geom.js resamplePath(pts, closed, step): points spaced evenly along a path.
+[[nodiscard]] std::vector<P2> resample_path(const std::vector<P2>& pts, bool closed, double step);
+/// geom.js revcloud(pts, closed, arcLen, reverse): a polyline of arcs about arcLen long bulging outward.
+[[nodiscard]] base::Value revcloud(const std::vector<P2>& pts, bool closed, double arc_len, bool reverse = false);
+
 // ---- corners.cpp: FILLET and CHAMFER
 
 /// geom.js cornerTarget(e, pick): what a pick on e is for a corner (seg: the polyline segment nearest the pick).

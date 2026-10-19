@@ -1,0 +1,38 @@
+[
+  {"name": "array: rectangular, count and spacing, bad counts", "steps": [
+    "LINE", "0,0", "10,0", "", "CIRCLE", "5,5", "2", {"select": [1, 2]}, "ARRAY", "", "COU", "3", "2", "S", "15", "12", "COU", "2.5", "0", "X",
+    {"select": [1]}, "ARRAYRECT", "COL", "2", "5", "R", "2", "-5", "S", "abc", "3", ""]},
+  {"name": "array: polar, fill, upright, one item, too few", "steps": [
+    "CIRCLE", "10,0", "1", {"select": [1]}, "ARRAYPOLAR", "0,0", "I", "4", "",
+    {"select": [1]}, "ARRAY", "PO", "0,0", "F", "90", "ROT", "N", "I", "3", "F", "0", "X",
+    {"select": [1]}, "ARRAYRECT", "COU", "1", "1", "X",
+    {"select": [1]}, "AR", "PO", "5,5", "I", "1", "X"]},
+  {"name": "revcloud: rectangle, flat, polygon with undo, freehand too short", "steps": [
+    "REVCLOUD", "0,0", "10,5", "RC", "A", "3", "0,20", "10,20", "RC", "P", "0,30", "10,30", "10,40", "U", "5,40", "",
+    "RC", "P", "0,60", "4,60", "", "RC", "F", "0,50", "", "RC", "R", "20,0", "30,10"]},
+  {"name": "revcloud: an object becomes the cloud, reversed, not an outline", "steps": [
+    "CIRCLE", "50,50", "5", "RECTANG", "0,0", "10,10", "TEXT", "0,20", "2.5", "0", "Hi", "",
+    "REVCLOUD", "O", {"click": [55, 50], "pick": 1}, "",
+    "RC", "O", {"click": [0, 5], "pick": 2}, "Y",
+    "RC", "O", {"click": [0, 20], "pick": 3}, {"esc": true}]},
+  {"name": "matchprop: text height, settings, the source left out", "steps": [
+    "TEXT", "0,0", "2.5", "0", "A", "", "TEXT", "0,10", "5", "0", "B", "", "LINE", "0,20", "10,20", "",
+    "MATCHPROP", {"click": [0, 10], "pick": 2}, {"window": [-1, -1, 11, 21], "ids": [1, 2, 3]}, "",
+    "MA", {"click": [0, 0], "pick": 1}, "S", "T", "C", "LA", "", {"window": [-1, 5, 11, 12], "ids": [2]}, "",
+    "PAINTER", {"click": [0, 0], "pick": 1}, {"click": [0, 0], "pick": 1}, ""]},
+  {"name": "mtext: box, options, empty, bad line spacing", "steps": [
+    "MTEXT", "0,0", "10,-5", "Hello", "World", "",
+    "MT", "0,20", "H", "3", "J", "MC", "L", "2", "L", "9", "R", "30", "W", "8", "Line", "",
+    "MT", "0,40", "5,35", "",
+    "T", "0,60", "J", "BR", "8,55", "x", ""]},
+  {"name": "mleader: text, sizes, no text, same point", "steps": [
+    "MLEADER", "0,0", "5,5", "Note", "two", "",
+    "MLD", "A", "1", "L", "2", "10,0", "5,-3", "",
+    "MLD", "0,10", "0,10",
+    "MLEAD", "20,0", "15,5", "x", ""]},
+  {"name": "textedit: picked, preselected, Enter keeps it, not text", "steps": [
+    "TEXT", "0,0", "2.5", "0", "Hi", "", "LINE", "0,10", "10,10", "", "MLEADER", "0,20", "5,25", "Lead", "",
+    "TEXTEDIT", {"click": [0, 0], "pick": 1}, "Hello", {"click": [5, 10], "pick": 2}, {"click": [0, 20], "pick": 3}, "Led", "",
+    {"select": [1]}, "ED", "Changed",
+    "DDEDIT", {"click": [0, 0], "pick": 1}, "", ""]}
+]

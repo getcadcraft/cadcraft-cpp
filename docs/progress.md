@@ -238,4 +238,7 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   (libs/cad/src/corners.cpp): lines, arcs, circles, polyline segments, parallel lines (half circle), shift = sharp
   corner, P every corner, M, U, T trim mode, D/A/E chamfer settings. Command parity 74/74 (8 new scripts in
   tests/commands/corners.json).
+- M5.1c: ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD (geom.js pathOf, resamplePath, revcloud: libs/cad/src/cloud.cpp),
+  MATCHPROP, MTEXT, MLEADER, TEXTEDIT (libs/cmd/src/annotate.cpp; text typed at the command line, as the JS without
+  an in-place editor). Command parity 82/82 (8 new scripts in tests/commands/annotate.json).
 
