@@ -109,65 +109,6 @@ bool nests(const Ctx& c, const std::string& inner, const std::string& name) {
   return false;
 }
 
-/// a.localeCompare(b, undefined, { numeric: true }) for block names: letters by their letter first (lower case
-/// before upper on a tie), runs of digits by their value, other characters before digits and letters.
-int locale_numeric(const std::string& a, const std::string& b) {
-  const auto rank = [](unsigned char ch) {
-    if (std::isdigit(ch) != 0) {
-      return 1;
-    }
-    return std::isalpha(ch) != 0 ? 2 : 0;
-  };
-  std::size_t i = 0;
-  std::size_t j = 0;
-  while (i < a.size() && j < b.size()) {
-    const auto ca = static_cast<unsigned char>(a[i]);
-    const auto cb = static_cast<unsigned char>(b[j]);
-    if (std::isdigit(ca) != 0 && std::isdigit(cb) != 0) {
-      std::size_t ie = i;
-      std::size_t je = j;
-      while (ie < a.size() && std::isdigit(static_cast<unsigned char>(a[ie])) != 0) {
-        ++ie;
-      }
-      while (je < b.size() && std::isdigit(static_cast<unsigned char>(b[je])) != 0) {
-        ++je;
-      }
-      std::string na = a.substr(i, ie - i);
-      std::string nb = b.substr(j, je - j);
-      na.erase(0, std::min(na.find_first_not_of('0'), na.size() - 1));
-      nb.erase(0, std::min(nb.find_first_not_of('0'), nb.size() - 1));
-      if (na.size() != nb.size()) {
-        return na.size() < nb.size() ? -1 : 1;
-      }
-      if (const int c = na.compare(nb); c != 0) {
-        return c < 0 ? -1 : 1;
-      }
-      i = ie;
-      j = je;
-      continue;
-    }
-    if (rank(ca) != rank(cb)) {
-      return rank(ca) < rank(cb) ? -1 : 1;
-    }
-    const int la = std::tolower(ca);
-    const int lb = std::tolower(cb);
-    if (la != lb) {
-      return la < lb ? -1 : 1;
-    }
-    ++i;
-    ++j;
-  }
-  if (i < a.size() || j < b.size()) {
-    return i < a.size() ? 1 : -1;
-  }
-  // the same letters: lower case first
-  for (std::size_t k = 0; k < a.size() && k < b.size(); ++k) {
-    if (a[k] != b[k]) {
-      return std::islower(static_cast<unsigned char>(a[k])) != 0 ? -1 : 1;
-    }
-  }
-  return 0;
-}
 /// commands.js namedBlocks(doc): the blocks that are not anonymous, in name order
 std::vector<std::string> named_blocks(const Ctx& c) {
   std::vector<std::string> out;
@@ -176,7 +117,8 @@ std::vector<std::string> named_blocks(const Ctx& c) {
       out.push_back(n);
     }
   });
-  std::ranges::stable_sort(out, [](const std::string& a, const std::string& b) { return locale_numeric(a, b) < 0; });
+  std::ranges::stable_sort(
+      out, [](const std::string& a, const std::string& b) { return base::js_locale_compare_numeric(a, b) < 0; });
   return out;
 }
 std::string list_of(const std::vector<std::string>& names, std::size_t max) {

@@ -106,7 +106,8 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.3a | blocks: BLOCK, ATTDEF, INSERT, PURGE |
 | M5.3b | the block editor (BEDIT … BCLOSE, BVSTATE / BVHIDE / BVSHOW), DELBLOCKS |
 | M5.4a | inquiry: DIST, AREA, MEASUREGEOM, ID, LIST, UNITS |
-| M5.4b | views and selection: ZOOM, NAMEDVIEW, UCS and the turned views, SELECT, QSELECT, SELECTSIMILAR, FIND |
+| M5.4b | selection: SELECT, QSELECT, SELECTSIMILAR, FIND |
+| M5.4c | views: ZOOM, NAMEDVIEW, UCS and the turned views, PLAN |
 | M5.5 | layers and properties: LAYER and the layer tools, PROPERTIES, LINETYPE, LTSCALE, LWEIGHT, the properties panel |
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands |

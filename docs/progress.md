@@ -268,4 +268,9 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   ID (in the UCS), LIST (commands.js describe, attribute rows), UNITS (length format, one undo step); geom.js
   polygonMeasure / entityArea / pointInPoly (libs/cad/src/measure.cpp); units.js formatArea. Command parity 109/109
   (6 new scripts in tests/commands/inquiry.json).
+- M5.4b: SELECT, QSELECT (qselect.js QS_PROPS, operators, * / ? wildcards), SELECTSIMILAR (with its settings),
+  FIND (findtext.js findMatches / applyMatches: text, attribute values, dimension words around <>)
+  (libs/cmd/src/select.cpp; a small code-point matcher stands in for the JS RegExps). BEDIT / INSERT name lists sort
+  with base::js_locale_compare_numeric (ICU root collation) instead of an approximation. Command parity 113/113
+  (4 new scripts in tests/commands/select.json).
 
