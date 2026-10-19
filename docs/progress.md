@@ -254,4 +254,7 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 - M5.3a: BLOCK (attribute definitions go into the block), ATTDEF (modes I / C / P), INSERT (by name, any case; S / R;
   each attribute asked), PURGE (nested unused blocks too), LIBRARY / BPARAMETER / INSERT F and L say what they need
   (libs/cmd/src/blocks.cpp). Command parity 99/99 (4 new scripts in tests/commands/blocks.json).
+- M5.2b: CI's GCC job was red from M5.1b on: a lambda's local shadowed an enclosing variable it does not capture (GCC's
+  -Wshadow sees it, Clang's does not). Fixed (corners.cpp, corner.cpp), and Clang builds now add
+  -Wshadow-uncaptured-local so the gate catches the next one.
 

@@ -120,7 +120,7 @@ bool apply_corner(Ctx& c, bool fillet, const cad::CornerResult& r) {
 
 /// commands.js cornerPreview(c, first, make): the corner with the object under the cursor as the second pick
 void corner_preview(Ctx& c, std::function<cad::CornerResult(const cad::CornerTarget&)> make) {
-  c.preview([&c, make = std::move(make)](Pt cur) {
+  c.preview([&c, fn = std::move(make)](Pt cur) {
     base::Array out;
     const auto id = c.host.pick_at(cur);
     const Value* e = id ? c.doc.entities().get(*id) : nullptr;
@@ -131,7 +131,7 @@ void corner_preview(Ctx& c, std::function<cad::CornerResult(const cad::CornerTar
     if (!tb) {
       return out;
     }
-    const cad::CornerResult r = make(*tb);
+    const cad::CornerResult r = fn(*tb);
     if (r.ok) {
       out = r.edits;
       out.insert(out.end(), r.add.begin(), r.add.end());

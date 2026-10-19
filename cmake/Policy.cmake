@@ -52,6 +52,11 @@ function(cc_apply_policy target)
     target_compile_options(${target} PRIVATE
       -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -Wnon-virtual-dtor -Wold-style-cast
       -Wcast-align -Wnull-dereference -Wdouble-promotion -Wformat=2 -Wimplicit-fallthrough)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # GCC's -Wshadow also catches a lambda's local that shadows an enclosing one it does not capture; Clang needs
+      # this to fail the same way (CI's GCC job was red on M5.2 for it)
+      target_compile_options(${target} PRIVATE -Wshadow-uncaptured-local)
+    endif()
     if(CC_WERROR)
       target_compile_options(${target} PRIVATE -Werror)
     endif()

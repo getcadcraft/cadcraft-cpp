@@ -638,8 +638,8 @@ CornerResult fillet_pair(const CornerTarget& a, const CornerTarget& b, double r,
       const double s = dot(u, {to.x - at.x, to.y - at.y});
       return s > 0 ? keep_u({-u.x, -u.y}) : keep_u(u);
     }
-    const double a = base::js_atan2(at.y - p.cy, at.x - p.cx);
-    return keep_turn(!((to.x - at.x) * -base::js_sin(a) + (to.y - at.y) * base::js_cos(a) > 0));
+    const double ang = base::js_atan2(at.y - p.cy, at.x - p.cx);
+    return keep_turn(!((to.x - at.x) * -base::js_sin(ang) + (to.y - at.y) * base::js_cos(ang) > 0));
   };
   return cut_both(a, b, CutAt{best->ta, away(pa, best->ta, best->tb)}, CutAt{best->tb, away(pb, best->tb, best->ta)},
                   trim, {corner_arc(best->c, r, best->ta, best->tb, like)});
