@@ -1,5 +1,5 @@
 cc_library(cad LAYER 2
-  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp src/files.cpp src/geom.cpp src/dims.cpp src/save_parts.cpp src/tx.cpp src/edit.cpp src/reshape.cpp src/corners.cpp src/cloud.cpp src/snap.cpp
+  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp src/files.cpp src/geom.cpp src/dims.cpp src/save_parts.cpp src/tx.cpp src/edit.cpp src/reshape.cpp src/corners.cpp src/cloud.cpp src/boundary.cpp src/snap.cpp
   DEPS cc::base cc::i18n)
 
 cc_test(cad

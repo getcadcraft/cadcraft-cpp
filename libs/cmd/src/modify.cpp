@@ -260,6 +260,7 @@ const std::vector<CommandDef>& command_table() {
     add_reshape(t);
     add_corner(t);
     add_annotate(t);
+    add_hatch(t);
     return t;
   }();
   return kTable;

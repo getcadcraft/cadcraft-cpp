@@ -241,4 +241,8 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 - M5.1c: ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD (geom.js pathOf, resamplePath, revcloud: libs/cad/src/cloud.cpp),
   MATCHPROP, MTEXT, MLEADER, TEXTEDIT (libs/cmd/src/annotate.cpp; text typed at the command line, as the JS without
   an in-place editor). Command parity 82/82 (8 new scripts in tests/commands/annotate.json).
+- M5.1d: HATCH (libs/cmd/src/hatch.cpp) on hatch.js loopsOf and boundaryAt (libs/cad/src/boundary.cpp: the planar
+  graph with the JS's grid hash, vertex snapping, faces and islands): pick inside, S select closed objects, P / ? /
+  SC / A / U, SOLID, the too-dense warning (docview hatch_lines). Command parity 88/88 (6 new scripts in
+  tests/commands/hatch.json).
 

@@ -138,6 +138,20 @@ struct Path {
 /// geom.js revcloud(pts, closed, arcLen, reverse): a polyline of arcs about arcLen long bulging outward.
 [[nodiscard]] base::Value revcloud(const std::vector<P2>& pts, bool closed, double arc_len, bool reverse = false);
 
+// ---- boundary.cpp: hatch boundaries
+
+/// hatch.js loopsOf(e): a closed object (circle, closed polyline, whole ellipse) as flat loops [x, y, …], else
+/// nothing.
+[[nodiscard]] std::optional<base::Array> loops_of(const base::Value& e);
+/// hatch.js boundaryAt(entities, pt, blocks, { within }): the closed area round pt with its islands, or an error
+/// ("large", "none", "open").
+struct Boundary {
+  std::string error;
+  base::Array loops;
+};
+[[nodiscard]] Boundary boundary_at(const std::vector<const base::Value*>& entities, P2 pt, const BlockLookup& blocks,
+                                   const std::optional<Bounds>& within);
+
 // ---- corners.cpp: FILLET and CHAMFER
 
 /// geom.js cornerTarget(e, pick): what a pick on e is for a corner (seg: the polyline segment nearest the pick).

@@ -1,6 +1,6 @@
 cc_library(cmd LAYER 5
-  SOURCES src/engine.cpp src/draw.cpp src/modify.cpp src/trim.cpp src/reshape.cpp src/corner.cpp src/annotate.cpp src/script.cpp
-  DEPS cc::base cc::i18n cc::cad cc::doc)
+  SOURCES src/engine.cpp src/draw.cpp src/modify.cpp src/trim.cpp src/reshape.cpp src/corner.cpp src/annotate.cpp src/hatch.cpp src/script.cpp
+  DEPS cc::base cc::i18n cc::cad cc::doc cc::docview)
 target_include_directories(cc_cmd PRIVATE src)
 
 cc_test(cmd
