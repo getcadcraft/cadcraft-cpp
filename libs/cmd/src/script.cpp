@@ -4,14 +4,18 @@
 // cursor, windows, a preselection.
 #include "cc/cmd/script.hpp"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
 #include "cc/cmd/engine.hpp"
+#include "cc/cmd/props.hpp"
 
 namespace cc::cmd {
 
@@ -67,6 +71,84 @@ std::vector<Id> ids(const Value& a) {
   return out;
 }
 
+constexpr std::array<std::string_view, 5> kNumeric{"len", "ang", "num", "int", "area"};
+
+/// The Properties panel (props.js): {props, ids?, group?, vertex?} lists the group's fields with the value they share;
+/// {prop, value, ids?, group?, vertex?} sets one (a number field's text read as props.js reads it).
+void props_step(doc::Doc& d, ScriptHost& host, const Value& s, const i18n::Catalog& words) {
+  base::Array& log = host.log;
+  std::vector<Value> ents;
+  const Value sids = s.get("ids");
+  for (const Id id : sids.is_array() ? ids(sids) : host.sel.ids()) {
+    if (const Value* e = d.entities().get(id)) {
+      ents.push_back(*e);
+    }
+  }
+  const std::vector<props::Group> groups = props::groups_of(ents, words);
+  const Value gk = s.get("group");
+  std::string want = groups.empty() ? std::string() : groups[0].key;
+  if (gk.is_string()) {
+    want = gk.as_string();
+  }
+  const auto g = std::ranges::find_if(groups, [&want](const props::Group& x) { return x.key == want; });
+  if (g == groups.end()) {
+    log.emplace_back(base::Array{"props", nullptr});
+    return;
+  }
+  props::Ctx ctx{.doc = &d, .words = &words, .ents = {}, .vertex = 0};
+  for (const Id id : g->ids) {
+    if (const Value* e = d.entities().get(id)) {
+      ctx.ents.push_back(*e);
+    }
+  }
+  if (ctx.ents.size() == 1) {
+    ctx.vertex = base::js_to_int32(base::js_to_number(s.get("vertex")));
+  }
+  const std::vector<props::Def> defs = props::defs_for(g->key, ctx);
+  if (s.get("props").truthy()) {
+    base::Array gs;
+    for (const props::Group& x : groups) {
+      gs.emplace_back(base::Array{x.key, static_cast<double>(x.n), x.label});
+    }
+    base::Array fields;
+    for (const props::Def& def : defs) {
+      const auto v = props::value_of(def, ctx);
+      Value shown = v ? *v : Value(std::string("\0varies", 7));
+      if (v && v->is_undefined()) {
+        shown = Value(nullptr);
+      }
+      fields.emplace_back(base::Array{def.key, def.sec, def.kind, def.label, std::move(shown)});
+    }
+    log.emplace_back(base::Array{"props", std::move(gs), std::move(fields)});
+    return;
+  }
+  const std::string key = s.get("prop").as_string();
+  const auto def = std::ranges::find_if(defs, [&key](const props::Def& x) { return x.key == key; });
+  if (def == defs.end()) {
+    log.emplace_back(base::Array{"prop", key, "missing"});
+    return;
+  }
+  Value v = s.get("value");
+  if (std::ranges::find(kNumeric, def->kind) != kNumeric.end()) {
+    const ReadCtx rc{.lunits = d.meta.get("lunits"),
+                     .units = d.meta.get("units").is_string() ? d.meta.get("units").as_string() : std::string(),
+                     .paper = {},
+                     .gt0 = def->gt0,
+                     .min = def->min,
+                     .max = def->max,
+                     .vars = {}};
+    const ReadResult r = read_value(base::js_string(v), def->kind == "area" ? "num" : def->kind, rc, words);
+    if (!r.ok) {
+      log.emplace_back(base::Array{"prop", key, "read", r.error});
+      return;
+    }
+    v = Value(r.value);
+  }
+  const props::Applied r = props::apply_value(d, *def, v, ctx);
+  log.emplace_back(base::Array{"prop", key, r.ok, static_cast<double>(r.changed), static_cast<double>(r.locked),
+                               r.error.empty() ? Value(nullptr) : Value(r.error)});
+}
+
 }  // namespace
 
 Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLimits& limits) {
@@ -113,6 +195,8 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
           const Value patch = s.get("patch");
           d.set_layer(ly->as_string(), patch.is_object() && !patch.is_point() ? patch : Value::object(),
                       s.get("current").truthy());
+        } else if (s.get("props").truthy() || s.get("prop").is_string()) {
+          props_step(d, host, s, words);
         }
       }
     }

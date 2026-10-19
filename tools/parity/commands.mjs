@@ -22,6 +22,38 @@ const { init } = await imp('i18n.js');
 init({ locale: 'en', strings: JSON.parse(readFileSync(join(app, 'lang/en.json'), 'utf8')) });
 const { Doc } = await imp('doc.js');
 const { Engine } = await imp('commands.js');
+const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
+const { readValue } = await imp('propexpr.js');
+const NUMERIC = ['len', 'ang', 'num', 'int', 'area'];
+
+/** The Properties panel (props.js): {props, ids?, group?, vertex?} lists the group's fields with the value they share;
+ * {prop, value, ids?, group?, vertex?} sets one (a number field's text read as props.js reads it). */
+function propsStep(doc, host, s, log) {
+  const ents = (Array.isArray(s.ids) ? s.ids : [...host.selection]).map((id) => doc.get(id)).filter(Boolean);
+  const groups = groupsOf(ents);
+  const g = groups.find((x) => x.key === (typeof s.group === 'string' ? s.group : groups[0]?.key));
+  if (!g) { log.push(['props', null]); return; }
+  const gents = g.ids.map((id) => doc.get(id));
+  const ctx = { doc, vertex: gents.length === 1 ? (s.vertex | 0) : 0 };
+  const defs = defsFor(g.key, gents, ctx);
+  if (s.props) {
+    log.push(['props', groups.map((x) => [x.key, x.n, x.label]), defs.map((d) => {
+      const v = valueOf(d, gents, ctx);
+      return [d.key, d.sec, d.kind, d.label, v === VARIES ? '\u0000varies' : v ?? null];
+    })]);
+    return;
+  }
+  const d = defs.find((x) => x.key === s.prop);
+  if (!d) { log.push(['prop', s.prop, 'missing']); return; }
+  let v = s.value;
+  if (NUMERIC.includes(d.kind)) {
+    const r = readValue(String(s.value), d.kind === 'area' ? 'num' : d.kind, { lunits: doc.meta.lunits, units: doc.meta.units, paper: null, gt0: d.gt0, min: d.min, max: d.max });
+    if (!r.ok) { log.push(['prop', s.prop, 'read', r.error]); return; }
+    v = r.value;
+  }
+  const r = applyValue(doc, d, gents, v, ctx);
+  log.push(['prop', s.prop, r.ok, r.changed, r.locked, r.error ?? null]);
+}
 const here = dirname(fileURLToPath(import.meta.url));
 const cli = process.env.CC_CLI || join(here, '../../build/release/apps/cadcraft-cli/cadcraft-cli');
 const args = process.argv.slice(2);
@@ -53,6 +85,7 @@ async function runJs(script) {
     else if (s.select) host.selection = new Set(s.select);
     else if ('shift' in s) host.shift = !!s.shift;
     else if (typeof s.layer === 'string') doc.setLayer(s.layer, s.patch && typeof s.patch === 'object' ? s.patch : {}, { current: !!s.current });   // the Layers panel
+    else if (s.props || typeof s.prop === 'string') propsStep(doc, host, s, log);
     await settle();
   }
   eng.escape();

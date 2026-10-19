@@ -7,3 +7,4 @@ cc_fuzz(json SOURCES fuzz_json.cpp DEPS cc::base CORPUS ${CMAKE_CURRENT_SOURCE_D
 cc_fuzz(dxf SOURCES fuzz_dxf.cpp DEPS cc::io-dxf CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/dxf)
 cc_fuzz(compile SOURCES fuzz_compile.cpp DEPS cc::drawing cc::io-dxf CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/compile)
 cc_fuzz(cmd_script SOURCES fuzz_cmd_script.cpp DEPS cc::cmd cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/cmd_script)
+cc_fuzz(prop_value SOURCES fuzz_prop_value.cpp DEPS cc::cmd cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/prop_value)

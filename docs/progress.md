@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
+Last updated 2026-10-19 · Change: M5.5b (the properties model).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -285,4 +285,15 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   does). Parity found one more dangling `get(k).as_array()` reference (LAYUNISO): base::Value's as_array / as_object /
   as_string / as_bytes now return by value on a temporary, which ends that bug class. Command parity 124/124
   (5 new scripts in tests/commands/layers.json).
+- 2026-10-19: the full-corpus suites after the base::Value change: import 110/110, doc 110/110, walk 108/108,
+  DXF save 216/216 and DWG save 648/648 byte-identical. (A first walk run read 0/108: build/release's CLI was older
+  than the `walk` command; rebuilt.)
+- M5.5b: the properties model. expr.js (libs/cad/src/expr.cpp: tokenizer, recursive descent, tree walk; units,
+  degrees, if / comparisons), propexpr.js (libs/cmd/src/propexpr.cpp: lengths in the drawing's format or with a
+  unit, feet-inches, d°m's", radians / grads, expressions with or without "=", min / max / > 0 / whole numbers) and
+  propdefs.js (libs/cmd/src/props.cpp, cc/cmd/props.hpp: the general fields and every type's — line, circle, arc,
+  ellipse, point, polyline vertices, text, block reference, hatch, multileader, viewport, the 59 dimension fields —
+  groupsOf, defsFor, valueOf, applyValue as one PROPERTIES step with locked objects counted and an error refusing
+  the whole change). The harness takes { props } (every field of a group with its shared value) and { prop, value }
+  steps on both sides. Command parity 132/132 (8 new scripts in tests/commands/props.json).
 

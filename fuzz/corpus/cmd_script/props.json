@@ -1,0 +1,1241 @@
+[
+ {
+  "name": "properties: line, every general field, typed values and errors",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "=2*10",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ang",
+    "value": "45d30'",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ang",
+    "value": "0.5r",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ang",
+    "value": "100g",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ang",
+    "value": "-30",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "start.x",
+    "value": "3'",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "start.y",
+    "value": "12mm",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "end.x",
+    "value": "",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "end.y",
+    "value": "1e2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "start.z",
+    "value": "=sqrt(16)+",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "0",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "abc",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dx",
+    "value": "5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "color",
+    "value": 1,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "color",
+    "value": "#FF8000",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "lt",
+    "value": "DASHED",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "lts",
+    "value": "0",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "lts",
+    "value": "2.5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "lw",
+    "value": 0.35,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "tr",
+    "value": 50,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "th",
+    "value": "2.5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "mat",
+    "value": "Glass",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "url",
+    "value": "  http://example.org/a  ",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "layer",
+    "value": "0",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "nope",
+    "value": "1",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   "U",
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: architectural units, feet and inches",
+  "steps": [
+   "UNITS",
+   "A",
+   "16",
+   "LINE",
+   "0,0",
+   "120,0",
+   "",
+   {
+    "prop": "len",
+    "value": "12'6\"",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "end.y",
+    "value": "1'-3 1/2\"",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "start.x",
+    "value": "2' 6",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "start.y",
+    "value": "=1'+6\"",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "10ft",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "1'1/0\"",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: circle, arc, ellipse; a mixed group",
+  "steps": [
+   "CIRCLE",
+   "0,0",
+   "5",
+   "ARC",
+   "10,0",
+   "15,5",
+   "20,0",
+   "ELLIPSE",
+   "30,0",
+   "40,0",
+   "3",
+   {
+    "props": true,
+    "ids": [
+     1,
+     2,
+     3
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1,
+     2,
+     3
+    ],
+    "group": "arc"
+   },
+   {
+    "props": true,
+    "ids": [
+     1,
+     2,
+     3
+    ],
+    "group": "nope"
+   },
+   {
+    "prop": "color",
+    "value": 3,
+    "ids": [
+     1,
+     2,
+     3
+    ],
+    "group": "all"
+   },
+   {
+    "prop": "r",
+    "value": "7",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "d",
+    "value": "=r*2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "area",
+    "value": "100",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "circ",
+    "value": "31.4",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "d",
+    "value": "-4",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "sweep",
+    "value": "360",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "sweep",
+    "value": "90",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "chord",
+    "value": "10",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "a0",
+    "value": "1.5708r",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "a1",
+    "value": "100g",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "r",
+    "value": "2",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "minor",
+    "value": "20",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "ratio",
+    "value": "0.5",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "ratio",
+    "value": "1.5",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "ea0",
+    "value": "30",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "ea1",
+    "value": "200",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "axisang",
+    "value": "-45",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "prop": "major",
+    "value": "8",
+    "ids": [
+     3
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     2
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     3
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: polyline vertices, widths, bulge, area, closed",
+  "steps": [
+   "PLINE",
+   "0,0",
+   "10,0",
+   "10,10",
+   "0,10",
+   "C",
+   {
+    "props": true,
+    "ids": [
+     1
+    ],
+    "vertex": 2
+   },
+   {
+    "prop": "vertex.x",
+    "value": "12",
+    "ids": [
+     1
+    ],
+    "vertex": 2
+   },
+   {
+    "prop": "vertex.y",
+    "value": "=10+2",
+    "ids": [
+     1
+    ],
+    "vertex": 9
+   },
+   {
+    "prop": "vsw",
+    "value": "1",
+    "ids": [
+     1
+    ],
+    "vertex": 1
+   },
+   {
+    "prop": "vew",
+    "value": "-1",
+    "ids": [
+     1
+    ],
+    "vertex": 1
+   },
+   {
+    "prop": "vb",
+    "value": "0.5",
+    "ids": [
+     1
+    ],
+    "vertex": 3
+   },
+   {
+    "prop": "gw",
+    "value": "0.2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "z",
+    "value": "3",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "area",
+    "value": "400",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "closed",
+    "value": false,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "area",
+    "value": "10",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ],
+    "vertex": 1
+   },
+   "U",
+   "U",
+   {
+    "props": true,
+    "ids": [
+     1
+    ],
+    "vertex": 3
+   }
+  ]
+ },
+ {
+  "name": "properties: text",
+  "steps": [
+   "TEXT",
+   "0,0",
+   "2.5",
+   "0",
+   "Hello",
+   "",
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "s",
+    "value": "   ",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "s",
+    "value": "Hi there",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "just",
+    "value": "center|middle",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "h",
+    "value": "5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "h",
+    "value": "-1",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "rot",
+    "value": "90",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "wf",
+    "value": "0",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "wf",
+    "value": "0.8",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "obl",
+    "value": "90",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "obl",
+    "value": "15",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ww",
+    "value": "40",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ls",
+    "value": "2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ls",
+    "value": "5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "ann",
+    "value": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "style",
+    "value": "Standard",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "pos.x",
+    "value": "=3*3",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: a linear and an angular dimension",
+  "steps": [
+   "DIMLINEAR",
+   "0,0",
+   "10,0",
+   "5,5",
+   "LINE",
+   "20,0",
+   "30,0",
+   "",
+   "LINE",
+   "20,0",
+   "20,10",
+   "",
+   "DIMANGULAR",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     20,
+     5
+    ],
+    "pick": 3
+   },
+   "24,4",
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.dec",
+    "value": "3",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.dec",
+    "value": "2.5",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.tol",
+    "value": "sym",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.tp",
+    "value": "0.1",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.zlead",
+    "value": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.ztrail",
+    "value": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.text",
+    "value": "<> mm",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.alt",
+    "value": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.altd",
+    "value": "2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.lunit",
+    "value": "4",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.tad",
+    "value": "1",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.trot",
+    "value": "30",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.blk1",
+    "value": "DOT",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.asz",
+    "value": "3",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.scale",
+    "value": "2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.pre",
+    "value": "~",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dimp1.x",
+    "value": "1",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "prop": "dim.tfill",
+    "value": "2",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "dim.adec",
+    "value": "2",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "dim.aunit",
+    "value": "1",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "dim.tol",
+    "value": "dev",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "dim.tp",
+    "value": "0.5",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "dim.tm",
+    "value": "0.25",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     4
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1,
+     4
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: hatch, block reference, multileader",
+  "steps": [
+   "RECTANG",
+   "0,0",
+   "10,10",
+   "HATCH",
+   "5,5",
+   "",
+   {
+    "props": true,
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "pattern",
+    "value": "SOLID",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "pattern",
+    "value": "ANSI31",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "pscale",
+    "value": "2",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "pangle",
+    "value": "45",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "origin.x",
+    "value": "1",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "island",
+    "value": "outer",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "bg",
+    "value": 3,
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "assoc",
+    "value": true,
+    "ids": [
+     2
+    ]
+   },
+   {
+    "prop": "z",
+    "value": "1",
+    "ids": [
+     2
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     2
+    ]
+   },
+   "LINE",
+   "20,0",
+   "30,0",
+   "",
+   "BLOCK",
+   "Seat",
+   "20,0",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 3
+   },
+   "",
+   "INSERT",
+   "Seat",
+   "40,0",
+   {
+    "props": true,
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "sx",
+    "value": "0",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "sx",
+    "value": "2",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "us",
+    "value": "3",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "rot",
+    "value": "90",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "prop": "ins.x",
+    "value": "50",
+    "ids": [
+     4
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     4
+    ]
+   },
+   "MLEADER",
+   "0,20",
+   "5,25",
+   "Note",
+   "",
+   {
+    "props": true,
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "s",
+    "value": "",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "h",
+    "value": "4",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "dir",
+    "value": "-1",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "masz",
+    "value": "1.5",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "dogleg",
+    "value": "5",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "prop": "arrow.x",
+    "value": "1",
+    "ids": [
+     6
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     6
+    ]
+   }
+  ]
+ },
+ {
+  "name": "properties: locked layers, the selection, undo",
+  "steps": [
+   {
+    "layer": "L"
+   },
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "LINE",
+   "0,5",
+   "10,5",
+   "",
+   {
+    "prop": "layer",
+    "value": "L",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "layer": "L",
+    "patch": {
+     "locked": true
+    }
+   },
+   {
+    "prop": "color",
+    "value": 1,
+    "ids": [
+     1,
+     2
+    ]
+   },
+   {
+    "prop": "len",
+    "value": "20",
+    "ids": [
+     1
+    ]
+   },
+   {
+    "select": [
+     2,
+     1
+    ]
+   },
+   {
+    "props": true
+   },
+   {
+    "prop": "color",
+    "value": 5
+   },
+   {
+    "layer": "L",
+    "patch": {
+     "locked": false
+    }
+   },
+   {
+    "prop": "len",
+    "value": "20",
+    "ids": [
+     1,
+     2
+    ]
+   },
+   {
+    "props": true,
+    "ids": [
+     1,
+     2
+    ]
+   },
+   "U",
+   "U",
+   {
+    "props": true,
+    "ids": [
+     1,
+     2
+    ]
+   },
+   "REDO",
+   {
+    "props": true,
+    "ids": [
+     1,
+     2
+    ]
+   }
+  ]
+ }
+]

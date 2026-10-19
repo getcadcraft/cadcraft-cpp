@@ -924,4 +924,27 @@ std::string format_decimals(double v, int prec) {
   return decimals(v, prec);
 }
 
+Value dim_style_full(const Value& e) {
+  return merged(merged(detail::dim_defaults(), detail::dim_extra()), g(e, "st"));
+}
+std::string dim_style_text(const Value& e, double v) {
+  const DimVal dv = dim_value(e, v);
+  const Value over = g(e, "text");
+  const std::string o = over.is_undefined() || over.is_null() ? std::string() : str(over);
+  std::string body = o.empty() || o == "<>" ? dv.main : replace_all(o, "<>", dv.main);
+  if (dv.tol.kind.empty() || dv.tol.kind == "none") {
+    return body;
+  }
+  if (dv.tol.kind == "sym") {
+    return body + dv.tol.text;
+  }
+  if (dv.tol.kind == "dev") {
+    return body + " " + dv.tol.upper + "/" + dv.tol.lower;
+  }
+  if (dv.tol.kind == "lim") {
+    return dv.tol.upper + "/" + dv.tol.lower;
+  }
+  return "[" + body + "]";
+}
+
 }  // namespace cc::cad

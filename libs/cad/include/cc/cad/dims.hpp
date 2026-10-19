@@ -32,6 +32,11 @@ namespace cc::cad {
 /// 4 architectural, 5 fractional); prec null = the format's default (4).
 [[nodiscard]] std::string format_length(double v, const base::Value& lunits, const base::Value& prec = base::Value());
 
+/// propdefs.js dst(e): { ...DIM_DEFAULTS, ...DIM_EXTRA, ...e.st } — every style key a dimension has.
+[[nodiscard]] base::Value dim_style_full(const base::Value& e);
+/// dimstyle.js dimStyleText(e, v): the text with the override, tolerances added.
+[[nodiscard]] std::string dim_style_text(const base::Value& e, double v);
+
 /// units.js lunitCode(v): a length format code 1 … 5 (anything else: 2, decimal).
 [[nodiscard]] int length_code(const base::Value& lunits);
 /// units.js precOf(code, prec): the precision a format uses (prec rounded into 0 … 8, else 4).
