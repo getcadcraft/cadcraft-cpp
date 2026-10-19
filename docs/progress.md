@@ -251,4 +251,7 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   and DIMLUNIT. Command parity 95/95 (7 new scripts in tests/commands/dims.json).
 - M5.2a: MSVC took `Array{Array}` in hatch.js loopsOf as a copy of the inner array (the trap noted at M4.3): loops
   are made with base::array_of. CI's MSVC job was red on M5.1d (cmd.golden, the hatch scripts).
+- M5.3a: BLOCK (attribute definitions go into the block), ATTDEF (modes I / C / P), INSERT (by name, any case; S / R;
+  each attribute asked), PURGE (nested unused blocks too), LIBRARY / BPARAMETER / INSERT F and L say what they need
+  (libs/cmd/src/blocks.cpp). Command parity 99/99 (4 new scripts in tests/commands/blocks.json).
 

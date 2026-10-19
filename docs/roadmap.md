@@ -103,7 +103,8 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.1c | ARRAY / ARRAYRECT / ARRAYPOLAR, REVCLOUD, MATCHPROP, MTEXT, MLEADER, TEXTEDIT |
 | M5.1d | HATCH (hatch.js patterns, boundaries) |
 | M5.2 | dimensions: DIMLINEAR, DIMALIGNED, DIMRADIUS, DIMDIAMETER, DIMANGULAR, DIMCONTINUE, DIMBASELINE, DIMLUNIT |
-| M5.3 | blocks: BLOCK, ATTDEF, INSERT, PURGE, the block editor (BEDIT … BCLOSE), DELBLOCKS |
+| M5.3a | blocks: BLOCK, ATTDEF, INSERT, PURGE |
+| M5.3b | the block editor (BEDIT … BCLOSE, BVSTATE / BVHIDE / BVSHOW), DELBLOCKS |
 | M5.4 | inquiry and views: DIST, AREA, MEASUREGEOM, ID, LIST, ZOOM, NAMEDVIEW, UNITS, UCS and the turned views, SELECT, QSELECT, SELECTSIMILAR, FIND |
 | M5.5 | layers and properties: LAYER and the layer tools, PROPERTIES, LINETYPE, LTSCALE, LWEIGHT, the properties panel |
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen |
