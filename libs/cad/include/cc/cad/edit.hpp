@@ -152,6 +152,22 @@ struct Boundary {
 [[nodiscard]] Boundary boundary_at(const std::vector<const base::Value*>& entities, P2 pt, const BlockLookup& blocks,
                                    const std::optional<Bounds>& within);
 
+// ---- measure.cpp: area and perimeter (AREA, MEASUREGEOM)
+
+/// geom.js pointInPoly(q, pts)
+[[nodiscard]] bool point_in_poly(P2 q, const std::vector<P2>& pts);
+/// geom.js polygonMeasure(pts): signed area (counter-clockwise positive) and perimeter, closing segment included.
+struct PolygonMeasure {
+  double area = 0, perimeter = 0;
+};
+[[nodiscard]] PolygonMeasure polygon_measure(const std::vector<P2>& pts);
+/// geom.js entityArea(e): kind "circle" (perimeter = circumference), "closed" or "open"; nothing without an area.
+struct EntityArea {
+  double area = 0, perimeter = 0;
+  std::string kind;
+};
+[[nodiscard]] std::optional<EntityArea> entity_area(const base::Value& e);
+
 // ---- corners.cpp: FILLET and CHAMFER
 
 /// geom.js cornerTarget(e, pick): what a pick on e is for a corner (seg: the polyline segment nearest the pick).

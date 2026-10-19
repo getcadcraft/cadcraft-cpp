@@ -264,4 +264,8 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 - M5.3c: GCC 14 found two more in CI: annotate.cpp ranged over `poly.get("pts").as_array()` (get() copies: a dangling
   temporary, a real bug) and flagged FILLET's option list built inside a co_await (kept in named locals now; the P
   option's helper takes its functions by value).
+- M5.4a: inquiry (libs/cmd/src/inquiry.cpp): DIST, AREA (points, objects, add / subtract totals), MEASUREGEOM,
+  ID (in the UCS), LIST (commands.js describe, attribute rows), UNITS (length format, one undo step); geom.js
+  polygonMeasure / entityArea / pointInPoly (libs/cad/src/measure.cpp); units.js formatArea. Command parity 109/109
+  (6 new scripts in tests/commands/inquiry.json).
 

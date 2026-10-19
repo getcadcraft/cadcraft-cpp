@@ -914,4 +914,14 @@ std::string format_length(double v, const Value& lunits, const Value& prec) {
   }
 }
 
+int length_code(const Value& lunits) {
+  return lunit_code(lunits);
+}
+int length_prec(const Value& prec) {
+  return prec_of(prec);
+}
+std::string format_decimals(double v, int prec) {
+  return decimals(v, prec);
+}
+
 }  // namespace cc::cad

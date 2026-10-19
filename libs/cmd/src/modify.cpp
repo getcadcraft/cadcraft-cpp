@@ -263,6 +263,7 @@ const std::vector<CommandDef>& command_table() {
     add_hatch(t);
     add_dims(t);
     add_blocks(t);
+    add_inquiry(t);
     return t;
   }();
   return kTable;

@@ -32,4 +32,11 @@ namespace cc::cad {
 /// 4 architectural, 5 fractional); prec null = the format's default (4).
 [[nodiscard]] std::string format_length(double v, const base::Value& lunits, const base::Value& prec = base::Value());
 
+/// units.js lunitCode(v): a length format code 1 … 5 (anything else: 2, decimal).
+[[nodiscard]] int length_code(const base::Value& lunits);
+/// units.js precOf(code, prec): the precision a format uses (prec rounded into 0 … 8, else 4).
+[[nodiscard]] int length_prec(const base::Value& prec);
+/// units.js decimals(v, prec): Number(v.toFixed(prec)) as text, a value under half the last digit as 0.
+[[nodiscard]] std::string format_decimals(double v, int prec);
+
 }  // namespace cc::cad
