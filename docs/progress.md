@@ -273,4 +273,9 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   (libs/cmd/src/select.cpp; a small code-point matcher stands in for the JS RegExps). BEDIT / INSERT name lists sort
   with base::js_locale_compare_numeric (ICU root collation) instead of an approximation. Command parity 113/113
   (4 new scripts in tests/commands/select.json).
+- M5.4c: UCS (ucs.js: origin + axis, World, Previous, Z, 3point, OBject, NAmed save / restore / delete / ?),
+  TURNLEFT / TURNRIGHT / TURNWORLD, PLAN, ZOOM (E / A / W / P / S / C, a typed 2x), NAMEDVIEW, and the host's
+  LAYER, NEW, OPEN, SAVE, SAVEAS, DXFOUT, PLOT, SHORTCUTS, COMPARESETTINGS (libs/cmd/src/views.cpp; cmd::Host gained
+  the view and file hooks, the viewer implements zoom and saves once the command ends). The harness compares the UCS
+  and named views too. Command parity 119/119 (6 new scripts in tests/commands/views.json).
 

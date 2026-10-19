@@ -136,6 +136,61 @@ class Viewer::CmdHost final : public cmd::Host {
     });
     return best;
   }
+  // ---- the view (ZOOM, NAMEDVIEW) and files (SAVE, SAVEAS, DXFOUT) for commands
+  [[nodiscard]] render::View* view() { return v_.space_ < v_.views_.size() ? &v_.views_[v_.space_] : nullptr; }
+  void remember_view() {
+    if (const render::View* v = view()) {
+      v_.prev_view_ = *v;
+    }
+  }
+  void zoom_extents() override {
+    if (render::View* v = view(); v != nullptr && v_.space_ < v_.drawing_.spaces.size()) {
+      remember_view();
+      *v = render::fit(v_.drawing_.spaces[v_.space_], *v);
+      v_.redraw_ = std::max(v_.redraw_, 2);
+    }
+  }
+  bool zoom_previous() override {
+    render::View* v = view();
+    if (v == nullptr || !v_.prev_view_) {
+      return false;
+    }
+    std::swap(*v, *v_.prev_view_);
+    v_.redraw_ = std::max(v_.redraw_, 2);
+    return true;
+  }
+  void zoom_by(double factor) override {
+    if (render::View* v = view(); v != nullptr && factor > 0 && std::isfinite(factor)) {
+      remember_view();
+      *v = render::zoom_at(*v, v->width / 2, v->height / 2, factor);
+      v_.redraw_ = std::max(v_.redraw_, 2);
+    }
+  }
+  void zoom_window(cmd::Pt a, cmd::Pt b, bool exact) override {
+    render::View* v = view();
+    const double w = std::abs(b.x - a.x);
+    const double h = std::abs(b.y - a.y);
+    if (v == nullptr || !(w > 0) || !(h > 0) || !std::isfinite(w) || !std::isfinite(h)) {
+      return;
+    }
+    remember_view();
+    v->cx = (a.x + b.x) / 2;
+    v->cy = (a.y + b.y) / 2;
+    v->zoom = std::clamp(std::min(v->width / w, v->height / h) * (exact ? 1 : 0.95), 1e-9, 1e9);
+    v_.redraw_ = std::max(v_.redraw_, 2);
+  }
+  [[nodiscard]] std::optional<cmd::ViewRect> view_rect() const override {
+    if (v_.space_ >= v_.views_.size()) {
+      return std::nullopt;
+    }
+    const render::View& v = v_.views_[v_.space_];
+    return cmd::ViewRect{.cx = v.cx, .cy = v.cy, .w = v.width / v.zoom, .h = v.height / v.zoom};
+  }
+  // the viewer saves once the command has ended (a save while one runs is refused)
+  void save_file(const std::string& format, bool /*remember*/) override {
+    v_.save_request_ = std::pair{format.empty() ? v_.save_format() : format, false};
+  }
+  void save_as() override { v_.save_request_ = std::pair{v_.save_format(), true}; }
   std::vector<doc::Id> pick_window(const cmd::Rect& r, bool crossing) override {
     std::vector<doc::Id> out;
     if (!v_.cad_) {
@@ -576,6 +631,15 @@ void Viewer::rebuild() {
 void Viewer::after_input() {
   if (cad_ && cad_->version() != drawn_version_) {
     rebuild();
+  }
+  if (save_request_ && engine_ && !engine_->busy()) {  // SAVE / SAVEAS / DXFOUT asked for it
+    const auto [format, as] = *save_request_;
+    save_request_.reset();
+    if (as) {
+      save_as_dialog();
+    } else {
+      save(format, false);
+    }
   }
   redraw_ = std::max(redraw_, 2);
 }

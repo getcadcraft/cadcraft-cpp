@@ -15,6 +15,7 @@
 #include <span>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <SDL3/SDL_events.h>
@@ -182,6 +183,8 @@ class Viewer {
   };
   std::optional<PendingSave> pending_save_;  // a save waiting for the dialog's path
   bool save_as_open_ = false;
+  std::optional<std::pair<std::string, bool>> save_request_;  // SAVE / DXFOUT (format, false) or SAVEAS (…, true)
+  std::optional<render::View> prev_view_;                     // ZOOM P
   int save_as_format_ = 0, save_as_version_ = 5;
   bool press_ = false;  // a button down on the canvas; `moved_` once it went beyond a click
   bool moved_ = false;

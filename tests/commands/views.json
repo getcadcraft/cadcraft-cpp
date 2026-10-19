@@ -1,0 +1,24 @@
+[
+  {"name": "ucs: origin and axis, world, previous, Z, 3 points, object; ID reads it", "steps": [
+    "LINE", "0,0", "10,10", "",
+    "UCS", "10,5", "20,15", "ID", "10,5",
+    "UCS", "", "ID", "10,5",
+    "UCS", "P", "UCS", "Z", "30", "ID", "0,0",
+    "UCS", "3", "0,0", "10,10", "0,10",
+    "UCS", "3", "", "",  "",
+    "UCS", "OB", {"click": [9, 9], "pick": 1}, "ID", "10,10",
+    "UCS", "W", "UCS", "P", "UCS", "P", "UCS", "P", "UCS", "P"]},
+  {"name": "ucs: named — save, list, restore, delete, bad names", "steps": [
+    "UCS", "5,5", "", "UCS", "NA", "S", "base", "UCS", "NA", "S", "a,b", "UCS", "W", "UCS", "NA", "?",
+    "UCS", "NA", "", "BASE", "UCS", "NA", "R", "zz", "UCS", "NA", "S", "Base",
+    "UCS", "NA", "D", "base", "UCS", "NA", "?", "UCS", "NA", "S", ""]},
+  {"name": "turned views and PLAN without a view to turn", "steps": [
+    "TURNLEFT", "TURNRIGHT", "TURNRIGHT", "TURNWORLD", "UCS", "NA", "S", "t", "PLAN", "", "PLAN", "U", "t", "PLAN", "U", "zz", "PLAN", "W"]},
+  {"name": "zoom: previous, scale, a factor, a bad centre height", "steps": [
+    "ZOOM", "P", "Z", "S", "abc", "Z", "S", "2", "Z", "2x", "Z", "C", "0,0", "abc"]},
+  {"name": "namedview: save by window, replace, list, delete, bad names, empty", "steps": [
+    "NAMEDVIEW", "W", "Front", "0,0", "10,5", "NV", "W", "front", "0,0", "20,10", "NV", "W", "Side", "5,5", "6,8", "NV", "?",
+    "NV", "S", "Top", "NV", "D", "FRONT", "NV", "D", "nope", "NV", "W", "a/b", "NV", "W", "Flat", "0,0", "10,0", "VIEWS", "?", "NV", "R", ""]},
+  {"name": "the host's commands with no host", "steps": [
+    "LAYER", "LA", "NEW", "OPEN", "SAVE", "QSAVE", "SAVEAS", "DXFOUT", "SHORTCUTS", "KEYS", "COMPARESETTINGS", "PLOT", "PRINT"]}
+]

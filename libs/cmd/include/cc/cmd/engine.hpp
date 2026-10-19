@@ -58,6 +58,11 @@ class IdSet {
   std::vector<Id> ids_;
 };
 
+/// The view's middle and size in drawing units (ZOOM C, NAMEDVIEW S).
+struct ViewRect {
+  double cx = 0, cy = 0, w = 0, h = 0;
+};
+
 /// What the engine needs from whoever shows it.
 class Host {
  public:
@@ -83,6 +88,28 @@ class Host {
   virtual void on_command(const std::string* name) { (void)name; }
   /// Shift held (it flips TRIM ↔ EXTEND, removes from a selection).
   [[nodiscard]] virtual bool shift() const { return false; }
+
+  // ---- what a host with a view and files does; a script's host has none of it (the defaults)
+  virtual void zoom_extents() {}
+  /// ZOOM P: false when there is no previous view.
+  virtual bool zoom_previous() { return false; }
+  virtual void zoom_by(double factor) { (void)factor; }
+  virtual void zoom_window(Pt a, Pt b, bool exact) { (void)a, (void)b, (void)exact; }
+  [[nodiscard]] virtual std::optional<ViewRect> view_rect() const { return std::nullopt; }
+  /// Turn the view so the angle's direction is level; false when the host cannot (PLAN says so).
+  virtual bool turn_view(double ang) {
+    (void)ang;
+    return false;
+  }
+  virtual void ucs_changed() {}
+  virtual void show_layers() {}
+  virtual void new_drawing() {}
+  virtual void open_file() {}
+  /// SAVE (format empty: the drawing's own) / DXFOUT ("dxf", remember false).
+  virtual void save_file(const std::string& format, bool remember) { (void)format, (void)remember; }
+  virtual void save_as() {}
+  /// PLOT: false when the host cannot plot.
+  virtual bool plot() { return false; }
 };
 
 /// A prompt option: `key` to type, `label` shown (translated), `en` the English label (scripts type English words).
