@@ -49,7 +49,7 @@ then the same `tar` line with `dxf-save`. The test `save.golden: saving the publ
 full check (216 saves) is `tools/parity/dxf-save.mjs`.
 
 `js-0.5-commands.tar.gz` — CadCraft 0.5's command line (commands.js `Engine` on a fresh `Doc`, a stub host) for every
-script file in `tests/commands/`: what it printed and prompted, the model after, the current settings, the next id and
+script file in `tests/commands/`: what it printed and prompted, the model and the block definitions after, the current settings, the next id and
 the undo / redo labels, canonical (`commands/<file name>`). Made with `node tools/parity/commands.mjs tests/commands/*.json
 --golden-out <dir>/commands`, then the same `tar` line with `commands`. The test `cmd.golden: the command scripts …`
 replays the scripts and compares.

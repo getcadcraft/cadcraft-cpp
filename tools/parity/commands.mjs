@@ -3,7 +3,7 @@
 // Command parity (M4.6): command scripts (typed lines, clicks with the object a pick finds, Esc, windows, a
 // preselection) run through CadCraft 0.5's command line (commands.js Engine) on a fresh Doc with a stub host, and
 // through `cadcraft-cli script <file>` — the same host, in C++. Compared: everything printed and prompted, the model
-// after (doc tolerances: abs 1e-9 + rel 1e-12), the current settings, the next id, the undo and redo labels.
+// after (doc tolerances: abs 1e-9 + rel 1e-12), the block definitions, the current settings, the next id, the undo and redo labels.
 //   node tools/parity/commands.mjs <scripts.json>… [--detail] [--max N]
 //   … --golden-out <dir>: also write the JS results of each file, canonical, as <dir>/<file name> (the libs/cmd
 //     test replays the scripts against them; tests/golden/README.md)
@@ -57,7 +57,7 @@ async function runJs(script) {
   eng.escape();
   await settle();
   await eng.done;
-  return { name: script.name, log, model: [...doc.model.entries()], current: doc.current, nextId: doc.nextId,
+  return { name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], current: doc.current, nextId: doc.nextId,
     undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label) };
 }
 

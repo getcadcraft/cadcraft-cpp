@@ -124,9 +124,12 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
   base::Array model;
   d.model()->each(
       [&](const doc::Id& id, const Value& e) { model.emplace_back(base::Array{static_cast<double>(id), e}); });
+  base::Array blocks;
+  d.blocks().each([&](const std::string& name, const Value& b) { blocks.emplace_back(base::Array{name, b}); });
   return base::make_object({{"name", script.get("name")},
                             {"log", std::move(host.log)},
                             {"model", std::move(model)},
+                            {"blocks", std::move(blocks)},
                             {"current", d.current},
                             {"nextId", static_cast<double>(d.next_id())},
                             {"undo", std::move(undo)},

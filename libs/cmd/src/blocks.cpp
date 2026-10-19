@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -527,12 +528,190 @@ Task<void> purge_cmd(Ctx& c) {
   co_return;
 }
 
+// ---- the block editor (BEDIT / BCLOSE); BVSTATE / BVHIDE / BVSHOW need a block with visibility states
+
+/// commands.js attdefText(d): a block attdef as an attribute-definition text, for the block editor
+Value attdef_text(const Value& d) {
+  const auto nn = [](const Value& v, const Value& def) { return v.is_undefined() || v.is_null() ? def : v; };
+  const auto orv = [](const Value& v, const Value& def) { return v.truthy() ? v : def; };
+  const Value h = d.get("h");
+  return base::make_object({{"type", "text"},
+                            {"layer", nn(d.get("layer"), "0")},
+                            {"color", nn(d.get("color"), nullptr)},
+                            {"x", d.get("x")},
+                            {"y", d.get("y")},
+                            {"h", h.is_number() && h.as_number() > 0 ? h : Value(2.5)},
+                            {"rot", orv(d.get("rot"), 0)},
+                            {"ha", orv(d.get("ha"), "left")},
+                            {"va", orv(d.get("va"), "baseline")},
+                            {"wf", orv(d.get("wf"), 1)},
+                            {"s", d.get("tag")},
+                            {"attdef", base::make_object({{"tag", d.get("tag")},
+                                                          {"prompt", nn(d.get("prompt"), "")},
+                                                          {"def", nn(d.get("def"), "")},
+                                                          {"invisible", d.get("invisible").truthy()},
+                                                          {"constant", d.get("constant").truthy()},
+                                                          {"preset", d.get("preset").truthy()}})}});
+}
+
+/// { color: null, ...e, id: doc.nextId++ }
+Value with_id(Ctx& c, const Value& e) {
+  Value x = base::make_object({{"color", nullptr}});
+  for (const base::Member* m : base::js_members(e.as_object())) {
+    x.set(m->key, m->value);
+  }
+  x.set("id", static_cast<double>(c.doc.take_id()));
+  return x;
+}
+
+Task<void> bedit_cmd(Ctx& c) {
+  if (const auto& open = c.doc.block_edit) {
+    const doc::MapPtr map = open->map;
+    const std::string open_name = open->name;
+    if (c.doc.space() != map) {
+      c.doc.set_space_map(map);
+    }
+    c.print(c.t("cmd.bedit.already", {{"name", open_name}}));
+    co_return;
+  }
+  std::optional<std::string> sel;
+  for (const Id id : c.host.selection()) {
+    const Value* e = c.doc.entities().get(id);
+    if (e != nullptr && type_of(*e) == "insert") {
+      sel = base::js_string(e->get("block"));
+      break;
+    }
+  }
+  const std::vector<std::string> names = named_blocks(c);
+  if (names.empty()) {
+    c.print(c.t("cmd.bedit.none"));
+    co_return;
+  }
+  std::string name;
+  for (;;) {
+    Ask a;
+    if (sel) {
+      a.def = *sel;
+    } else if (const Value lb = c.engine.state.get("lastBlock"); !lb.is_undefined() && !lb.is_null()) {
+      a.def = lb;
+    }
+    const std::string v = trim(text_of(co_await c.string(c.t("cmd.bedit.name"), std::move(a))));
+    if (v.empty()) {
+      co_return;
+    }
+    auto hit = std::ranges::find(names, v);
+    if (hit == names.end()) {
+      const std::string low = base::js_to_lower(v);
+      hit = std::ranges::find_if(names, [&low](const std::string& n) { return base::js_to_lower(n) == low; });
+    }
+    if (hit != names.end()) {
+      name = *hit;
+      break;
+    }
+    c.print(c.t("cmd.bedit.unknown", {{"name", v}, {"list", list_of(names, 30)}}));
+  }
+  const Value* bp = c.doc.blocks().get(name);
+  if (bp == nullptr) {
+    co_return;
+  }
+  const Value x = bp->get("xref");
+  if (x.truthy()) {
+    const Value of = x.get("of");
+    c.print(c.t("cmd.xref.readonly", {{"name", of.is_undefined() ? name : base::js_string(of)}}));
+    co_return;
+  }
+  const Value blk = *bp;
+  auto map = std::make_shared<doc::EntityMap>();
+  const Value ents = blk.get("entities");
+  for (const Value& e : ents.is_array() ? ents.as_array() : base::Array{}) {
+    const Value withid = e.get("id").truthy() ? e : with_id(c, e);
+    map->set(id_of(withid), withid);
+  }
+  const Value ads = blk.get("attdefs");
+  for (const Value& d : ads.is_array() ? ads.as_array() : base::Array{}) {
+    const Value withid = with_id(c, attdef_text(d));
+    map->set(id_of(withid), withid);
+  }
+  const doc::Layout* lay = c.doc.layout();
+  c.host.set_selection({});
+  c.doc.block_edit = doc::BlockEdit{.name = name,
+                                    .map = map,
+                                    .base = blk.get("base"),
+                                    .mark = c.doc.mark(),
+                                    .from = lay != nullptr ? lay->name : std::string()};
+  c.doc.set_space_map(map);
+  c.print(c.t("cmd.bedit.open", {{"name", name}}));
+}
+
+/// commands.js closeBlockEdit(doc, save): save the block (one undo step with everything done in it) or throw the
+/// edits away
+std::optional<doc::BlockEdit> close_block_edit(Ctx& c, bool save) {
+  if (!c.doc.block_edit) {
+    return std::nullopt;
+  }
+  doc::BlockEdit be = *c.doc.block_edit;
+  std::vector<Value> all;
+  be.map->each([&](const Id&, const Value& e) { all.push_back(e); });
+  auto [entities, attdefs] = split_attdefs(all);
+  c.doc.block_edit.reset();
+  c.doc.set_space(be.from);
+  if (save) {
+    c.doc.change("BEDIT", [&] {
+      (void)c.doc.define_block(
+          base::make_object({{"name", be.name}, {"base", be.base}, {"entities", entities}, {"attdefs", attdefs}}));
+    });
+    c.doc.squash(be.mark, "BEDIT");
+  } else {
+    while (c.doc.mark() > be.mark) {
+      (void)c.doc.undo();
+    }
+    c.doc.clear_redo();
+  }
+  return be;
+}
+
+Task<void> bclose_cmd(Ctx& c) {
+  if (!c.doc.block_edit) {
+    c.print(c.t("cmd.bclose.none"));
+    co_return;
+  }
+  const std::string name = c.doc.block_edit->name;
+  Ask a;
+  a.options = {c.opt("S", c.t("opt.save")), c.opt("D", c.t("opt.discard"))};
+  a.def = "S";
+  const Answer k = co_await c.keyword(c.t("cmd.bclose.ask", {{"name", name}}), std::move(a));
+  const bool save = k.key() != "D";
+  (void)close_block_edit(c, save);
+  c.print(save ? c.words.tn("cmd.bclose.saved", static_cast<double>(c.doc.block_uses(name)), {{"name", name}})
+               : c.t("cmd.bclose.discarded", {{"name", name}, {"n", std::to_string(c.doc.block_uses(name))}}));
+}
+
+/// commands.js visEditor(c): the block editor, open on a block with visibility states
+bool vis_editor(Ctx& c) {
+  if (!c.doc.block_edit) {
+    c.print(c.t("cmd.bvstate.no_editor"));
+    return false;
+  }
+  // the fork opens every block plainly: visibility states are not ported yet (docs/gaps.md)
+  c.print(c.t("cmd.bvstate.no_states", {{"name", c.doc.block_edit->name}}));
+  return false;
+}
+Task<void> bvstate_cmd(Ctx& c) {
+  (void)vis_editor(c);
+  co_return;
+}
+
 }  // namespace
 
 void add_blocks(std::vector<CommandDef>& t) {
   t.push_back(def("BLOCK", {"B", "BMAKE"}, block_cmd, "cmd.block.make_block_objects_they"));
   t.push_back(def("ATTDEF", {"ATT", "DDATTDEF", "-ATTDEF"}, attdef_cmd, "cmd.attdef.help"));
+  t.push_back(def("BEDIT", {"BE"}, bedit_cmd, "cmd.bedit.help", true));
+  t.push_back(def("BVSTATE", {"BVS"}, bvstate_cmd, "cmd.bvstate.help", true));
+  t.push_back(def("BVHIDE", {"BVH"}, bvstate_cmd, "cmd.bvhide.help"));
+  t.push_back(def("BVSHOW", {"BVSH"}, bvstate_cmd, "cmd.bvshow.help"));
   t.push_back(def("BPARAMETER", {"BPARAM"}, bparameter_cmd, "cmd.bparameter.help"));
+  t.push_back(def("BCLOSE", {}, bclose_cmd, "cmd.bclose.help", true));
   t.push_back(def("INSERT", {"I", "DDINSERT"}, insert_cmd, "cmd.insert.help"));
   CommandDef lib = def("LIBRARY", {"LIB"}, library_cmd, "cmd.library.library_panel_place_items", true);
   lib.keep_selection = true;

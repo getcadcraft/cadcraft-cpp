@@ -123,6 +123,15 @@ struct Op {
   std::vector<Layout> layouts_before, layouts_after;
 };
 
+/// commands.js doc.blockEdit: the block editor's state while it is open (BEDIT … BCLOSE).
+struct BlockEdit {
+  std::string name;
+  MapPtr map;            // the block's objects, being edited (the open space)
+  Value base;            // the block's base point
+  std::size_t mark = 0;  // the undo mark when it opened
+  std::string from;      // the layout it was opened from ('' = the model)
+};
+
 struct Step {
   std::string label;
   std::vector<Op> ops;
@@ -143,6 +152,8 @@ class Doc {
   [[nodiscard]] const Layout* layout() const noexcept;
   /// Open the model (empty name) or a layout by name. Not an edit.
   void set_space(std::string_view layout_name = {});
+  /// Open another space: the block editor's map (doc.setSpace({ entities: map })). Not an edit.
+  void set_space_map(MapPtr map) { space_ = map ? std::move(map) : model_; }
 
   // ---- layers, blocks, styles
   [[nodiscard]] const OrderedMap<std::string>& layers() const noexcept { return layers_; }
@@ -189,6 +200,8 @@ class Doc {
   void clear_redo() noexcept { redo_.clear(); }
   /// The id the next added entity gets (doc.js nextId).
   [[nodiscard]] Id next_id() const noexcept { return next_id_; }
+  /// doc.nextId++: an id handed out without an edit (the block editor's objects).
+  Id take_id() noexcept { return next_id_++; }
   [[nodiscard]] std::uint64_t version() const noexcept { return version_; }
   [[nodiscard]] bool dirty() const noexcept { return version_ != saved_version_; }
   void mark_saved() noexcept { saved_version_ = version_; }
@@ -220,6 +233,7 @@ class Doc {
   std::string parametric_text;               // a file's CADCRAFT_PARAMETRIC payload, kept for saving
   m3d::Model model3d;                        // the 3D model (model3d.js): the file's 3D faces as one group
   std::string model3d_text;                  // a file's CADCRAFT_3D JSON (not read back yet: docs/gaps.md)
+  std::optional<BlockEdit> block_edit;       // the block editor, while open
 
  private:
   MapPtr model_ = std::make_shared<EntityMap>();

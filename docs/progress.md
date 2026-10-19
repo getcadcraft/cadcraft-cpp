@@ -257,4 +257,8 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
 - M5.2b: CI's GCC job was red from M5.1b on: a lambda's local shadowed an enclosing variable it does not capture (GCC's
   -Wshadow sees it, Clang's does not). Fixed (corners.cpp, corner.cpp), and Clang builds now add
   -Wshadow-uncaptured-local so the gate catches the next one.
+- M5.3b: the block editor: BEDIT opens a block as a space of its own (Doc::block_edit, set_space_map, take_id; its
+  attribute definitions as texts), BCLOSE saves it as one undo step (squashed) or discards every edit made in it;
+  BVSTATE / BVHIDE / BVSHOW say what they need (visibility states are not ported). The command harness now compares
+  the block definitions too (tools/parity/commands.mjs, cadcraft-cli script): 103/103 scripts.
 

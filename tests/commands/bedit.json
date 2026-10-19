@@ -1,0 +1,21 @@
+[
+  {"name": "bedit: no blocks; not in the editor", "steps": ["BEDIT", "BCLOSE", "BVSTATE", "BVHIDE", "BVSHOW"]},
+  {"name": "bedit: edit a block and save; the editor already open; visibility states", "steps": [
+    "LINE", "0,0", "10,0", "", "CIRCLE", "5,5", "2",
+    "BLOCK", "Door", "0,0", {"window": [-1, -1, 11, 8], "ids": [1, 2]}, "",
+    "BEDIT", "zz", "door",
+    "LINE", "0,10", "10,10", "",
+    "BE", "BVSTATE", "BVHIDE", "BVSH",
+    "BCLOSE", "",
+    "INSERT", "", "20,0"]},
+  {"name": "bedit: discard the edits; the selected reference's block is offered", "steps": [
+    "LINE", "0,0", "10,0", "", "BLOCK", "A", "0,0", {"click": [5, 0], "pick": 1}, "",
+    "LINE", "0,5", "10,5", "", "BLOCK", "B", "0,5", {"click": [5, 5], "pick": 3}, "",
+    {"select": [4]}, "BEDIT", "b", "ERASE", {"window": [-1, -1, 11, 1], "ids": [5]}, "", "CIRCLE", "0,0", "3",
+    "BCLOSE", "D", "UNDO"]},
+  {"name": "bedit: attribute definitions come out as texts and go back in", "steps": [
+    "ATTDEF", "", "num", "Number:", "1", "0,0", "2.5", "0", "LINE", "0,-2", "10,-2", "",
+    "BLOCK", "Tag", "0,0", {"window": [-1, -3, 11, 3], "ids": [1, 2]}, "",
+    "BEDIT", "Tag", "ATTDEF", "", "size", "Size:", "M", "0,5", "2", "0",
+    "BCLOSE", "S", "INSERT", "Tag", "10,10", "", "XL"]}
+]
