@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // cc::cmd — a command script run headless on a fresh drawing:
 //   { name, steps: [ "LINE", "0,0", { click: [x, y], pick?: id }, { cursor: [x, y] }, { esc: true },
-//                    { window: [minX, minY, maxX, maxY], crossing?, ids: [...] }, { select: [ids] }, { shift: bool } ]
-//                    }
-// → { name, log: [[print|prompt, text]…], model: [[id, entity]…], current, nextId, undo: [labels], redo: [labels] }
+//                    { window: [minX, minY, maxX, maxY], crossing?, ids: [...] }, { select: [ids] }, { shift: bool },
+//                    { layer: name, patch?: {…}, current?: bool } (what the Layers panel does) ] }
+// → { name, log: [[print|prompt, text]…], model: [[id, entity]…], blocks, layers: [[name, layer]…], meta, ucs,
+//     ucsNamed, views, current, nextId, undo: [labels], redo: [labels] }
 // (tools/parity/commands.mjs runs the same scripts through CadCraft 0.5's Engine and compares).
 #pragma once
 

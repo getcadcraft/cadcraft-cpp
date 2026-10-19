@@ -108,7 +108,8 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.4a | inquiry: DIST, AREA, MEASUREGEOM, ID, LIST, UNITS |
 | M5.4b | selection: SELECT, QSELECT, SELECTSIMILAR, FIND |
 | M5.4c | views: ZOOM, NAMEDVIEW, UCS and the turned views, PLAN |
-| M5.5 | layers and properties: LAYER and the layer tools, PROPERTIES, LINETYPE, LTSCALE, LWEIGHT, the properties panel |
+| M5.5a | the layer tools (layertools.js): LAYISO … LAYDEL, RENAME, COUNT, LINETYPE, LTSCALE, LWEIGHT, XREF ? |
+| M5.5b | PROPERTIES and the properties panel, the layers panel's switches |
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands |
 | M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets |

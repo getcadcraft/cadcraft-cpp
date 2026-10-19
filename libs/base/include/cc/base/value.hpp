@@ -87,15 +87,21 @@ class Value {
   [[nodiscard]] double as_number() const;
   /// The number, or `def` when this is not a number.
   [[nodiscard]] double num_or(double def) const noexcept;
-  [[nodiscard]] const std::string& as_string() const;
-  [[nodiscard]] std::string& as_string();
-  [[nodiscard]] const Array& as_array() const;
-  [[nodiscard]] Array& as_array();
+  // On a temporary (get() returns one) the accessors hand back the contents by value, so `v.get(k).as_array()` can be
+  // bound to a reference or ranged over without dangling (GCC 14 does not extend a range-for's inner temporaries).
+  [[nodiscard]] const std::string& as_string() const&;
+  [[nodiscard]] std::string& as_string() &;
+  [[nodiscard]] std::string as_string() &&;
+  [[nodiscard]] const Array& as_array() const&;
+  [[nodiscard]] Array& as_array() &;
+  [[nodiscard]] Array as_array() &&;
   /// Throws std::logic_error on a compact point (use get(), or the non-const as_object(), which expands it).
-  [[nodiscard]] const Object& as_object() const;
+  [[nodiscard]] const Object& as_object() const&;
   /// A compact point is expanded into an ordinary object first.
-  [[nodiscard]] Object& as_object();
-  [[nodiscard]] const ByteVec& as_bytes() const;
+  [[nodiscard]] Object& as_object() &;
+  [[nodiscard]] Object as_object() &&;
+  [[nodiscard]] const ByteVec& as_bytes() const&;
+  [[nodiscard]] ByteVec as_bytes() &&;
 
   // ---- object helpers (this must be an object)
   /// Sets `key`; an existing key keeps its place (JS assignment). Returns the member's value — except on a compact
@@ -201,24 +207,37 @@ inline bool Value::as_bool() const {
 inline double Value::as_number() const {
   return std::get<double>(v_);
 }
-inline const std::string& Value::as_string() const {
+inline const std::string& Value::as_string() const& {
   return std::get<std::string>(v_);
 }
-inline std::string& Value::as_string() {
+inline std::string& Value::as_string() & {
   return std::get<std::string>(v_);
 }
-inline const Array& Value::as_array() const {
+inline std::string Value::as_string() && {
+  return std::move(std::get<std::string>(v_));
+}
+inline const Array& Value::as_array() const& {
   return std::get<Array>(v_);
 }
-inline Array& Value::as_array() {
+inline Array& Value::as_array() & {
   return std::get<Array>(v_);
 }
-inline Object& Value::as_object() {
+inline Array Value::as_array() && {
+  return std::move(std::get<Array>(v_));
+}
+inline Object& Value::as_object() & {
   expand();
   return std::get<Object>(v_);
 }
-inline const ByteVec& Value::as_bytes() const {
+inline Object Value::as_object() && {
+  expand();
+  return std::move(std::get<Object>(v_));
+}
+inline const ByteVec& Value::as_bytes() const& {
   return std::get<ByteVec>(v_);
+}
+inline ByteVec Value::as_bytes() && {
+  return std::move(std::get<ByteVec>(v_));
 }
 inline void Value::push(Value v) {
   as_array().push_back(std::move(v));

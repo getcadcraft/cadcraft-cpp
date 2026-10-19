@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
 // Command parity (M4.6): command scripts (typed lines, clicks with the object a pick finds, Esc, windows, a
-// preselection) run through CadCraft 0.5's command line (commands.js Engine) on a fresh Doc with a stub host, and
+// preselection, a layer set as the Layers panel does) run through CadCraft 0.5's command line (commands.js Engine) on a fresh Doc with a stub host, and
 // through `cadcraft-cli script <file>` — the same host, in C++. Compared: everything printed and prompted, the model
-// after (doc tolerances: abs 1e-9 + rel 1e-12), the block definitions, the UCS (current and saved), the named views, the current settings, the next id, the undo and redo labels.
+// after (doc tolerances: abs 1e-9 + rel 1e-12), the block definitions, the layers, the drawing's meta, the UCS (current and saved), the named views, the current settings, the next id, the undo and redo labels.
 //   node tools/parity/commands.mjs <scripts.json>… [--detail] [--max N]
 //   … --golden-out <dir>: also write the JS results of each file, canonical, as <dir>/<file name> (the libs/cmd
 //     test replays the scripts against them; tests/golden/README.md)
@@ -52,12 +52,13 @@ async function runJs(script) {
     else if (s.window) { host.windowIds = s.ids || []; eng.window({ minX: s.window[0], minY: s.window[1], maxX: s.window[2], maxY: s.window[3] }, !!s.crossing); }
     else if (s.select) host.selection = new Set(s.select);
     else if ('shift' in s) host.shift = !!s.shift;
+    else if (typeof s.layer === 'string') doc.setLayer(s.layer, s.patch && typeof s.patch === 'object' ? s.patch : {}, { current: !!s.current });   // the Layers panel
     await settle();
   }
   eng.escape();
   await settle();
   await eng.done;
-  return { name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
+  return { name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label) };
 }
 

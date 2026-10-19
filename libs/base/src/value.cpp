@@ -106,7 +106,7 @@ bool Value::same_point(const Value& point, const Value& other) {
   return true;
 }
 
-const Object& Value::as_object() const {
+const Object& Value::as_object() const& {
   if (is_point()) {
     point_access("as_object() const");
   }

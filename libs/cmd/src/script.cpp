@@ -108,6 +108,11 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
           host.sel = std::move(set);
         } else if (const Value* sh = s.find("shift")) {
           host.shift_down = sh->truthy();
+        } else if (const Value* ly = s.find("layer"); ly != nullptr && ly->is_string()) {
+          // what the Layers panel does (doc.setLayer): a layer made or changed, made current
+          const Value patch = s.get("patch");
+          d.set_layer(ly->as_string(), patch.is_object() && !patch.is_point() ? patch : Value::object(),
+                      s.get("current").truthy());
         }
       }
     }
@@ -124,12 +129,16 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
   base::Array model;
   d.model()->each(
       [&](const doc::Id& id, const Value& e) { model.emplace_back(base::Array{static_cast<double>(id), e}); });
+  base::Array layers;
+  d.layers().each([&](const std::string& name, const Value& l) { layers.emplace_back(base::Array{name, l}); });
   base::Array blocks;
   d.blocks().each([&](const std::string& name, const Value& b) { blocks.emplace_back(base::Array{name, b}); });
   return base::make_object({{"name", script.get("name")},
                             {"log", std::move(host.log)},
                             {"model", std::move(model)},
                             {"blocks", std::move(blocks)},
+                            {"layers", std::move(layers)},
+                            {"meta", d.meta},
                             {"ucs", d.ucs},
                             {"ucsNamed", d.ucs_named},
                             {"views", d.views},

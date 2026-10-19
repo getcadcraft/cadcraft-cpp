@@ -278,4 +278,11 @@ Last updated 2026-10-18 · Change: M4.7d (Save / Save as); M4 complete.
   LAYER, NEW, OPEN, SAVE, SAVEAS, DXFOUT, PLOT, SHORTCUTS, COMPARESETTINGS (libs/cmd/src/views.cpp; cmd::Host gained
   the view and file hooks, the viewer implements zoom and saves once the command ends). The harness compares the UCS
   and named views too. Command parity 119/119 (6 new scripts in tests/commands/views.json).
+- M5.5a: layertools.js (libs/cmd/src/layers.cpp): LAYISO / LAYUNISO, LAYOFF / LAYFRZ by pick with U, LAYMCUR,
+  LAYON / LAYTHW, LAYMRG and LAYDEL (model, sheets and blocks), RENAME (layers and blocks), COUNT, LINETYPE,
+  LTSCALE, LWEIGHT; XREF ? lists a drawing's links; XATTACH, PUBLISH, SHEETSET say what they need. The harness
+  compares the layers and the drawing's meta too, and takes a { layer, patch, current } step (what the Layers panel
+  does). Parity found one more dangling `get(k).as_array()` reference (LAYUNISO): base::Value's as_array / as_object /
+  as_string / as_bytes now return by value on a temporary, which ends that bug class. Command parity 124/124
+  (5 new scripts in tests/commands/layers.json).
 

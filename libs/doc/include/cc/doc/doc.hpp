@@ -226,6 +226,7 @@ class Doc {
   Value ucs;     // { x, y, ang } or null (the world)
   Value ucs_named = base::Value::array();
   Value ucs_prev = base::Value::array();  // UCS Previous (this session; not saved)
+  Value lay_iso;                          // what the last LAYISO did, for LAYUNISO (this session; null: none)
   double view_twist = 0;
   Value dyn_src;  // the file's dynamic-block objects, or null
   OrderedMap<std::string> linetypes, text_styles, dim_styles;
