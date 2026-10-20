@@ -1,0 +1,235 @@
+[
+ {
+  "name": "layout: a new sheet (title block, viewport at a standard scale), a second, back to the model",
+  "steps": [
+   "LINE",
+   "0,0",
+   "1000,0",
+   "1000,500",
+   "",
+   "LAYOUT",
+   "LO",
+   {
+    "space": null
+   },
+   "NEWLAYOUT",
+   {
+    "space": "Layout1"
+   },
+   "U",
+   {
+    "space": "nope"
+   }
+  ]
+ },
+ {
+  "name": "mview, vports and split; a viewport too small",
+  "steps": [
+   "MVIEW",
+   "VPORTS",
+   "SPLIT",
+   "CIRCLE",
+   "50,50",
+   "40",
+   "LAYOUT",
+   "MVIEW",
+   "20,20",
+   "120,90",
+   "MV",
+   "5,5",
+   "5,40",
+   "VPORTS",
+   "200,20",
+   "260,60",
+   "U",
+   "SPLIT"
+  ]
+ },
+ {
+  "name": "vpview: a window on the model, a locked viewport, the selected one",
+  "steps": [
+   "LINE",
+   "0,0",
+   "100,0",
+   "",
+   "CIRCLE",
+   "300,200",
+   "25",
+   "LAYOUT",
+   "VPVIEW",
+   {
+    "click": [
+     200,
+     150
+    ],
+    "pick": 9
+   },
+   {
+    "click": [
+     200,
+     150
+    ],
+    "pick": 10
+   },
+   "250,150",
+   "350,250",
+   {
+    "select": [
+     10
+    ]
+   },
+   "VPVIEW",
+   "-10,-10",
+   "110,10",
+   {
+    "prop": "locked",
+    "value": true,
+    "ids": [
+     10
+    ]
+   },
+   {
+    "select": [
+     10
+    ]
+   },
+   "VPVIEW",
+   "VPVIEW",
+   {
+    "esc": true
+   },
+   {
+    "space": null
+   }
+  ]
+ },
+ {
+  "name": "vplayer: freeze by wildcard in the current viewport, all, thaw, reset, new-viewport default, list",
+  "steps": [
+   {
+    "layer": "Walls"
+   },
+   {
+    "layer": "Doors"
+   },
+   {
+    "layer": "Text"
+   },
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "VPLAYER",
+   "LAYOUT",
+   {
+    "select": [
+     9
+    ]
+   },
+   "VPLAYER",
+   "?",
+   "F",
+   "w*,DOORS",
+   "C",
+   "?",
+   "F",
+   "zz*",
+   "T",
+   "doors",
+   "A",
+   "V",
+   "Text",
+   "F",
+   "R",
+   "text",
+   "C",
+   "?",
+   "",
+   "MVIEW",
+   "0,0",
+   "50,50",
+   "VPLAYER",
+   "F",
+   "Text",
+   "S",
+   {
+    "click": [
+     25,
+     25
+    ],
+    "pick": 21
+   },
+   {
+    "click": [
+     0,
+     0
+    ],
+    "pick": 2
+   },
+   "",
+   "?",
+   ""
+  ]
+ },
+ {
+  "name": "mspace and pspace need the drawing window; viewlabel follows its viewport's name",
+  "steps": [
+   "MSPACE",
+   "PSPACE",
+   "VIEWLABEL",
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "LAYOUT",
+   "MS",
+   "PS",
+   "VIEWLABEL",
+   {
+    "click": [
+     1,
+     1
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     200,
+     150
+    ],
+    "pick": 9
+   },
+   "30,20",
+   {
+    "select": [
+     9
+    ]
+   },
+   "VL",
+   "",
+   {
+    "prop": "vname",
+    "value": "Plan",
+    "ids": [
+     9
+    ]
+   },
+   {
+    "prop": "vname",
+    "value": "",
+    "ids": [
+     9
+    ]
+   },
+   "U",
+   "U",
+   "REDO",
+   {
+    "select": [
+     9
+    ]
+   },
+   "ERASE"
+  ]
+ }
+]

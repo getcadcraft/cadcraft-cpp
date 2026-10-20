@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-19 · Change: M5.5c (the Properties panel, the layers panel's switches).
+Last updated 2026-10-20 · Change: M5.6a (sheets: LAYOUT, MVIEW, VPVIEW, VPLAYER, VIEWLABEL …).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -307,4 +307,13 @@ Last updated 2026-10-19 · Change: M5.5c (the Properties panel, the layers panel
   Command parity 133/133. Checked under Xvfb with dwg-samples/example_2018.dwg: SELECTALL, PR, the linetype scale
   typed for all 58 objects, the Arc group's Geometry section. From here every fork build, gate and harness runs in
   forkrust.slice (2.5 cores, nice 19, -j3) — the owner's rule for the VPS; the full gate passes that way.
+- M5.6a (2026-10-20): sheets. sheets.js (libs/cmd sheets.hpp: papers, UNIT_MM, scale lists with the architectural
+  ones for imperial drawings, scale labels, best scale, model extents, aimViewport, a new sheet's border, title block
+  and viewport) and the commands (libs/cmd/src/layouts.cpp): LAYOUT, MVIEW, VPORTS (MVIEW on a sheet, panes in the
+  model), SPLIT, VPVIEW (a window or a named view), VPLAYER (? / Freeze / Thaw / Reset / Vpvisdflt, wildcards, All /
+  Select / Current), MSPACE / PSPACE, VIEWLABEL. VIEWLABEL's live field needs doc.js editHooks: doc::Doc::edit_hooks
+  run inside a change before it is recorded, and the engine installs the view-label hook. The host gives the clock
+  (Host::now_ms: the title block's date), panes and viewport entry; a script answers as the JS stub does. The harness
+  compares the layouts (paper and objects) and the open space, takes a { space } step, and runs both sides on one
+  fixed clock (2026-10-16 UTC). Command parity 138/138 (5 new scripts in tests/commands/sheets.json).
 

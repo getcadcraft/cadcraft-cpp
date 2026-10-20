@@ -116,6 +116,18 @@ class Host {
   virtual void props_toggle_quick() {}
   [[nodiscard]] virtual std::string props_pick_label() const { return {}; }
   virtual void props_picked(Pt p) { (void)p; }
+  // sheets: the clock for a title block's date, panes in the drawing window, working through a viewport
+  [[nodiscard]] virtual double now_ms() const { return 0; }
+  [[nodiscard]] virtual bool can_split() const { return false; }
+  virtual void set_panes(const std::string& layout) { (void)layout; }
+  [[nodiscard]] virtual bool can_enter_viewport() const { return false; }
+  [[nodiscard]] virtual std::optional<base::Value> viewport_entered() const { return std::nullopt; }
+  virtual void enter_viewport(const base::Value& vp) { (void)vp; }
+  virtual void leave_viewport() {}
+  [[nodiscard]] virtual std::optional<base::Value> viewport_at(Pt p) const {
+    (void)p;
+    return std::nullopt;
+  }
 };
 
 /// A prompt option: `key` to type, `label` shown (translated), `en` the English label (scripts type English words).

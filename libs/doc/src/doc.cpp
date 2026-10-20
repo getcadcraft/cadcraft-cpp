@@ -319,6 +319,17 @@ void Doc::change(std::string label, const std::function<void()>& fn) {
     pending_.reset();
     throw;
   }
+  if (!pending_->ops.empty() && !edit_hooks.empty()) {
+    // add-ons' follow-up edits (doc.js editHooks): inside this step; a hook that fails is skipped, as in 0.5
+    const std::vector<Op> ops = pending_->ops;
+    const std::vector<EditHook> hooks = edit_hooks;
+    for (const EditHook& h : hooks) {
+      try {
+        h.fn(*this, ops);
+      } catch (const std::exception&) {  // NOLINT(bugprone-empty-catch) — console.error in 0.5
+      }
+    }
+  }
   Step step = std::move(*pending_);
   pending_.reset();
   if (!step.ops.empty()) {

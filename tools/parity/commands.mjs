@@ -62,6 +62,13 @@ const maxShow = args.includes('--max') ? Number(args[args.indexOf('--max') + 1])
 const goldenOut = args.includes('--golden-out') ? resolve(args[args.indexOf('--golden-out') + 1]) : null;
 const files = args.filter((a, k) => !a.startsWith('--') && !(k > 0 && ['--max', '--golden-out'].includes(args[k - 1])));
 const settle = () => new Promise((r) => setImmediate(r));
+// one clock on both sides (a new sheet's title block is dated): 2026-10-16, UTC — cadcraft-cli script uses the same
+const FIXED_NOW = Date.UTC(2026, 9, 16);
+const RealDate = Date;
+globalThis.Date = class extends RealDate {
+  constructor(...a) { if (a.length) super(...a); else super(FIXED_NOW); }
+  static now() { return FIXED_NOW; }
+};
 
 async function runJs(script) {
   const doc = new Doc();
@@ -86,12 +93,14 @@ async function runJs(script) {
     else if ('shift' in s) host.shift = !!s.shift;
     else if (typeof s.layer === 'string') doc.setLayer(s.layer, s.patch && typeof s.patch === 'object' ? s.patch : {}, { current: !!s.current });   // the Layers panel
     else if (s.props || typeof s.prop === 'string') propsStep(doc, host, s, log);
+    else if ('space' in s) doc.setSpace(typeof s.space === 'string' ? doc.layouts.find((l) => l.name === s.space) || null : null);   // the space tabs
     await settle();
   }
   eng.escape();
   await settle();
   await eng.done;
   return { name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
+    layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,
     undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label) };
 }
 

@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <array>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -263,6 +264,12 @@ class Viewer::CmdHost final : public cmd::Host {
     return v_.prop_pick_ ? v_.prop_pick_->label : std::string();
   }
   void props_picked(cmd::Pt p) override { v_.props_picked(p.x, p.y); }
+  // a new sheet's title block is dated today
+  [[nodiscard]] double now_ms() const override {
+    return static_cast<double>(
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count());
+  }
   void preview(const base::Array& entities) override {
     v_.preview_ = entities;
     v_.redraw_ = std::max(v_.redraw_, 2);

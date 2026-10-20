@@ -263,9 +263,11 @@ const std::vector<CommandDef>& command_table() {
     add_hatch(t);
     add_dims(t);
     add_blocks(t);
+    add_layouts(t);
     add_inquiry(t);
     add_select(t);
     add_views(t);
+    add_sheet_tools(t);
     add_layers(t);
     add_props(t);
     return t;

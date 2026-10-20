@@ -448,9 +448,17 @@ void AskAwait::await_suspend(std::coroutine_handle<> h) {
 // ---------------------------------------------------------------- Engine
 
 Engine::Engine(doc::Doc& d, Host& h, const i18n::Catalog& words)
-    : doc_(d), host_(h), words_(words), c_(*this, d, h, words) {}
+    : doc_(d), host_(h), words_(words), c_(*this, d, h, words) {
+  if (std::ranges::none_of(d.edit_hooks, [](const doc::Doc::EditHook& x) { return x.tag == "viewlabel"; })) {
+    const i18n::Catalog* w = &words;
+    d.edit_hooks.push_back({.tag = "viewlabel", .fn = [w](doc::Doc& doc, const std::vector<doc::Op>& ops) {
+                              detail::view_label_hook(doc, ops, *w);
+                            }});
+  }
+}
 
 Engine::~Engine() {
+  std::erase_if(doc_.edit_hooks, [](const doc::Doc::EditHook& x) { return x.tag == "viewlabel"; });
   waiting_.reset();
   root_.reset();
 }

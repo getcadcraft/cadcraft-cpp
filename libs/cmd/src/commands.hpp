@@ -49,6 +49,10 @@ void add_select(std::vector<CommandDef>& t);
 void add_views(std::vector<CommandDef>& t);
 void add_layers(std::vector<CommandDef>& t);
 void add_props(std::vector<CommandDef>& t);
+void add_layouts(std::vector<CommandDef>& t);      // LAYOUT, MVIEW, VPORTS, SPLIT, VPVIEW (after PURGE)
+void add_sheet_tools(std::vector<CommandDef>& t);  // VPLAYER, MSPACE, PSPACE, VIEWLABEL (after COMPARESETTINGS)
+/// commands.js's Doc.editHooks entry for VIEWLABEL: labels follow their viewport's name in the same undo step.
+void view_label_hook(doc::Doc& doc, const std::vector<doc::Op>& ops, const i18n::Catalog& words);
 
 /// commands.js undoInside(c): undo the command's last step (U at a prompt).
 void undo_inside(Ctx& c);

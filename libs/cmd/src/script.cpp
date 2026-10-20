@@ -40,6 +40,8 @@ class ScriptHost final : public Host {
   std::optional<Id> pick_at(Pt /*raw*/) override { return std::exchange(next_pick, std::nullopt); }
   std::vector<Id> pick_window(const Rect& /*r*/, bool /*crossing*/) override { return std::exchange(window_ids, {}); }
   [[nodiscard]] bool shift() const override { return shift_down; }
+  /// One clock for every script (a new sheet's title block is dated): 2026-10-16, UTC, as the parity harness's.
+  [[nodiscard]] double now_ms() const override { return 1792108800000.0; }
 };
 
 double num(const Value& v) {
@@ -197,6 +199,12 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                       s.get("current").truthy());
         } else if (s.get("props").truthy() || s.get("prop").is_string()) {
           props_step(d, host, s, words);
+        } else if (const Value* sp = s.find("space")) {
+          // the space tabs (doc.setSpace): a sheet by name, anything else the model
+          const bool known = sp->is_string() && std::ranges::any_of(d.layouts(), [sp](const doc::Layout& l) {
+                               return l.name == sp->as_string();
+                             });
+          d.set_space(known ? sp->as_string() : std::string());
         }
       }
     }
@@ -217,6 +225,14 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
   d.layers().each([&](const std::string& name, const Value& l) { layers.emplace_back(base::Array{name, l}); });
   base::Array blocks;
   d.blocks().each([&](const std::string& name, const Value& b) { blocks.emplace_back(base::Array{name, b}); });
+  base::Array layouts;
+  for (const doc::Layout& l : d.layouts()) {
+    base::Array ents;
+    l.entities->each(
+        [&](const doc::Id& id, const Value& e) { ents.emplace_back(base::Array{static_cast<double>(id), e}); });
+    layouts.emplace_back(base::Array{l.name, l.paper, std::move(ents)});
+  }
+  const doc::Layout* open = d.layout();
   return base::make_object({{"name", script.get("name")},
                             {"log", std::move(host.log)},
                             {"model", std::move(model)},
@@ -228,6 +244,8 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                             {"views", d.views},
                             {"current", d.current},
                             {"nextId", static_cast<double>(d.next_id())},
+                            {"layouts", std::move(layouts)},
+                            {"space", open != nullptr ? Value(open->name) : Value(nullptr)},
                             {"undo", std::move(undo)},
                             {"redo", std::move(redo)}});
 }

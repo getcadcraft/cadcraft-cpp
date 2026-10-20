@@ -222,6 +222,12 @@ class Doc {
   Value meta;     // { name, units, source, version, … }
   Value current;  // { layer, color, textHeight, dim, linetype, lineweight }
   Value views = base::Value::array();
+  /// Doc.editHooks: run inside every change that recorded something, before it is recorded (their edits join it).
+  struct EditHook {
+    std::string tag;
+    std::function<void(Doc&, const std::vector<Op>&)> fn;
+  };
+  std::vector<EditHook> edit_hooks;
   Value vports;  // panes.js shape or null
   Value ucs;     // { x, y, ang } or null (the world)
   Value ucs_named = base::Value::array();
