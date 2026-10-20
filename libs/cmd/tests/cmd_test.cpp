@@ -167,7 +167,7 @@ TEST_CASE("a selection of a great many objects stays fast; it keeps the order pi
   constexpr cc::doc::Id kN = 200000;
   std::size_t added = 0;
   for (cc::doc::Id i = 1; i <= kN; ++i) {
-    added += set.add(i) ? 1 : 0;
+    added += set.add(i) ? std::size_t{1} : std::size_t{0};
   }
   CHECK(added == kN);
   CHECK(set.size() == kN);
