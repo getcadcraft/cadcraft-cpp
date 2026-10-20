@@ -140,7 +140,7 @@ async function runJs(script) {
   }
   return { ...pdf, name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,
-    undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label) };
+    undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label), constraints: doc.constraints, params: doc.params };
 }
 
 let same = 0, n = 0;

@@ -1,0 +1,1 @@
+{"format": "cadcraft-parametric", "version": 2, "refs": {"1": "line", "3": "circle"}, "constraints": [{"id": "k1", "type": "horizontal", "refs": [{"r": "1", "k": "L"}]}, {"id": "k2", n": 1, "ref1"}]}}

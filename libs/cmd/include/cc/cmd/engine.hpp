@@ -18,6 +18,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -74,6 +75,14 @@ class IdSet {
 /// The view's middle and size in drawing units (ZOOM C, NAMEDVIEW S).
 struct ViewRect {
   double cx = 0, cy = 0, w = 0, h = 0;
+};
+
+/// How constraints show (CONSTRAINTBAR, DCDISPLAY; the JS's host.constraintView): bars for all or none, the objects
+/// whose bars are hidden, dimensional constraints shown.
+struct ConstraintView {
+  std::string bars = "all";
+  std::set<Id> hidden;
+  bool dims = true;
 };
 
 /// What the engine needs from whoever shows it.
@@ -147,6 +156,10 @@ class Host {
   virtual Clipboard& clipboard() { return own_clipboard_; }
   [[nodiscard]] virtual bool clipboard_shared() const { return false; }
   [[nodiscard]] virtual std::string paste_base() const { return "lower-left"; }
+  // constraints (pcommands.js): how they show, a redraw when that changed, the Parameters panel (false: none)
+  ConstraintView& constraint_view() { return constraint_view_; }
+  virtual void constraint_view_changed() {}
+  virtual bool show_parameters() { return false; }
   // pictures (host.pickPictures): PNG / JPEG files from the host's picker, one or several; the choice comes back
   // through Engine::give_files (an empty list = cancelled). No picker: IMAGEATTACH and IMAGE say so.
   [[nodiscard]] virtual bool can_pick_pictures() const { return false; }
@@ -166,6 +179,7 @@ class Host {
 
  private:
   Clipboard own_clipboard_;
+  ConstraintView constraint_view_;
 };
 
 /// A prompt option: `key` to type, `label` shown (translated), `en` the English label (scripts type English words).
@@ -316,6 +330,8 @@ class Engine {
 
   // ---- what commands keep between runs (the JS engine's fields)
   std::optional<Pt> last_point;               // for @ input
+  std::string last_gc, last_dc;               // GEOMCONSTRAINT / DIMCONSTRAINT: the last type (the default next)
+  std::pair<double, double> autoc{0.05, 1};   // AUTOCONSTRAIN: distance and angle (degrees) tolerances
   std::optional<Pt> rubber_base;              // ortho and direct distance use it
   base::Value state = base::Value::object();  // lastRadius, lastRotation, lastSides, lastOffset, …
   std::size_t cmd_mark = 0;

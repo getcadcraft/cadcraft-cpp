@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8c (pictures in PDFs).
+Last updated 2026-10-20 · Change: M5.8e (constraints and parameters).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -385,4 +385,18 @@ Last updated 2026-10-20 · Change: M5.8c (pictures in PDFs).
   lengths and xref offsets masked (plot::pdf_canonical): Node's zlib is Chromium's, which deflates the same bytes
   differently from zlib 1.3.2; every inflated byte, every image and every other byte of the file match. Corpus plot
   parity unchanged (no corpus drawing has its picture files). Fuzz target png_decode.
+- M5.8e (2026-10-20): constraints and parameters. libs/cad gsolve.hpp (gsolve.js: damped Newton with the least-norm
+  step, Levenberg–Marquardt, a halving line search, Gram–Schmidt analysis — every Map order, summation order and Math
+  call as the JS's, so solves match to the bit) and params.hpp (params.js: evaluateVars in dependency order with
+  cycles marked, applyParams, driveBack / driveVar by secant then bracket and bisect, setVar, removeVar inlining);
+  expr.hpp gains literal, formatNumber, renameIn. libs/doc gcons.hpp (gcons.js: making, measuring, solving, status,
+  afterEdit, forFile, resolveParametric with every field of a file's payload checked) and params_doc.hpp
+  (params-doc.js: each edit on a draft, resolved, solved, written in one undo step). Doc::change re-solves after every
+  edit that moves constrained geometry and refuses (rolls back, Doc::note) one the constraints cannot follow;
+  Doc::load resolves a file's payload by its CCREF keys. libs/cmd: the 27 parametric commands of pcommands.js except
+  SWBOUT (GEOMCONSTRAINT / GC*, DIMCONSTRAINT / DC*, DELCONSTRAINT, AUTOCONSTRAIN, PARAMETERS, -PARAMETERS,
+  CONSTRAINTBAR, DCDISPLAY). The harness compares the constraints and the parameters too. Command parity 159/159
+  (tests/commands/constraints.json: 7 scripts — every geometric and dimensional type, a move the rest follows, a
+  move refused, AUTOCONSTRAIN with settings, conversions, parameters driven back through a chain, a cycle refused);
+  doc parity with constraints compared. Fuzz target parametric; unit tests.
 

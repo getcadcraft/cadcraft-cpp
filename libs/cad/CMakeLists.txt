@@ -1,9 +1,9 @@
 cc_library(cad LAYER 2
-  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp src/read_dxf.cpp src/tancircle.cpp src/pictures.cpp src/files.cpp src/geom.cpp src/dims.cpp src/save_parts.cpp src/tx.cpp src/edit.cpp src/reshape.cpp src/corners.cpp src/cloud.cpp src/boundary.cpp src/measure.cpp src/expr.cpp src/snap.cpp
+  SOURCES src/util.cpp src/props.cpp src/parts.cpp src/import_dwg.cpp src/read_dxf.cpp src/tancircle.cpp src/pictures.cpp src/files.cpp src/geom.cpp src/dims.cpp src/save_parts.cpp src/tx.cpp src/edit.cpp src/reshape.cpp src/corners.cpp src/cloud.cpp src/boundary.cpp src/measure.cpp src/expr.cpp src/gsolve.cpp src/params.cpp src/snap.cpp
   DEPS cc::base cc::i18n)
 
 cc_test(cad
-  SOURCES tests/import_test.cpp tests/snap_test.cpp
+  SOURCES tests/import_test.cpp tests/snap_test.cpp tests/gsolve_test.cpp
   DEPS cc::cad cc::io-dwg cc::i18n)
 if(TARGET test_cad)
   target_include_directories(test_cad PRIVATE ${PROJECT_SOURCE_DIR}/tests/support ${CMAKE_CURRENT_SOURCE_DIR}/src)

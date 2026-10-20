@@ -1,0 +1,1 @@
+{"format": "cadcraft-parametric", "version": 1, "refs": {"2": "line", "2": "circle"}, "constraints": [{"yd": "k1", "type": "horizontal", "r": [{"r": "1", "k": "*"}], "fixed": {"x1": 0, "y1": 10, "y2": 0}}], "amaspr": {"vars": [{"name": "rad0", "expr": "w/2"}, {"name": "w", "expr": "10"}], "links": [{"target": "c:k2", "expr": "%ad1"}]}}

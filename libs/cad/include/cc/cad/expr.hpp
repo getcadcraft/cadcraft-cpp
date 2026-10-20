@@ -55,4 +55,15 @@ struct Result {
 [[nodiscard]] Result compute(std::string_view src, const std::map<std::string, double>& values,
                              const i18n::Catalog& words);
 
+/// NAME_RE: a letter or _, then letters, digits, _ (40 at most)
+[[nodiscard]] bool valid_name(std::string_view s);
+/// RESERVED: a function, a constant or a unit
+[[nodiscard]] bool reserved(std::string_view s);
+/// literal(src): the number a plain number (with or without a unit) is, or nothing
+[[nodiscard]] std::optional<double> literal(std::string_view src, const i18n::Catalog& words);
+/// formatNumber(v): the shortest text that reads back to v to 12 significant digits
+[[nodiscard]] std::string format_number(double v);
+/// renameIn(src, from, to): whole names only, never a unit after a number
+[[nodiscard]] std::string rename_in(std::string_view src, std::string_view from, std::string_view to);
+
 }  // namespace cc::cad::expr

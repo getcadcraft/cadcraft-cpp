@@ -1,5 +1,5 @@
 cc_library(cmd LAYER 5
-  SOURCES src/engine.cpp src/draw.cpp src/modify.cpp src/trim.cpp src/reshape.cpp src/corner.cpp src/annotate.cpp src/hatch.cpp src/dims.cpp src/blocks.cpp src/inquiry.cpp src/select.cpp src/views.cpp src/layers.cpp src/script.cpp src/propexpr.cpp src/props.cpp src/linetypes.cpp src/propcmds.cpp src/layouts.cpp src/clipboard.cpp src/clipcmds.cpp src/settings_cmds.cpp src/pictures_cmds.cpp src/extras_cmds.cpp
+  SOURCES src/engine.cpp src/draw.cpp src/modify.cpp src/trim.cpp src/reshape.cpp src/corner.cpp src/annotate.cpp src/hatch.cpp src/dims.cpp src/blocks.cpp src/inquiry.cpp src/select.cpp src/views.cpp src/layers.cpp src/script.cpp src/propexpr.cpp src/props.cpp src/linetypes.cpp src/propcmds.cpp src/layouts.cpp src/clipboard.cpp src/clipcmds.cpp src/settings_cmds.cpp src/pcommands.cpp src/pictures_cmds.cpp src/extras_cmds.cpp
   DEPS cc::base cc::i18n cc::cad cc::doc cc::docview cc::sheets)
 target_include_directories(cc_cmd PRIVATE src)
 

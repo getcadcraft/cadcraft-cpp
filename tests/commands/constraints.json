@@ -1,0 +1,598 @@
+[
+ {
+  "name": "geometric: horizontal, perpendicular, coincident; a move the rest follows; undo, redo; the status",
+  "steps": [
+   "LINE",
+   "0,0",
+   "100,10",
+   "",
+   "LINE",
+   "100,10",
+   "110,60",
+   "",
+   "GCHORIZONTAL",
+   {
+    "click": [
+     50,
+     5
+    ],
+    "pick": 1
+   },
+   "GCPERPENDICULAR",
+   {
+    "click": [
+     50,
+     5
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     105,
+     40
+    ],
+    "pick": 2
+   },
+   "GCCOINCIDENT",
+   {
+    "click": [
+     102,
+     15
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     98,
+     9
+    ],
+    "pick": 1
+   },
+   {
+    "select": [
+     1
+    ]
+   },
+   "MOVE",
+   "0,0",
+   "10,5",
+   "UNDO",
+   "REDO",
+   "-PARAMETERS",
+   "?"
+  ]
+ },
+ {
+  "name": "dimensional: DCHORIZONTAL with Enter, parameters new / edit / rename / delete, a typed number solves back",
+  "steps": [
+   "LINE",
+   "0,0",
+   "50,0",
+   "",
+   "DCHORIZONTAL",
+   {
+    "click": [
+     1,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     49,
+     0
+    ],
+    "pick": 1
+   },
+   "25,10",
+   "",
+   "-PARAMETERS",
+   "N",
+   "width",
+   "30",
+   "-PARAMETERS",
+   "E",
+   "d1",
+   "width*2",
+   "-PARAMETERS",
+   "?",
+   "-PARAMETERS",
+   "E",
+   "d1",
+   "80",
+   "-PARAMETERS",
+   "R",
+   "width",
+   "w",
+   "-PARAMETERS",
+   "D",
+   "w",
+   "Y",
+   "-PARAMETERS",
+   "?",
+   "UNDO",
+   "UNDO"
+  ]
+ },
+ {
+  "name": "radius, diameter and angle constraints; DELCONSTRAINT; a dimension typed as name=expression",
+  "steps": [
+   "CIRCLE",
+   "0,0",
+   "10",
+   "LINE",
+   "20,0",
+   "40,0",
+   "",
+   "LINE",
+   "20,0",
+   "35,15",
+   "",
+   "DCRADIUS",
+   {
+    "click": [
+     10,
+     0
+    ],
+    "pick": 1
+   },
+   "15,15",
+   "rad1=12.5",
+   "DCANGULAR",
+   {
+    "click": [
+     30,
+     0
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     27,
+     7
+    ],
+    "pick": 3
+   },
+   "40,10",
+   "30",
+   "DCDIAMETER",
+   {
+    "click": [
+     0,
+     12.5
+    ],
+    "pick": 1
+   },
+   "-20,-20",
+   "",
+   "-PARAMETERS",
+   "?",
+   {
+    "select": [
+     1
+    ]
+   },
+   "DELCONSTRAINT",
+   "-PARAMETERS",
+   "?"
+  ]
+ },
+ {
+  "name": "AUTOCONSTRAIN with settings; GCFIX object refuses a move; GEOMCONSTRAINT by keyword; tangent, equal, concentric",
+  "steps": [
+   "LINE",
+   "0,0",
+   "50,0.2",
+   "",
+   "LINE",
+   "50.01,0.2",
+   "50.5,40",
+   "",
+   "CIRCLE",
+   "20,30",
+   "5",
+   "CIRCLE",
+   "22,31",
+   "8",
+   {
+    "select": [
+     1,
+     2
+    ]
+   },
+   "AUTOCONSTRAIN",
+   "AUTOCONSTRAIN",
+   "S",
+   "0.1",
+   "2",
+   {
+    "window": [
+     -1,
+     -1,
+     60,
+     45
+    ],
+    "ids": [
+     1,
+     2
+    ]
+   },
+   "",
+   "GCFIX",
+   "O",
+   {
+    "click": [
+     25,
+     0.1
+    ],
+    "pick": 1
+   },
+   {
+    "select": [
+     1
+    ]
+   },
+   "MOVE",
+   "0,0",
+   "5,5",
+   "GEOMCONSTRAINT",
+   "CON",
+   {
+    "click": [
+     25,
+     30
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     30,
+     31
+    ],
+    "pick": 4
+   },
+   "GCON",
+   "",
+   {
+    "click": [
+     10,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     20,
+     25
+    ],
+    "pick": 3
+   },
+   "GCTANGENT",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     20,
+     25
+    ],
+    "pick": 3
+   },
+   "GCEQUAL",
+   {
+    "click": [
+     20,
+     25
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     22,
+     23
+    ],
+    "pick": 4
+   },
+   "-PARAMETERS",
+   "?"
+  ]
+ },
+ {
+  "name": "DIMLINEAR converted (DIMCONSTRAINT, DCCONVERT); DCLINEAR picks the rotation; symmetric two points; bars and display",
+  "steps": [
+   "LINE",
+   "0,0",
+   "40,0",
+   "",
+   "LINE",
+   "0,20",
+   "40,20",
+   "",
+   "LINE",
+   "20,-10",
+   "20,30",
+   "",
+   "DIMLINEAR",
+   "0,0",
+   "40,0",
+   "20,-8",
+   "DIMCONSTRAINT",
+   {
+    "click": [
+     20,
+     -8
+    ],
+    "pick": 4
+   },
+   "DCLINEAR",
+   {
+    "click": [
+     0.5,
+     20
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     39,
+     20
+    ],
+    "pick": 2
+   },
+   "20,30",
+   "",
+   "DCALIGNED",
+   "2L",
+   {
+    "click": [
+     10,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     10,
+     20
+    ],
+    "pick": 2
+   },
+   "45,10",
+   "",
+   "GCSYMMETRIC",
+   "",
+   {
+    "click": [
+     1,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     39,
+     0.2
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     20,
+     5
+    ],
+    "pick": 3
+   },
+   "CONSTRAINTBAR",
+   "H",
+   "DCDISPLAY",
+   "H",
+   "DCDISPLAY",
+   "",
+   "PARAMETERS"
+  ]
+ },
+ {
+  "name": "tangent line-circle, fixed point refuses a move, collinear, parallel, vertical by two points, coincident on an object",
+  "steps": [
+   "LINE",
+   "0,0",
+   "50,0",
+   "",
+   "CIRCLE",
+   "20,12",
+   "10",
+   "LINE",
+   "0,20",
+   "50,25",
+   "",
+   "LINE",
+   "60,0",
+   "90,2",
+   "",
+   "POINT",
+   "70,40",
+   {
+    "esc": true
+   },
+   "GCTANGENT",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     20,
+     22
+    ],
+    "pick": 2
+   },
+   "GCFIX",
+   {
+    "click": [
+     0.5,
+     0
+    ],
+    "pick": 1
+   },
+   "GCFIX",
+   {
+    "click": [
+     49.5,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "select": [
+     1
+    ]
+   },
+   "MOVE",
+   "0,0",
+   "5,5",
+   "GCCOLLINEAR",
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     75,
+     1
+    ],
+    "pick": 4
+   },
+   "GCPARALLEL",
+   {
+    "click": [
+     10,
+     22
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     25,
+     0
+    ],
+    "pick": 1
+   },
+   "GCVERTICAL",
+   "2P",
+   {
+    "click": [
+     0.5,
+     20
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     70,
+     40
+    ],
+    "pick": 5
+   },
+   "GCCOINCIDENT",
+   "O",
+   {
+    "click": [
+     30,
+     23
+    ],
+    "pick": 3
+   },
+   {
+    "click": [
+     70,
+     40
+    ],
+    "pick": 5
+   },
+   "-PARAMETERS",
+   "?",
+   "UNDO",
+   "UNDO"
+  ]
+ },
+ {
+  "name": "parameters: a cycle refused, a driven value solved back through two parameters, rename a dimension by name=expr",
+  "steps": [
+   "LINE",
+   "0,0",
+   "40,0",
+   "",
+   "LINE",
+   "0,0",
+   "0,30",
+   "",
+   "-PARAMETERS",
+   "N",
+   "a",
+   "10",
+   "-PARAMETERS",
+   "N",
+   "b",
+   "a*2",
+   "DCHORIZONTAL",
+   "O",
+   {
+    "click": [
+     20,
+     0
+    ],
+    "pick": 1
+   },
+   "20,-10",
+   "b+20",
+   "DCVERTICAL",
+   {
+    "click": [
+     0,
+     0.5
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     0,
+     29
+    ],
+    "pick": 2
+   },
+   "-10,15",
+   "h=a+b",
+   "-PARAMETERS",
+   "E",
+   "a",
+   "b/2",
+   "-PARAMETERS",
+   "E",
+   "d1",
+   "50",
+   "-PARAMETERS",
+   "E",
+   "h",
+   "45",
+   "-PARAMETERS",
+   "D",
+   "h",
+   "-PARAMETERS",
+   "D",
+   "a",
+   "N",
+   "-PARAMETERS",
+   "?"
+  ]
+ }
+]

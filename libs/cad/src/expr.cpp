@@ -701,4 +701,70 @@ Result compute(std::string_view src, const std::map<std::string, double>& values
   return r;
 }
 
+// ---------------------------------------------------------------- names, literals, numbers (params.js uses them)
+
+bool valid_name(std::string_view s) {
+  // NAME_RE /^[A-Za-z_][A-Za-z0-9_]{0,39}$/
+  return !s.empty() && s.size() <= 40 && !digit(s[0]) && std::ranges::all_of(s, word);
+}
+
+bool reserved(std::string_view s) {
+  if (func(std::string(s)) != nullptr || s == "pi") {
+    return true;
+  }
+  return s == "mm" || s == "cm" || s == "m" || s == "in" || s == "ft" || s == "deg" || s == "rad";
+}
+
+std::optional<double> literal(std::string_view src, const i18n::Catalog& words) {
+  const Parsed p = parse(src, std::set<std::string>{}, words);
+  if (!p.ok || !p.ast) {
+    return std::nullopt;
+  }
+  const Node& n = *p.ast;
+  if (n.kind == Node::Kind::neg && !n.args.empty() && n.args[0]->kind == Node::Kind::num && n.args[0]->name.empty()) {
+    return -n.args[0]->v;
+  }
+  if (n.kind == Node::Kind::num && n.name.empty()) {
+    return n.v;
+  }
+  return std::nullopt;
+}
+
+std::string format_number(double v) {
+  if (!std::isfinite(v)) {
+    return base::js_string(base::Value(v));
+  }
+  const double r = base::js_number(base::js_to_exponential(v, 11));  // Number(v.toPrecision(12))
+  if (r == 0) {
+    return "0";  // -0 too
+  }
+  std::string s;
+  base::append_number(s, r);
+  return s;
+}
+
+std::string rename_in(std::string_view src, std::string_view from, std::string_view to) {
+  // /[A-Za-z_][A-Za-z0-9_]*/g, a match right after a digit or '.' left alone (a unit: 25mm)
+  std::string out;
+  std::size_t i = 0;
+  while (i < src.size()) {
+    const char c = src[i];
+    const bool start = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == '_';
+    if (!start) {
+      out += c;
+      ++i;
+      continue;
+    }
+    std::size_t j = i + 1;
+    while (j < src.size() && word(src[j])) {
+      ++j;
+    }
+    const std::string_view m = src.substr(i, j - i);
+    const bool after_number = i > 0 && (digit(src[i - 1]) || src[i - 1] == '.');
+    out += !after_number && m == from ? to : m;
+    i = j;
+  }
+  return out;
+}
+
 }  // namespace cc::cad::expr

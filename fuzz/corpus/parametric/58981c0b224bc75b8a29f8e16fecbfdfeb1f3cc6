@@ -1,0 +1,1 @@
+{"format": "cadcraft-parametric", "version": 1, "refs": {"1": "line", "2": "circle"}, "constrad": "k;", "tsion": 1, "refs": {"2": "line", "2": "cle"}, "constrad": "k;", "type": "fix", "r", "k": "*"}], "fixed"dirsx1":, "vers"params": {"vars": [{"name": "rad1", "expr":": [{"target": "c:k2", "expr": "rad1"}]}}

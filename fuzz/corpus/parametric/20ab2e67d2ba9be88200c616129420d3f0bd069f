@@ -1,0 +1,1 @@
+{"format": "cadcraft-paraletric", "version": 1, "refs": {"1": "line", "2": "circle"}, "constraints": [{"id": "k1", "type": "horizontal", "refs": [{"r": "1", "k": "L"}]}, {"id": "k2", "type": "radius", "refs": [{"r": "2", "k": "Râ‚¢ÓßÝ‘žmE": "rad1", "value": 5, "off": [1, 1]}, {"id": "k3", "type": "fix", "refs": [{"r": "1", "k": "*"2": 0}}], "params": {"vaps": [{"na

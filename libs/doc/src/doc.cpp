@@ -11,6 +11,7 @@
 
 #include "cc/base/js.hpp"
 #include "cc/cad/files.hpp"
+#include "cc/doc/gcons.hpp"
 #include "cc/m3d/drawing3d.hpp"
 
 namespace cc::doc {
@@ -319,7 +320,7 @@ void Doc::change(std::string label, const std::function<void()>& fn) {
     pending_.reset();
     throw;
   }
-  if (!pending_->ops.empty() && !edit_hooks.empty()) {
+  if (!pending_->ops.empty() && !edit_hooks.empty() && !solving) {
     // add-ons' follow-up edits (doc.js editHooks): inside this step; a hook that fails is skipped, as in 0.5
     const std::vector<Op> ops = pending_->ops;
     const std::vector<EditHook> hooks = edit_hooks;
@@ -328,6 +329,24 @@ void Doc::change(std::string label, const std::function<void()>& fn) {
         h.fn(*this, ops);
       } catch (const std::exception&) {  // NOLINT(bugprone-empty-catch) — console.error in 0.5
       }
+    }
+  }
+  if (!pending_->ops.empty() && constraints.is_array() && !constraints.as_array().empty() && !solving) {
+    // constrained geometry moved: the rest follows, or the whole change is refused (gcons.afterEdit)
+    static const i18n::Catalog kKeys;
+    std::optional<std::string> verdict;
+    try {
+      verdict = gcons::after_edit(*this, pending_->ops, catalog != nullptr ? *catalog : kKeys);
+    } catch (...) {
+      rollback(pending_ops());
+      pending_.reset();
+      throw;
+    }
+    if (verdict) {
+      rollback(pending_ops());
+      pending_.reset();
+      note(*verdict);
+      return;
     }
   }
   Step step = std::move(*pending_);
@@ -340,6 +359,17 @@ void Doc::change(std::string label, const std::function<void()>& fn) {
     redo_.clear();
     ++version_;
   }
+}
+
+void Doc::set_parametric(Value constraints_in, Value params_in) {
+  must_be_in_change();
+  Op op;
+  op.kind = Op::Kind::parametric;
+  op.before = base::make_object({{"constraints", constraints}, {"params", params}});
+  op.after = base::make_object({{"constraints", constraints_in}, {"params", params_in}});
+  pending_ops().push_back(std::move(op));
+  constraints = std::move(constraints_in);
+  params = std::move(params_in);
 }
 
 const Value& Doc::add(const Value& e, const MapPtr& map_in) {
@@ -654,6 +684,7 @@ std::size_t Doc::block_uses(std::string_view name) const {
 // ---------------------------------------------------------------- load
 
 void Doc::load(Value drawing, const i18n::Catalog& words) {
+  std::vector<std::pair<std::string, std::pair<double, Value>>> ccrefs;  // CCREF key → { id, entity }
   const Value tw = drawing.get("viewTwist");
   view_twist = finite(tw) && std::abs(tw.as_number()) <= 100 ? tw.as_number() : 0;
   const Value u = drawing.get("ucs");
@@ -731,6 +762,8 @@ void Doc::load(Value drawing, const i18n::Catalog& words) {
       }
     });
     for (auto& [id, v] : todo) {
+      // the file's CCREF keys → this session's ids (gcons.resolveParametric checks everything)
+      ccrefs.emplace_back(base::js_string(model_->get(id)->get("ccref")), std::pair{static_cast<double>(id), v});
       model_->set(id, std::move(v));
     }
   }
@@ -738,6 +771,20 @@ void Doc::load(Value drawing, const i18n::Catalog& words) {
   params = base::make_object({{"vars", Array{}}, {"links", Array{}}});
   const Value pt = drawing.get("parametric");
   parametric_text = pt.is_string() ? pt.as_string() : std::string();
+  load_notes.clear();
+  if (pt.truthy()) {
+    gcons::Resolved got = gcons::resolve_parametric(pt, ccrefs, words);
+    constraints = std::move(got.constraints);
+    params = cad::params::to_value(got.params);
+    load_notes = got.notes;
+    if (Value* rep = drawing.find("report"); rep != nullptr && rep->is_object()) {
+      if (Value* notes = rep->find("notes"); notes != nullptr && notes->is_array()) {
+        for (const std::string& n : got.notes) {
+          notes->push(n);
+        }
+      }
+    }
+  }
   if (const Value lo = drawing.get("layouts"); lo.is_array()) {
     for (const Value& l : lo.as_array()) {
       auto map = std::make_shared<EntityMap>();
@@ -884,7 +931,9 @@ Value Doc::dump() const {
                             {"ucsNamed", ucs_named},
                             {"viewTwist", view_twist},
                             {"dynSrc", dyn_src},
-                            {"nextId", static_cast<double>(next_id_)}});
+                            {"nextId", static_cast<double>(next_id_)},
+                            {"constraints", constraints},
+                            {"params", params}});
 }
 
 }  // namespace cc::doc

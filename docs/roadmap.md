@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-20 · Change: M5.8c done.
+Last updated 2026-10-20 · Change: M5.8e done; M5.8 f–i.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -113,5 +113,5 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.5c | PROPERTIES / PROPERTIESCLOSE / QPMODE / _PROPPICK and the properties panel, the layers panel's switches — **done 2026-10-19** |
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen — **M5.6a done 2026-10-20** (the sheet commands); **M5.6b done 2026-10-20** (plot.js, the PDF writer, `cadcraft-cli plot`, 307 PDFs byte for byte); **M5.6c done 2026-10-20** (the tabs follow the document, PLOT in the viewer); MSPACE / PSPACE inside a viewport and split panes wait (docs/gaps.md) |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands — **M5.7a done 2026-10-20** (the reader, 214/214 documents); **M5.7b done 2026-10-20** (the clipboard, NEW / OPEN in the viewer) |
-| M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets — **M5.8a done 2026-10-20** (TTR / TTT, TEXTMASK, XCLIP, the settings commands, HELP); **M5.8b done 2026-10-20** (picture commands, the drawing's picture files); **M5.8c done 2026-10-20** (pictures in PDFs); M5.8d pictures on screen (wuffs); M5.8e constraints and parameters; M5.8f point clouds, VIEWBASE; M5.8g AutoLISP (APPLOAD, ALIASEDIT, REINIT; lisp/) |
+| M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets — **M5.8a done 2026-10-20** (TTR / TTT, TEXTMASK, XCLIP, the settings commands, HELP); **M5.8b done 2026-10-20** (picture commands, the drawing's picture files); **M5.8c done 2026-10-20** (pictures in PDFs); M5.8d pictures on screen (wuffs); **M5.8e done 2026-10-20** (constraints and parameters: solver, parameter table, the commands); M5.8f constraints in saved files, ckeep, SWBOUT; M5.8g the viewer's constraint overlay and Parameters panel; M5.8h point clouds, VIEWBASE; M5.8i AutoLISP (APPLOAD, ALIASEDIT, REINIT; lisp/) |
 

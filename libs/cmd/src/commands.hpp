@@ -53,6 +53,7 @@ void add_clipboard(std::vector<CommandDef>& t);
 void add_settings(std::vector<CommandDef>& t);  // POLARANG … LWDISPLAY (before UNITS)
 void add_help(std::vector<CommandDef>& t);
 /// What cadcraft.js registers after commands.js loads: TEXTMASK, XCLIP (textmask-cmd.js, xclip-cmd.js)
+void add_parametric(std::vector<CommandDef>& t);
 void add_pictures(std::vector<CommandDef>& t);
 void add_registered(
     std::vector<CommandDef>& t);  // HELP (after COMPARESETTINGS' group)    // COPYCLIP … PASTEORIG (after MOVE / COPY)

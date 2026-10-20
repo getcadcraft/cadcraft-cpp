@@ -269,7 +269,9 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                                     {"layouts", std::move(layouts)},
                                     {"space", open != nullptr ? Value(open->name) : Value(nullptr)},
                                     {"undo", std::move(undo)},
-                                    {"redo", std::move(redo)}});
+                                    {"redo", std::move(redo)},
+                                    {"constraints", d.constraints},
+                                    {"params", d.params}});
   if (finish) {
     finish(script, d, result);
   }

@@ -12,9 +12,10 @@
 // insert, hatch, dim, viewport, mleader, xline, ray). Spaces: `model` holds the drawing, each layout its paper-space
 // entities; `entities()` is whichever is open.
 //
-// Not ported yet (docs/gaps.md): constraints and parameters (a file's CADCRAFT_PARAMETRIC payload is kept as text),
-// reading CadCraft's own copy of the 3D model back (a file's 3D faces come in as loose faces), Studio Live's hook,
-// add-on edit hooks.
+// Constraints and parameters (cc/doc/gcons.hpp, params_doc.hpp): `constraints` and `params` are part of the undoable
+// document; a change that moves constrained geometry is re-solved before it is recorded, or refused (note()).
+// Not ported yet (docs/gaps.md): reading CadCraft's own copy of the 3D model back (a file's 3D faces come in as loose
+// faces), Studio Live's hook.
 #pragma once
 
 #include <cstdint>
@@ -229,6 +230,22 @@ class Doc {
     std::function<void(Doc&, const std::vector<Op>&)> fn;
   };
   std::vector<EditHook> edit_hooks;
+  /// doc.solving: a parametric edit writing its own solution (afterEdit and the edit hooks stay out of it)
+  bool solving = false;
+  /// doc.onNote: constraints said something about an edit (an edit refused, objects that followed)
+  std::function<void(const std::string&)> on_note;
+  std::string last_note;
+  std::vector<std::string> load_notes;  // what reading the file's constraints said
+  void note(const std::string& msg) {
+    last_note = msg;
+    if (on_note) {
+      on_note(msg);
+    }
+  }
+  /// setParametric({ constraints, params }): inside a change, one undo step with the geometry
+  void set_parametric(Value constraints_in, Value params_in);
+  /// the language constraints' messages are in (an engine sets it; nothing: the keys)
+  const i18n::Catalog* catalog = nullptr;
   /// doc.pictures (pictures.js): the picture files the drawing uses, key → file, in the order kept; not undoable
   std::vector<std::pair<std::string, PictureFile>> pictures;
   std::uint64_t picture_version = 0;
@@ -240,7 +257,7 @@ class Doc {
   double view_twist = 0;
   Value dyn_src;  // the file's dynamic-block objects, or null
   OrderedMap<std::string> linetypes, text_styles, dim_styles;
-  Value constraints = base::Value::array();  // gcons.js (not ported: docs/gaps.md)
+  Value constraints = base::Value::array();  // gcons.js (cc/doc/gcons.hpp)
   Value params;                              // params.js { vars, links }
   std::string parametric_text;               // a file's CADCRAFT_PARAMETRIC payload, kept for saving
   m3d::Model model3d;                        // the 3D model (model3d.js): the file's 3D faces as one group

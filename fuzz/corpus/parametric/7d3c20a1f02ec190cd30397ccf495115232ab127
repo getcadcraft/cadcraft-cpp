@@ -1,0 +1,1 @@
+{"format": "cadcraft-parametric", "vesrion": 1, "refs": {"1": "line", "2": "circle"}, "constraints": [{"id": "k1", "type": "horizontal", "id": "k1", "type":": "10"}], "pinks": [{"target": "c:k2", "expr": "rad1"}]}}

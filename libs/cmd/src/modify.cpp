@@ -271,6 +271,7 @@ const std::vector<CommandDef>& command_table() {
     add_views(t);
     add_sheet_tools(t);
     add_help(t);
+    add_parametric(t);  // commands.js: installParametric after HELP, before the layer tools
     add_layers(t);
     add_props(t);
     add_pictures(t);  // cadcraft.js imports pictures-cmd.js before textmask-cmd.js and xclip-cmd.js

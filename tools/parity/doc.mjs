@@ -59,7 +59,8 @@ const jsImport = (data, dxf) => {
     return { model: map(d.model), layers: map(d.layers), blocks: map(d.blocks),
       layouts: d.layouts.map((l) => ({ name: l.name, paper: l.paper, entities: map(l.entities) })), views: d.views, meta: d.meta,
       current: d.current, linetypes: map(d.linetypes), textStyles: map(d.textStyles), dimStyles: map(d.dimStyles), vports: d.vports,
-      ucs: d.ucs, ucsNamed: d.ucsNamed, viewTwist: d.viewTwist, dynSrc: d.dynSrc, nextId: d.nextId };
+      ucs: d.ucs, ucsNamed: d.ucsNamed, viewTwist: d.viewTwist, dynSrc: d.dynSrc, nextId: d.nextId,
+      constraints: d.constraints, params: d.params };
   } catch (e) { return { $error: { message: e.message } }; }
 };
 
