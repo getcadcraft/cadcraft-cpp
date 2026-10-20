@@ -18,6 +18,8 @@
 #include "cc/base/js.hpp"
 #include "cc/base/js_math.hpp"
 #include "cc/docview/walk.hpp"
+#include "cc/image/picture.hpp"
+#include "cc/image/png.hpp"
 #include "cc/sheets/sheets.hpp"
 
 namespace cc::plot {
@@ -388,12 +390,29 @@ struct Page {
   std::size_t missing = 0, texts = 0;
   std::vector<double> alphas;
   std::string name;
+  std::vector<std::size_t> xobjects;  // the images it uses, in first-use order
+  std::size_t pictures = 0, shrunk = 0, kept = 0;
+};
+/// An image in the file (a picture used on several pages is stored once)
+struct FileImage {
+  image::PdfImage img;
+  const doc::PictureFile* rec = nullptr;
+  double max_dpi = 0;
 };
 
-Page page_of(const DisplayList& list, double pen, const PdfOptions& o) {
+/// toFixed(6) of a picture's matrix (not finite: 0)
+std::string fixed6(double x) {
+  return std::isfinite(x) ? base::js_to_fixed(x, 6) : std::string("0");
+}
+
+Page page_of(const DisplayList& list, double pen, const PdfOptions& o, std::vector<FileImage>& images) {
   Ops out;
   std::size_t missing = 0;
   std::size_t n_texts = 0;
+  std::size_t n_pics = 0;
+  std::size_t shrunk = 0;
+  std::size_t kept = 0;
+  std::vector<std::size_t> xobjects;
   const std::string k = base::js_to_fixed(72 / 25.4, 9);
   out.raw(k + " 0 0 " + k + " 0 0 cm");  // everything after this is in mm
   for (const ListView& v : list.views) {
@@ -402,6 +421,46 @@ Page page_of(const DisplayList& list, double pen, const PdfOptions& o) {
     if (v.clip) {
       out.poly(*v.clip);
       out.raw("W n");
+    }
+    for (const docview::PictureOut& p : v.pictures) {
+      const double mm_w = base::js_hypot(p.ux, p.uy) * p.w;
+      const double mm_h = base::js_hypot(p.vx, p.vy) * p.h;
+      const doc::PictureFile* rec = nullptr;
+      for (const auto& [file, r] : list.picture_files) {
+        if (file == p.file) {
+          rec = r;
+        }
+      }
+      const auto found =
+          std::ranges::find_if(images, [&](const FileImage& im) { return im.rec == rec && im.max_dpi == o.max_dpi; });
+      std::size_t im = static_cast<std::size_t>(found - images.begin());
+      if (found == images.end()) {
+        auto img = rec != nullptr ? image::pdf_image(rec->mime, rec->bytes, o.max_dpi, mm_w, mm_h) : std::nullopt;
+        if (!img) {
+          continue;
+        }
+        shrunk += img->shrunk ? 1 : 0;
+        kept += img->kept ? 1 : 0;
+        im = images.size();
+        images.push_back({.img = std::move(*img), .rec = rec, .max_dpi = o.max_dpi});
+      }
+      if (std::ranges::find(xobjects, im) == xobjects.end()) {
+        xobjects.push_back(im);
+      }
+      out.raw("q");
+      if (p.clip.size() >= 6) {
+        out.raw(num(p.clip[0]) + " " + num(p.clip[1]) + " m");
+        for (std::size_t i = 2; i + 1 < p.clip.size(); i += 2) {
+          out.raw(num(p.clip[i]) + " " + num(p.clip[i + 1]) + " l");
+        }
+        out.raw("h W n");
+      }
+      out.alpha(p.alpha);
+      out.raw(fixed6(p.ux * p.w) + " " + fixed6(p.uy * p.w) + " " + fixed6(p.vx * p.h) + " " + fixed6(p.vy * p.h) +
+              " " + fixed6(p.x) + " " + fixed6(p.y) + " cm /Im" + std::to_string(im) + " Do");
+      out.raw("Q");
+      out.alpha(1);
+      ++n_pics;
     }
     out.raw("1 J 1 j " + num(pen) + " w");
     for (const Fill& f : v.fills) {
@@ -465,7 +524,11 @@ Page page_of(const DisplayList& list, double pen, const PdfOptions& o) {
          .missing = missing,
          .texts = n_texts,
          .alphas = out.alphas,
-         .name = {}};
+         .name = {},
+         .xobjects = std::move(xobjects),
+         .pictures = n_pics,
+         .shrunk = shrunk,
+         .kept = kept};
   if (o.compress) {
     p.content = o.compress(out.buf);
     p.flate = !p.content.empty();
@@ -493,7 +556,8 @@ std::string pdf_date(double ms) {
 }
 
 /// assemble(pages, title): a PDF 1.4 file; with more than one page, a bookmark per page
-std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::string& title, double date_ms) {
+std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::string& title, double date_ms,
+                                   const std::vector<FileImage>& images) {
   std::vector<std::uint8_t> out;
   std::vector<std::size_t> offsets;
   const auto push = [&out](std::string_view s) { out.insert(out.end(), s.begin(), s.end()); };
@@ -521,6 +585,9 @@ std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::st
   for (const Page& p : pages) {
     room += p.content.size() + 1024;
   }
+  for (const FileImage& im : images) {
+    room += im.img.data.size() + (im.img.smask ? im.img.smask->size() : 0) + 1024;
+  }
   out.reserve(room);
   push("%PDF-1.4\n");
   out.insert(out.end(), {0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a});  // a binary comment: "this file has 8-bit data"
@@ -531,7 +598,25 @@ std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::st
   const std::size_t first = 6;
   const auto page_no = [&](std::size_t i) { return first + 2 * i; };
   const auto item_no = [&](std::size_t i) { return first + 2 * n + i; };
-  const std::size_t total = outlines ? item_no(n) : page_no(n);
+  // pictures (0.5 WL.13): after everything else, each image followed by its soft mask when it has one
+  const std::size_t img_base = outlines ? item_no(n) : page_no(n);
+  std::vector<std::size_t> img_no;
+  {
+    std::size_t k = img_base;
+    for (const FileImage& im : images) {
+      img_no.push_back(k);
+      k += im.img.smask ? 2 : 1;
+    }
+  }
+  std::size_t total = img_base;
+  if (!images.empty()) {
+    total = img_no.back() + (images.back().img.smask ? 2 : 1);
+  }
+  const auto count = [](double v) {
+    std::string s;
+    base::append_number(s, v);
+    return s;
+  };
   obj(1, {"<< /Type /Catalog /Pages 2 0 R" + std::string(outlines ? " /Outlines 5 0 R /PageMode /UseOutlines" : "") +
           " >>"});
   std::string kids;
@@ -556,9 +641,21 @@ std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::st
       }
       gs += " >>";
     }
-    obj(page_no(i),
-        {"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + pt(p.w) + " " + pt(p.h) +
-         "] /Resources << /Font << /F1 3 0 R >>" + gs + " >> /Contents " + std::to_string(page_no(i) + 1) + " 0 R >>"});
+    std::string xo;
+    if (!p.xobjects.empty()) {
+      xo = " /XObject << ";
+      for (std::size_t j = 0; j < p.xobjects.size(); ++j) {
+        xo += (j ? " " : "") + std::string("/Im") + std::to_string(p.xobjects[j]) + " " +
+              std::to_string(img_no[p.xobjects[j]]) + " 0 R";
+      }
+      xo += " >>";
+    }
+    std::string page = "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 " + pt(p.w) + " " + pt(p.h) +
+                       "] /Resources << /Font << /F1 3 0 R >>";
+    page += gs;
+    page += xo;
+    page += " >> /Contents " + std::to_string(page_no(i) + 1) + " 0 R >>";
+    obj(page_no(i), {page});
     obj(page_no(i) + 1,
         {"<< /Length " + std::to_string(p.content.size()) + (p.flate ? " /Filter /FlateDecode" : "") + " >>\nstream\n"},
         &p.content, "\nendstream");
@@ -569,6 +666,23 @@ std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::st
                        (i ? " /Prev " + std::to_string(item_no(i - 1)) + " 0 R" : std::string()) +
                        (i < n - 1 ? " /Next " + std::to_string(item_no(i + 1)) + " 0 R" : std::string()) + " /Dest [" +
                        std::to_string(page_no(i)) + " 0 R /Fit] >>"});
+    }
+  }
+  for (std::size_t i = 0; i < images.size(); ++i) {
+    const image::PdfImage& im = images[i].img;
+    const std::size_t no = img_no[i];
+    obj(no,
+        {"<< /Type /XObject /Subtype /Image /Width " + count(im.w) + " /Height " + count(im.h) + " /ColorSpace /" +
+         (im.colors == 1 ? "DeviceGray" : "DeviceRGB") + " /BitsPerComponent 8 /Filter /" + im.filter +
+         (im.smask ? " /SMask " + std::to_string(no + 1) + " 0 R" : std::string()) + " /Length " +
+         std::to_string(im.data.size()) + " >>\nstream\n"},
+        &im.data, "\nendstream");
+    if (im.smask) {
+      obj(no + 1,
+          {"<< /Type /XObject /Subtype /Image /Width " + count(im.w) + " /Height " + count(im.h) +
+           " /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length " +
+           std::to_string(im.smask->size()) + " >>\nstream\n"},
+          &*im.smask, "\nendstream");
     }
   }
   const std::size_t xref = out.size();
@@ -701,7 +815,7 @@ Sheet model_sheet(const doc::Doc& doc, const cad::Bounds& area, std::string_view
 
 DisplayList display_list(const doc::Doc& doc, const Sheet& sheet, bool mono) {
   const auto ink = [mono](const std::string& c) { return mono || c == "ink" ? std::string("#000000") : c; };
-  DisplayList list{.w = sheet.w, .h = sheet.h, .name = sheet.name, .views = {}};
+  DisplayList list{.w = sheet.w, .h = sheet.h, .name = sheet.name, .views = {}, .picture_files = {}};
   for (const View& v : sheet.views) {
     ListView lv;
     lv.clip = v.clip;
@@ -786,6 +900,21 @@ DisplayList display_list(const doc::Doc& doc, const Sheet& sheet, bool mono) {
         stroke_list(ink(color), lw, alpha_of(o)).push_back(q);
       }
     };
+    // 0.5 WL.13/14: only pictures whose file CadCraft has
+    out.picture = [&](const docview::PictureOut& p) {
+      const doc::PictureFile* rec = doc::find_picture(doc, p.file);
+      if (rec == nullptr) {
+        return;
+      }
+      lv.pictures.push_back(p);
+      for (auto& [file, r] : list.picture_files) {
+        if (file == p.file) {
+          r = rec;
+          return;
+        }
+      }
+      list.picture_files.emplace_back(p.file, rec);
+    };
     docview::walk(doc, v.entities, out, {.m = v.m, .plot = true, .frozen = v.frozen});
     list.views.push_back(std::move(lv));
   }
@@ -794,19 +923,24 @@ DisplayList display_list(const doc::Doc& doc, const Sheet& sheet, bool mono) {
 
 PdfResult to_pdf(const DisplayList& list, const PdfOptions& o) {
   std::vector<Page> pages;
-  pages.push_back(page_of(list, o.pen, o));
+  std::vector<FileImage> images;
+  pages.push_back(page_of(list, o.pen, o, images));
   const Page& page = pages.front();
   PdfResult r{.bytes = {}, .missing = page.missing, .texts = page.texts, .pages = 1, .compressed = page.flate};
-  r.bytes = assemble(pages, o.title ? *o.title : list.name, o.date_ms);
+  r.pictures = page.pictures;
+  r.shrunk = page.shrunk;
+  r.kept = page.kept;
+  r.bytes = assemble(pages, o.title ? *o.title : list.name, o.date_ms, images);
   return r;
 }
 
 PdfResult to_pdf_pages(const std::vector<DisplayList>& lists, const PdfOptions& o,
                        const std::vector<std::string>& names) {
   std::vector<Page> pages;
+  std::vector<FileImage> images;
   PdfResult r;
   for (std::size_t i = 0; i < lists.size(); ++i) {
-    Page p = page_of(lists[i], o.pen, o);
+    Page p = page_of(lists[i], o.pen, o, images);
     if (i < names.size() && !names[i].empty()) {
       p.name = names[i];
     } else {
@@ -817,9 +951,96 @@ PdfResult to_pdf_pages(const std::vector<DisplayList>& lists, const PdfOptions& 
     r.compressed = p.flate;
     pages.push_back(std::move(p));
   }
-  r.bytes = assemble(pages, o.title ? *o.title : std::string("Drawing"), o.date_ms);
+  r.bytes = assemble(pages, o.title ? *o.title : std::string("Drawing"), o.date_ms, images);
   r.pages = pages.size();
   return r;
+}
+
+std::string pdf_canonical(std::span<const std::uint8_t> pdf) {
+  // tools/parity/commands.mjs pdfCanonical: /<<([^<>]*)>>\nstream\n/ → the stream's bytes, inflated when Flate
+  const std::string text(pdf.begin(), pdf.end());  // the bytes as Latin-1
+  const std::string_view s(text);
+  std::string out;
+  std::size_t at = 0;
+  const std::size_t xr = s.rfind("\nxref\n");  // the table (not startxref's)
+  const std::size_t end = xr == std::string_view::npos ? s.size() : xr + 1;
+  while (at < end) {
+    const std::size_t st = s.find(">>\nstream\n", at);
+    if (st == std::string_view::npos || st >= end) {
+      break;
+    }
+    const std::size_t open = s.rfind("<<", st);
+    if (open == std::string_view::npos || open < at ||
+        s.substr(open + 2, st - open - 2).find_first_of("<>") != std::string_view::npos) {
+      out += s.substr(at, st + 10 - at);
+      at = st + 10;
+      continue;
+    }
+    std::string_view dict = s.substr(open + 2, st - open - 2);
+    const std::size_t lp = dict.find("/Length ");
+    std::size_t len = 0;
+    if (lp != std::string_view::npos) {
+      std::size_t j = lp + 8;
+      while (j < dict.size() && dict[j] >= '0' && dict[j] <= '9') {
+        len = len * 10 + static_cast<std::size_t>(dict[j] - '0');
+        ++j;
+      }
+    }
+    const std::size_t body = st + 10;
+    if (body + len > s.size()) {
+      break;
+    }
+    std::string d(dict);
+    if (lp != std::string_view::npos) {
+      std::size_t j = lp + 8;
+      while (j < d.size() && d[j] >= '0' && d[j] <= '9') {
+        ++j;
+      }
+      d.replace(lp, j - lp, "/Length *");
+    }
+    out += s.substr(at, open - at);
+    out += "<<" + d + ">>\nstream\n";
+    const auto bytes = pdf.subspan(body, len);
+    if (d.contains("/Filter /FlateDecode")) {
+      const auto inflated = image::zlib_inflate(bytes, std::size_t{1} << 30U);
+      out += inflated ? "#inflated " + base::base64(*inflated) : std::string("#bad-flate");
+    } else {
+      out += "#raw " + base::base64(bytes);
+    }
+    at = body + len;
+  }
+  out += s.substr(at, end > at ? end - at : 0);
+  // Latin-1 → UTF-8, as the harness's latin1 string is written to JSON
+  std::string utf8;
+  utf8.reserve(out.size());
+  for (const char c : out) {
+    const auto u = static_cast<unsigned char>(c);
+    if (u < 0x80) {
+      utf8 += c;
+    } else {
+      utf8 += static_cast<char>(0xC0U | (u >> 6U));
+      utf8 += static_cast<char>(0x80U | (u & 0x3FU));
+    }
+  }
+  return utf8;
+}
+
+void script_pdf(const Value& plot, const doc::Doc& doc, double date_ms, Value& result) {
+  const auto ext = extents_of(doc);
+  if (!ext) {
+    return;
+  }
+  const Value mono = plot.get("mono");
+  const Value dpi = plot.get("maxDpi");
+  PdfOptions o;
+  o.date_ms = date_ms;
+  o.compress = [](std::span<const std::uint8_t> b) { return image::zlib_compress(b); };
+  o.max_dpi = dpi.is_number() && dpi.as_number() > 0 ? dpi.as_number() : 0;
+  const PdfResult r = to_pdf(display_list(doc, model_sheet(doc, *ext), mono.is_bool() ? mono.as_bool() : true), o);
+  result.set("pdf", pdf_canonical(r.bytes));
+  result.set("pdfReport", base::make_object({{"pictures", static_cast<double>(r.pictures)},
+                                             {"shrunk", static_cast<double>(r.shrunk)},
+                                             {"kept", static_cast<double>(r.kept)}}));
 }
 
 std::optional<cad::Bounds> extents_of(const doc::Doc& doc) {

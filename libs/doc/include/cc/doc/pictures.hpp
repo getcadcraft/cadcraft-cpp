@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "cc/base/value.hpp"
+#include "cc/image/picture.hpp"
 
 namespace cc::doc {
 
@@ -30,11 +31,7 @@ struct Sniffed {
 };
 /// sniffPicture(bytes): a PNG or a JPEG we can read, by its content; nothing otherwise (or past 100 Mpixels).
 [[nodiscard]] std::optional<Sniffed> sniff_picture(std::span<const std::uint8_t> bytes);
-struct JpegInfo {
-  double w = 0, h = 0, components = 0;
-};
-/// jpegInfo(bytes): the frame header (SOF0–SOF2).
-[[nodiscard]] std::optional<JpegInfo> jpeg_info(std::span<const std::uint8_t> bytes);
+using image::jpeg_info;
 
 /// pictureFrame(block): the frame entity of a picture block (the poly carrying `pic`), or nullptr.
 [[nodiscard]] const base::Value* picture_frame(const base::Value& block);

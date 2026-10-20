@@ -38,31 +38,6 @@ std::string picture_key(std::string_view file) {
   return base::js_to_lower(sl == std::string_view::npos ? file : file.substr(sl + 1));
 }
 
-std::optional<JpegInfo> jpeg_info(std::span<const std::uint8_t> b) {
-  std::size_t i = 2;
-  while (i + 9 < b.size()) {
-    if (b[i] != 0xff) {
-      return std::nullopt;
-    }
-    const std::uint8_t m = b[i + 1];
-    if (m == 0xd8 || (m >= 0xd0 && m <= 0xd7) || m == 0x01) {
-      i += 2;
-      continue;
-    }
-    const std::size_t len = (static_cast<std::size_t>(b[i + 2]) << 8U) | b[i + 3];
-    if (m >= 0xc0 && m <= 0xc2) {
-      return JpegInfo{.w = static_cast<double>((static_cast<unsigned>(b[i + 7]) << 8U) | b[i + 8]),
-                      .h = static_cast<double>((static_cast<unsigned>(b[i + 5]) << 8U) | b[i + 6]),
-                      .components = static_cast<double>(b[i + 9])};
-    }
-    if (m == 0xda || len < 2) {
-      return std::nullopt;
-    }
-    i += 2 + len;
-  }
-  return std::nullopt;
-}
-
 std::optional<Sniffed> sniff_picture(std::span<const std::uint8_t> b) {
   if (b.size() > 24 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4e && b[3] == 0x47) {
     const double w = be32(b, 16);

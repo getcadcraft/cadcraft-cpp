@@ -1,5 +1,5 @@
-cc_library(image LAYER 3
-  SOURCES src/png.cpp
+cc_library(image LAYER 2
+  SOURCES src/png.cpp src/picture.cpp
   DEPS cc::base
   PRIVATE_EXTERNAL ZLIB::ZLIB)
 

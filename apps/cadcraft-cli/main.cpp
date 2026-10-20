@@ -407,6 +407,13 @@ int cmd_dxf_save(const std::filesystem::path& in, const std::string& format, con
   return 0;
 }
 
+/// A script's {"plot"} as the parity harness plots it: the model to PDF, on the harness's clock (2026-10-16 UTC).
+void script_pdf(const cc::base::Value& script, const cc::doc::Doc& doc, cc::base::Value& result) {
+  if (const cc::base::Value* p = script.find("plot"); p != nullptr && p->is_object() && !p->is_point()) {
+    cc::plot::script_pdf(*p, doc, 1792108800000.0, result);
+  }
+}
+
 int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
   const auto text = cc::base::read_file(file, std::uint64_t{1} << 26U);
   if (!text) {
@@ -431,7 +438,7 @@ int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
   for (const cc::base::Value& sc : scripts->as_array()) {
     std::string js;
     try {
-      cc::base::write_json(cc::cmd::run_script(sc, *words), js);
+      cc::base::write_json(cc::cmd::run_script(sc, *words, {}, script_pdf), js);
     } catch (const std::exception& e) {
       js.clear();
       cc::base::write_json(cc::base::make_object({{"$error", cc::base::make_object({{"message", e.what()}})}}), js);

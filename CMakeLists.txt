@@ -56,9 +56,9 @@ if(CC_BUILD_TESTS)
   enable_testing()
 endif()
 
+find_package(ZLIB REQUIRED)  # libs/image: PNG, the PDF streams
 if(CC_BUILD_RENDER)
   find_package(Freetype REQUIRED)
-  find_package(ZLIB REQUIRED)
 endif()
 if(CC_BUILD_GUI)
   find_package(SDL3 CONFIG REQUIRED)
@@ -72,6 +72,7 @@ add_subdirectory(libs/i18n)       # L1
 add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/cad)        # L2
 add_subdirectory(libs/m3d)        # L2
+add_subdirectory(libs/image)      # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()
@@ -80,7 +81,6 @@ add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/doc)        # L3
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/render)   # L3
-  add_subdirectory(libs/image)    # L3
 endif()
 add_subdirectory(libs/importer)   # L4
 add_subdirectory(libs/save)       # L4

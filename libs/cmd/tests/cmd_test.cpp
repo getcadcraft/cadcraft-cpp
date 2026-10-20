@@ -16,6 +16,7 @@
 #include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/i18n/i18n.hpp"
+#include "cc/plot/plot.hpp"
 #include "golden.hpp"
 
 namespace fs = std::filesystem;
@@ -70,7 +71,12 @@ TEST_CASE("golden: the command scripts give what CadCraft 0.5's command line gav
     const Value want = read_json(golden / entry.path().filename());
     REQUIRE(want.as_array().size() == scripts.as_array().size());
     for (std::size_t i = 0; i < scripts.as_array().size(); ++i) {
-      const Value got = cc::cmd::run_script(scripts.as_array()[i], words());
+      const Value got = cc::cmd::run_script(
+          scripts.as_array()[i], words(), {}, [](const Value& sc, const cc::doc::Doc& d, Value& result) {
+            if (const Value* p = sc.find("plot"); p != nullptr && p->is_object() && !p->is_point()) {
+              cc::plot::script_pdf(*p, d, 1792108800000.0, result);  // the harness's clock
+            }
+          });
       INFO(entry.path().filename().string() << ": " << cc::base::js_string(scripts.as_array()[i]["name"]));
       std::vector<std::string> diffs;
       cc::test::compare(want.as_array()[i], got, "", diffs);

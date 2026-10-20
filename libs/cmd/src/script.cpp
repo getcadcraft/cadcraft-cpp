@@ -155,7 +155,8 @@ void props_step(doc::Doc& d, ScriptHost& host, const Value& s, const i18n::Catal
 
 }  // namespace
 
-Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLimits& limits) {
+Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLimits& limits,
+                 const ScriptFinish& finish) {
   doc::Doc d;
   ScriptHost host;
   Engine eng(d, host, words);
@@ -254,21 +255,25 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
     layouts.emplace_back(base::Array{l.name, l.paper, std::move(ents)});
   }
   const doc::Layout* open = d.layout();
-  return base::make_object({{"name", script.get("name")},
-                            {"log", std::move(host.log)},
-                            {"model", std::move(model)},
-                            {"blocks", std::move(blocks)},
-                            {"layers", std::move(layers)},
-                            {"meta", d.meta},
-                            {"ucs", d.ucs},
-                            {"ucsNamed", d.ucs_named},
-                            {"views", d.views},
-                            {"current", d.current},
-                            {"nextId", static_cast<double>(d.next_id())},
-                            {"layouts", std::move(layouts)},
-                            {"space", open != nullptr ? Value(open->name) : Value(nullptr)},
-                            {"undo", std::move(undo)},
-                            {"redo", std::move(redo)}});
+  Value result = base::make_object({{"name", script.get("name")},
+                                    {"log", std::move(host.log)},
+                                    {"model", std::move(model)},
+                                    {"blocks", std::move(blocks)},
+                                    {"layers", std::move(layers)},
+                                    {"meta", d.meta},
+                                    {"ucs", d.ucs},
+                                    {"ucsNamed", d.ucs_named},
+                                    {"views", d.views},
+                                    {"current", d.current},
+                                    {"nextId", static_cast<double>(d.next_id())},
+                                    {"layouts", std::move(layouts)},
+                                    {"space", open != nullptr ? Value(open->name) : Value(nullptr)},
+                                    {"undo", std::move(undo)},
+                                    {"redo", std::move(redo)}});
+  if (finish) {
+    finish(script, d, result);
+  }
+  return result;
 }
 
 }  // namespace cc::cmd

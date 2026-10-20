@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8b (pictures: IMAGEATTACH, IMAGE, IMAGECLIP).
+Last updated 2026-10-20 · Change: M5.8c (pictures in PDFs).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -373,4 +373,16 @@ Last updated 2026-10-20 · Change: M5.8b (pictures: IMAGEATTACH, IMAGE, IMAGECLI
   Host::pick_pictures → Engine::give_files); scripts queue files with a `{pictures}` step, as the harness's host does.
   The walk reports pictures (out.picture: placement, frame, fade) and leaves a picture's name out once its file is
   there. Command parity 148/148 (tests/commands/pictures.json), a fuzz target (picture), a unit test.
+- M5.8c (2026-10-20): pictures in PDFs (plot.js WL.13, pictures.js pdfImage). libs/image picture.hpp ports 0.5's own
+  PNG decoder (decodePng: grey, grey + alpha, RGB, RGBA, palette + tRNS, 16-bit to 8, interlaced refused; bounds-checked,
+  100 Mpixel cap), its box filter (shrink) and pdfImage: a JPEG goes in as it is (DCTDecode, grey or RGB), a PNG
+  deflated with its transparency as a soft mask, shrunk to `max_dpi` when printed denser. libs/plot writes the images
+  under the linework, clipped to their frames, faded, one image per file per PDF, numbered after everything else as
+  0.5 does. libs/image moved to L2 and is built everywhere (zlib a base dependency; libs/doc shares jpegInfo). A command
+  script may ask for the model's PDF (`{"plot": {"mono", "maxDpi"}}`); tests/commands/pictures-pdf.json: RGBA,
+  palette + tRNS, 16-bit grey, RGB, grey + alpha with every PNG filter, a clipped picture, a JPEG kept, a CMYK JPEG left
+  out, 1 dpi shrinking, a shared file — 4/4 the same. The PDFs are compared with each Flate stream inflated and the
+  lengths and xref offsets masked (plot::pdf_canonical): Node's zlib is Chromium's, which deflates the same bytes
+  differently from zlib 1.3.2; every inflated byte, every image and every other byte of the file match. Corpus plot
+  parity unchanged (no corpus drawing has its picture files). Fuzz target png_decode.
 

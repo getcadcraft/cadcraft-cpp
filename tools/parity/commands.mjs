@@ -7,6 +7,7 @@
 //   node tools/parity/commands.mjs <scripts.json>… [--detail] [--max N]
 //   … --golden-out <dir>: also write the JS results of each file, canonical, as <dir>/<file name> (the libs/cmd
 //     test replays the scripts against them; tests/golden/README.md)
+import zlib from 'node:zlib';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -27,6 +28,7 @@ await imp('textmask-cmd.js');
 await imp('xclip-cmd.js');
 const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
 const { readValue } = await imp('propexpr.js');
+const { modelSheet, displayList, toPdf, extentsOf } = await imp('plot.js');
 const NUMERIC = ['len', 'ang', 'num', 'int', 'area'];
 
 /** The Properties panel (props.js): {props, ids?, group?, vertex?} lists the group's fields with the value they share;
@@ -73,6 +75,28 @@ globalThis.Date = class extends RealDate {
   static now() { return FIXED_NOW; }
 };
 
+/** A PDF as libs/plot pdf_canonical makes it: Flate streams inflated, lengths and the xref table masked. */
+function pdfCanonical(bytes) {
+  const b = Buffer.from(bytes), s = b.toString('latin1');
+  const xr = s.lastIndexOf('\nxref\n'), end = xr >= 0 ? xr + 1 : s.length;   // the table (not startxref's)
+  let out = '', at = 0;
+  while (at < end) {
+    const st = s.indexOf('>>\nstream\n', at);
+    if (st < 0 || st >= end) break;
+    const open = s.lastIndexOf('<<', st);
+    if (open < 0 || open < at || /[<>]/.test(s.slice(open + 2, st))) { out += s.slice(at, st + 10); at = st + 10; continue; }
+    const dict = s.slice(open + 2, st), m = /\/Length (\d*)/.exec(dict), len = m ? +(m[1] || 0) : 0, body = st + 10;
+    if (body + len > s.length) break;
+    const d = m ? dict.replace(/\/Length \d*/, '/Length *') : dict;
+    out += s.slice(at, open) + '<<' + d + '>>\nstream\n';
+    const raw = b.subarray(body, body + len);
+    if (d.includes('/Filter /FlateDecode')) { try { out += '#inflated ' + zlib.inflateSync(raw).toString('base64'); } catch { out += '#bad-flate'; } }
+    else out += '#raw ' + raw.toString('base64');
+    at = body + len;
+  }
+  return out + s.slice(at, Math.max(end, at));
+}
+
 async function runJs(script) {
   const doc = new Doc();
   const log = [];
@@ -105,7 +129,16 @@ async function runJs(script) {
   eng.escape();
   await settle();
   await eng.done;
-  return { name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
+  // a script may ask for the model's PDF (the pictures in it: plot.js WL.13)
+  let pdf = {};
+  if (script.plot) {
+    const ext = extentsOf(doc);
+    if (ext) {
+      const r = await toPdf(displayList(doc, modelSheet(doc, { area: ext }), { mono: script.plot.mono !== false }), { maxDpi: script.plot.maxDpi || 0 });
+      pdf = { pdf: pdfCanonical(r.bytes), pdfReport: { pictures: r.report.pictures, shrunk: r.report.shrunk, kept: r.report.kept } };
+    }
+  }
+  return { ...pdf, name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,
     undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label) };
 }

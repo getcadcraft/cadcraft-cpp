@@ -8,7 +8,9 @@
 //   auto list = plot::display_list(doc, plot::layout_sheet(doc, doc.layouts()[0]));
 //   auto pdf = plot::to_pdf(list, {.title = "Plan", .date_ms = now});   // pdf.bytes, pdf.missing, pdf.texts
 //
-// Not ported yet (docs/gaps.md): pictures (pictures.js), per-viewport layer overrides (VP.3), the canvas preview.
+// Pictures (WL.13) go in as image XObjects at their own resolution (`max_dpi`: a cap on paper), under the linework,
+// clipped to their frames; only pictures whose file the drawing has.
+// Not ported yet (docs/gaps.md): per-viewport layer overrides (VP.3), the canvas preview.
 #pragma once
 
 #include <array>
@@ -26,6 +28,7 @@
 #include "cc/cad/edit.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/doc/doc.hpp"
+#include "cc/docview/walk.hpp"
 
 namespace cc::plot {
 
@@ -87,11 +90,14 @@ struct ListView {
   std::vector<Stroke> strokes;  // grouped by colour, lineweight and alpha, in first-seen order
   std::vector<Point> points;
   std::vector<Text> texts;
+  std::vector<docview::PictureOut> pictures;  // in mm on the sheet
 };
 struct DisplayList {
   double w = 0, h = 0;
   std::string name;
   std::vector<ListView> views;
+  /// the files the pictures use (as the drawing names them → the drawing's file; valid while it keeps them)
+  std::vector<std::pair<std::string, const doc::PictureFile*>> picture_files;
 };
 /// displayList(doc, sheet, { mono }): what to draw, in millimetres on the sheet (mono: everything black).
 [[nodiscard]] DisplayList display_list(const doc::Doc& doc, const Sheet& sheet, bool mono = true);
@@ -102,17 +108,26 @@ struct PdfOptions {
   double date_ms = 0;                // /CreationDate (ms since 1970, UTC): the host's clock
   /// Compresses the page content in the zlib format (/FlateDecode; cc::image::zlib_compress); empty: left as written.
   std::function<std::vector<std::uint8_t>(std::span<const std::uint8_t>)> compress;
+  double max_dpi = 0;  // > 0: pictures printed denser than this many pixels per inch are shrunk (a JPEG is kept)
 };
 struct PdfResult {
   std::vector<std::uint8_t> bytes;
   std::size_t missing = 0, texts = 0, pages = 1;
   bool compressed = false;
+  std::size_t pictures = 0, shrunk = 0, kept = 0;  // to_pdf: the pictures on the page, shrunk, kept as they are
 };
 /// toPdf(list, { pen, title }): one page.
 [[nodiscard]] PdfResult to_pdf(const DisplayList& list, const PdfOptions& o);
 /// toPdfPages(lists, { pen, title, names }): one page each at its own paper size, a bookmark per page.
 [[nodiscard]] PdfResult to_pdf_pages(const std::vector<DisplayList>& lists, const PdfOptions& o,
                                      const std::vector<std::string>& names = {});
+
+/// The PDF a command script asks for (`plot`: {mono (default true), maxDpi}): the model at its extents, fitted on the
+/// default paper, as base64 in result.pdf with result.pdfReport {pictures, shrunk, kept}; nothing for an empty model.
+void script_pdf(const base::Value& plot, const doc::Doc& doc, double date_ms, base::Value& result);
+/// A PDF as the parity kit compares it: every Flate stream inflated (zlib builds deflate the same bytes differently:
+/// Node's is Chromium's), "/Length n" and the cross-reference table masked; everything else byte for byte.
+[[nodiscard]] std::string pdf_canonical(std::span<const std::uint8_t> pdf);
 
 /// extentsOf(doc): the model area a plot covers when asked for its extents, or nothing for an empty model.
 [[nodiscard]] std::optional<cad::Bounds> extents_of(const doc::Doc& doc);
