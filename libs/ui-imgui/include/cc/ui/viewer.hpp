@@ -109,6 +109,8 @@ class Viewer {
   [[nodiscard]] const doc::Doc* document() const noexcept { return cad_.get(); }
   /// The prompt the command line shows ("" between commands).
   [[nodiscard]] const std::string& prompt() const noexcept { return prompt_; }
+  /// The space shown: 0 = the model, n = the n-th sheet (its tab).
+  [[nodiscard]] std::size_t space_index() const noexcept { return space_; }
   /// True while the Properties panel is open (PROPERTIES / PROPERTIESCLOSE, its close button).
   [[nodiscard]] bool properties_open() const noexcept { return props_open_; }
   /// True while Quick Properties is on (QPMODE).
@@ -131,6 +133,9 @@ class Viewer {
   void save(std::string format, bool as);
   void save_to(const std::string& path);
   void save_as_dialog();
+  /// PLOT (plot.js): the open sheet at 1:1, or the model at its extents on the default paper, as a PDF
+  void plot_now();
+  [[nodiscard]] std::size_t doc_space_index() const;
   void canvas_window(double x0, double y0, double x1, double y1);
   [[nodiscard]] bool wants_point() const;
   [[nodiscard]] bool can_select() const;
@@ -212,6 +217,9 @@ class Viewer {
   bool save_as_open_ = false;
   std::optional<std::pair<std::string, bool>> save_request_;  // SAVE / DXFOUT (format, false) or SAVEAS (…, true)
   std::optional<render::View> prev_view_;                     // ZOOM P
+  bool plot_request_ = false;                                 // PLOT asked: the PDF is made once the command ends
+  std::optional<std::size_t> tab_select_;  // a tab the document opened (LAYOUT, VPVIEW): selected next frame
+  std::vector<bool> need_fit_;             // spaces whose view is fitted on the next frame (new sheets)
   int save_as_format_ = 0, save_as_version_ = 5;
   bool press_ = false;  // a button down on the canvas; `moved_` once it went beyond a click
   bool moved_ = false;

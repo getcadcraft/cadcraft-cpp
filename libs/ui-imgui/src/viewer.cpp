@@ -31,10 +31,13 @@
 #include "cc/cmd/engine.hpp"
 #include "cc/docview/drawing.hpp"
 #include "cc/engine/open.hpp"
+#include "cc/image/png.hpp"
+#include "cc/plot/plot.hpp"
 #include "cc/render/scene.hpp"
 #include "cc/render/view.hpp"
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
+#include "cc/sheets/sheets.hpp"
 
 namespace cc::ui {
 
@@ -239,6 +242,10 @@ class Viewer::CmdHost final : public cmd::Host {
     v_.save_request_ = std::pair{format.empty() ? v_.save_format() : format, false};
   }
   void save_as() override { v_.save_request_ = std::pair{v_.save_format(), true}; }
+  bool plot() override {
+    v_.plot_request_ = true;
+    return true;
+  }
   std::vector<doc::Id> pick_window(const cmd::Rect& r, bool crossing) override {
     std::vector<doc::Id> out;
     if (!v_.cad_) {
@@ -576,6 +583,60 @@ void Viewer::save(std::string format, bool as) {
   }
 }
 
+void Viewer::plot_now() {
+  if (!cad_ || !cmd_host_) {
+    return;
+  }
+  if (engine_ && engine_->busy()) {
+    cmd_host_->print(words_->t("app.finish_cancel_current_command"));
+    return;
+  }
+  const doc::Layout* lay = cad_->layout();
+  std::optional<plot::Sheet> sheet;
+  if (lay != nullptr) {
+    sheet = plot::layout_sheet(*cad_, *lay);
+  } else if (const auto ext = plot::extents_of(*cad_)) {
+    sheet = plot::model_sheet(*cad_, *ext, sheets::default_paper(*cad_).key);
+  } else {
+    cmd_host_->print(words_->t("app.there_nothing_plot_yet"));
+    return;
+  }
+  const plot::DisplayList list = plot::display_list(*cad_, *sheet);
+  plot::PdfOptions o;
+  o.date_ms = cmd_host_->now_ms();
+  o.compress = [](std::span<const std::uint8_t> b) { return image::zlib_compress(b); };
+  const plot::PdfResult pdf = plot::to_pdf(list, o);
+  PendingSave ps;
+  ps.format = "pdf";
+  const base::Value nm = cad_->meta.get("name");
+  const std::string base_name = nm.truthy() ? base::js_string(nm) : std::string("Drawing1");
+  ps.name = base_name + (lay != nullptr ? " - " + lay->name : std::string()) + ".pdf";
+  ps.bytes.resize(pdf.bytes.size());
+  std::ranges::transform(pdf.bytes, ps.bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
+  std::string w;
+  std::string h;
+  base::append_number(w, std::round(sheet->w));
+  base::append_number(h, std::round(sheet->h));
+  const std::string what = lay != nullptr ? lay->name : words_->t("app.tab.model");
+  const std::string done =
+      sheet->scale ? words_->t("app.plot.done.scale", {{"name", what},
+                                                       {"bytes", std::to_string(pdf.bytes.size())},
+                                                       {"w", w},
+                                                       {"h", h},
+                                                       {"scale", sheet->scale->label}})
+                   : words_->t("app.plot.done",
+                               {{"name", what}, {"bytes", std::to_string(pdf.bytes.size())}, {"w", w}, {"h", h}});
+  ps.notes.emplace_back(done);
+  if (services_.pick_save) {
+    pending_save_ = std::move(ps);
+    services_.pick_save(pending_save_->name, "pdf");
+  } else if (services_.download) {
+    services_.download(ps.name, ps.bytes);
+    cmd_host_->print(done);
+  }
+  redraw_ = std::max(redraw_, 2);
+}
+
 void Viewer::save_to(const std::string& path) {
   if (!pending_save_ || !cad_ || !cmd_host_) {
     return;
@@ -588,6 +649,12 @@ void Viewer::save_to(const std::string& path) {
   }
   if (const auto ok = base::write_file_atomic(path, ps.bytes); !ok) {
     cmd_host_->print(words_->t("app.save.failed", {{"format", format_label(ps.format)}, {"why", ok.error().message}}));
+    return;
+  }
+  if (ps.format == "pdf") {  // a plot: the drawing's own file and its saved state stay as they are
+    for (const base::Value& n : ps.notes) {
+      cmd_host_->print(base::js_string(n));
+    }
     return;
   }
   source_path_ = path;
@@ -686,6 +753,7 @@ void Viewer::rebuild() {
   }
   if (views_.size() != drawing_.spaces.size()) {
     views_.resize(drawing_.spaces.size(), views_.empty() ? render::View{} : views_.front());
+    need_fit_.resize(drawing_.spaces.size(), true);  // a new sheet shows all of itself
   }
   hidden_.assign(drawing_.layers.size(), false);
   drawn_version_ = cad_->version();
@@ -706,9 +774,35 @@ std::vector<doc::Id> Viewer::props_selection() const {
   return ids;
 }
 
+std::size_t Viewer::doc_space_index() const {
+  const doc::Layout* lay = cad_ ? cad_->layout() : nullptr;
+  if (lay == nullptr) {
+    return 0;
+  }
+  const auto& list = cad_->layouts();
+  for (std::size_t i = 0; i < list.size(); ++i) {
+    if (list[i].name == lay->name) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
 void Viewer::after_input() {
   if (cad_ && cad_->version() != drawn_version_) {
     rebuild();
+  }
+  // the document opened another space (LAYOUT opens its new sheet, VPVIEW picks on the model): its tab follows
+  if (cad_) {
+    if (const std::size_t want = doc_space_index(); want != space_ && want < drawing_.spaces.size()) {
+      space_ = want;
+      tab_select_ = want;
+      redraw_ = std::max(redraw_, 2);
+    }
+  }
+  if (plot_request_ && engine_ && !engine_->busy()) {
+    plot_request_ = false;
+    plot_now();
   }
   if (save_request_ && engine_ && !engine_->busy()) {  // SAVE / SAVEAS / DXFOUT asked for it
     const auto [format, as] = *save_request_;
@@ -1234,6 +1328,10 @@ void Viewer::ui(float dpr) {
       if (ImGui::MenuItem(words_->t("app.save_copy").c_str(), "Ctrl+Shift+S", false, cad_ != nullptr)) {
         save_as_open_ = true;
       }
+      ImGui::Separator();
+      if (ImGui::MenuItem(words_->t("input.cmd.file.plot").c_str(), "Ctrl+P", false, cad_ != nullptr)) {
+        plot_now();
+      }
       ImGui::EndMenu();
     }
     if (ImGui::BeginMenu(words_->t("toolbar.group.view").c_str())) {
@@ -1265,6 +1363,9 @@ void Viewer::ui(float dpr) {
   if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && ImGui::IsKeyPressed(ImGuiKey_O) && services_.pick_open) {
     services_.pick_open();
   }
+  if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && ImGui::IsKeyPressed(ImGuiKey_P) && cad_) {
+    plot_now();
+  }
   save_as_dialog();
   layers_panel();
   // the space tabs, above the canvas
@@ -1277,12 +1378,14 @@ void Viewer::ui(float dpr) {
     for (std::size_t s = 0; s < drawing_.spaces.size(); ++s) {
       const auto& sp = drawing_.spaces[s];
       const std::string label = (sp.kind == "model" ? words_->t("app.tab.model") : sp.name) + "##" + sp.key;
-      if (ImGui::BeginTabItem(label.c_str())) {
+      const ImGuiTabItemFlags f = tab_select_ == s ? ImGuiTabItemFlags_SetSelected : ImGuiTabItemFlags_None;
+      if (ImGui::BeginTabItem(label.c_str(), nullptr, f)) {
         set_space(s);
         ImGui::EndTabItem();
       }
     }
     ImGui::EndTabBar();
+    tab_select_.reset();
   }
   ImGui::End();
   status_bar();
@@ -1305,6 +1408,13 @@ void Viewer::ui(float dpr) {
       views_[s] = render::fit(drawing_.spaces[s], views_[s]);
     }
     fit_pending_ = false;
+    std::ranges::fill(need_fit_, false);
+  }
+  for (std::size_t s = 0; doc_ && s < need_fit_.size() && s < views_.size(); ++s) {
+    if (need_fit_[s]) {
+      views_[s] = render::fit(drawing_.spaces[s], views_[s]);
+      need_fit_[s] = false;
+    }
   }
   overlay();
   if (redraw_ > 0) {

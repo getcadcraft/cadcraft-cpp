@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.6b (PLOT: plot.js and the PDF writer).
+Last updated 2026-10-20 · Change: M5.6c (sheets and PLOT in the viewer).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -330,4 +330,9 @@ Last updated 2026-10-20 · Change: M5.6b (PLOT: plot.js and the PDF writer).
   (display lists 7.0 s); the first C++ version took 18.7 s — a 52 MB page copied by an initializer list and the
   content kept as millions of small strings. CI: M5.5c failed MSVC (C4244, an int → float in a layer-switch icon),
   fixed here.
+- M5.6c (2026-10-20): sheets in the viewer. The tabs follow the document's open space (LAYOUT opens its new sheet,
+  VPVIEW picks on the model and comes back), a new sheet's view is fitted, and PLOT / Ctrl+P / File › Plot to PDF
+  plots the open sheet at 1:1 or the model at its extents on the default paper (A3, Tabloid for imperial drawings):
+  the desktop's save dialog (a PDF filter), a download on the web; a plot never touches the drawing's saved state.
+  Checked under Xvfb: LAYOUT on dwg-samples/example_2018.dwg opens Layout3 with its title block and viewport.
 

@@ -94,8 +94,15 @@ int run(std::span<char*> argv) {
     services.pick_open = [&] { SDL_ShowOpenFileDialog(picked, inbox, window, kFilters.data(), 1, nullptr, false); };
     static constexpr std::array<SDL_DialogFileFilter, 1> kDwg{{{"DWG", "dwg"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kDxf{{{"DXF", "dxf"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kPdf{{{"PDF", "pdf"}}};
     services.pick_save = [&](const std::string& name, const std::string& ext) {
-      SDL_ShowSaveFileDialog(save_picked, inbox, window, ext == "dwg" ? kDwg.data() : kDxf.data(), 1, name.c_str());
+      const SDL_DialogFileFilter* f = kDxf.data();
+      if (ext == "dwg") {
+        f = kDwg.data();
+      } else if (ext == "pdf") {
+        f = kPdf.data();
+      }
+      SDL_ShowSaveFileDialog(save_picked, inbox, window, f, 1, name.c_str());
     };
     cc::ui::Host host(window, *gpu, services, assets_dir(argv[0]), locale);
     inbox = &host.viewer().inbox();

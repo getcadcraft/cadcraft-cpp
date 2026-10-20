@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-20 · Change: M5.6b done.
+Last updated 2026-10-20 · Change: M5.6 done (a–c).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -111,7 +111,7 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.5a | the layer tools (layertools.js): LAYISO … LAYDEL, RENAME, COUNT, LINETYPE, LTSCALE, LWEIGHT, XREF ? |
 | M5.5b | the properties model: expr.js, propexpr.js (typed values), propdefs.js (every type's fields, shared values, one undo step) — **done 2026-10-19** |
 | M5.5c | PROPERTIES / PROPERTIESCLOSE / QPMODE / _PROPPICK and the properties panel, the layers panel's switches — **done 2026-10-19** |
-| M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen — **M5.6a done 2026-10-20** (the sheet commands); **M5.6b done 2026-10-20** (plot.js, the PDF writer, `cadcraft-cli plot`, 307 PDFs byte for byte); M5.6c sheets in the viewer (viewports drawn, MSPACE / PSPACE, panes) |
+| M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen — **M5.6a done 2026-10-20** (the sheet commands); **M5.6b done 2026-10-20** (plot.js, the PDF writer, `cadcraft-cli plot`, 307 PDFs byte for byte); **M5.6c done 2026-10-20** (the tabs follow the document, PLOT in the viewer); MSPACE / PSPACE inside a viewport and split panes wait (docs/gaps.md) |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands |
 | M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets |
 

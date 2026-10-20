@@ -201,3 +201,55 @@ TEST_CASE("properties: PROPERTIES opens the panel, a typed value edits the selec
   CHECK((undo.empty() || undo.back() != "PROPERTIES"));
   frame(viewer);
 }
+
+TEST_CASE("sheets: LAYOUT opens its sheet in the tabs, a tab opens its space, PLOT runs from the drawing window") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  cc::doc::Doc src;
+  src.change("LINE", [&] {
+    (void)src.add(cc::base::make_object({{"type", "line"}, {"x1", 0}, {"y1", 0}, {"x2", 100}, {"y2", 50}}));
+  });
+  const cc::i18n::Catalog words;
+  cc::save::DwgSaveOptions opts;
+  opts.version = "2018";
+  opts.created_ms = 0;
+  const auto saved = cc::save::save_dwg(src, opts, words);
+  std::vector<std::byte> dwg(saved.bytes.size());
+  for (std::size_t i = 0; i < dwg.size(); ++i) {
+    dwg[i] = static_cast<std::byte>(saved.bytes[i]);
+  }
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, {}, CC_ASSETS_DIR, "en");
+  auto d = cc::engine::open_bytes("t.dwg", dwg);
+  REQUIRE(d);
+  viewer.show(std::move(*d));
+  frame(viewer);
+  REQUIRE(viewer.document() != nullptr);
+  const std::size_t sheets_before = viewer.document()->layouts().size();
+  CHECK(viewer.space_index() == 0);
+
+  viewer.command("LAYOUT");
+  frame(viewer);
+  frame(viewer);  // the tab bar takes the new selection
+  REQUIRE(viewer.document()->layouts().size() == sheets_before + 1);
+  CHECK(viewer.space_index() == sheets_before + 1);
+  REQUIRE(viewer.document()->layout() != nullptr);
+  CHECK(viewer.document()->layout()->name == viewer.document()->layouts().back().name);
+  CHECK(viewer.view().zoom > 0);
+
+  // MVIEW on the open sheet goes into that sheet
+  const std::size_t before = viewer.document()->layouts().back().entities->size();
+  viewer.command("MVIEW");
+  viewer.command("20,20");
+  viewer.command("120,90");
+  frame(viewer);
+  CHECK(viewer.document()->layouts().back().entities->size() == before + 1);
+
+  // PLOT: the drawing window plots (no file service here, so nothing is written) and never says it cannot
+  viewer.command("PLOT");
+  frame(viewer);
+  CHECK(viewer.prompt().empty());
+  frame(viewer);
+}
