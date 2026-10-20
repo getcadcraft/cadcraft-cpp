@@ -102,7 +102,10 @@ TEST_CASE("pictures: a picture draws its file's pixels, clipped to its frame (dr
   auto shot =
       cc::ui::render_offscreen(*gpu, renderer, draws, 160, 40, cc::render::Rgba{.r = 1, .g = 1, .b = 1, .a = 1});
   REQUIRE(shot);
-  if (!kPixels) {
+  if (!kPixels || gpu->backend == "null") {
+    if (kPixels) {
+      WARN("no adapter that draws (" << gpu->adapter_name << "): the pixels are not checked");
+    }
     return;
   }
   const auto px = [&shot](int x, int y) {
