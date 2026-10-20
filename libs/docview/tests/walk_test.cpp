@@ -15,6 +15,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include "cc/base/file.hpp"
+#include "cc/base/js.hpp"
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/cad/import.hpp"
@@ -109,4 +110,65 @@ TEST_CASE("dashes follow the pattern along a run of lines and carry over from on
   CHECK(dots[1].first == 2);
   CHECK(std::abs(dots[1].second - 2.03) < 1e-12);
   CHECK(dots[6] == std::pair<double, double>{9, 10});
+}
+
+TEST_CASE("a clipped reference draws only what lies inside its clip (xclip.js), texts by their insertion point") {
+  cc::doc::Doc d;
+  d.change("SET UP", [&] {
+    (void)d.define_block(cc::base::make_object(
+        {{"name", "B"},
+         {"base", cc::base::make_object({{"x", 0}, {"y", 0}})},
+         {"entities",
+          cc::base::Array{
+              cc::base::make_object({{"type", "line"}, {"layer", "0"}, {"x1", 0}, {"y1", 5}, {"x2", 20}, {"y2", 5}}),
+              cc::base::make_object({{"type", "circle"}, {"layer", "0"}, {"cx", 10}, {"cy", 5}, {"r", 3}}),
+              cc::base::make_object(
+                  {{"type", "text"}, {"layer", "0"}, {"x", 15}, {"y", 5}, {"h", 1}, {"rot", 0}, {"s", "out"}}),
+              cc::base::make_object(
+                  {{"type", "text"}, {"layer", "0"}, {"x", 9}, {"y", 5}, {"h", 1}, {"rot", 0}, {"s", "in"}})}}}));
+    // the clip: x from 5 to 12 in the block's coordinates; the reference moved by (100, 0)
+    cc::base::Array pts;
+    for (const auto& [x, y] :
+         {std::pair{5.0, 0.0}, std::pair{12.0, 0.0}, std::pair{12.0, 10.0}, std::pair{5.0, 10.0}}) {
+      pts.emplace_back(cc::base::make_object({{"x", x}, {"y", y}}));
+    }
+    (void)d.add(cc::base::make_object({{"type", "insert"},
+                                       {"layer", "0"},
+                                       {"block", "B"},
+                                       {"x", 100},
+                                       {"y", 0},
+                                       {"sx", 1},
+                                       {"sy", 1},
+                                       {"rot", 0},
+                                       {"clip", cc::base::make_object({{"pts", cc::base::Value(std::move(pts))}})}}));
+  });
+  std::vector<cc::cad::Prim> lines;
+  std::vector<std::string> texts;
+  cc::docview::Out out;
+  out.stroke = [&](const std::string&, const std::vector<cc::cad::Prim>& ps, double, const cc::docview::Opts&) {
+    lines.insert(lines.end(), ps.begin(), ps.end());
+  };
+  out.text = [&](const std::string&, const cc::base::Value& e, const cc::docview::Opts&) {
+    texts.push_back(cc::base::js_string(e.get("s")));
+  };
+  out.fill = [](const std::string&, const std::vector<std::vector<double>>&, bool, const cc::docview::Opts&) {};
+  std::vector<const cc::base::Value*> ents;
+  d.model()->each([&](const cc::doc::Id&, const cc::base::Value& e) { ents.push_back(&e); });
+  cc::docview::walk(d, ents, out);
+  // the line is cut to x 105–112; the circle (x 7–13) keeps its arcs inside, none past x 112
+  bool cut_line = false;
+  for (const cc::cad::Prim& p : lines) {
+    if (!p.arc) {
+      cut_line =
+          cut_line || (std::abs(std::min(p.x1, p.x2) - 105) < 1e-9 && std::abs(std::max(p.x1, p.x2) - 112) < 1e-9);
+    } else {
+      for (const double a : {p.a0, p.a1}) {
+        const double x = p.cx + p.r * std::cos(a);
+        CHECK(x >= 105 - 1e-6);
+        CHECK(x <= 112 + 1e-6);
+      }
+    }
+  }
+  CHECK(cut_line);
+  CHECK(texts == std::vector<std::string>{"in"});
 }

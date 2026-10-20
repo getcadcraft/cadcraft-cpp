@@ -1,0 +1,313 @@
+[
+ {
+  "name": "circle ttr and ttt: lines and circles, the touch points nearest the picks; no circle",
+  "steps": [
+   "LINE",
+   "0,0",
+   "100,0",
+   "",
+   "LINE",
+   "0,0",
+   "0,100",
+   "",
+   "CIRCLE",
+   "60,60",
+   "15",
+   "CIRCLE",
+   "T",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     0,
+     50
+    ],
+    "pick": 2
+   },
+   "10",
+   "TTR",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     60,
+     45
+    ],
+    "pick": 3
+   },
+   "8",
+   "TTR",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     0,
+     50
+    ],
+    "pick": 2
+   },
+   "",
+   "CIRCLE",
+   "TTT",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     0,
+     50
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     49,
+     52
+    ],
+    "pick": 3
+   },
+   "LINE",
+   "0,10",
+   "100,10",
+   "",
+   "CIRCLE",
+   "T",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     50,
+     10
+    ],
+    "pick": 7
+   },
+   "2",
+   "TEXT",
+   "0,-20",
+   "2.5",
+   "0",
+   "Hi",
+   "",
+   "TTR",
+   {
+    "click": [
+     1,
+     -20
+    ],
+    "pick": 8
+   },
+   {
+    "esc": true
+   }
+  ]
+ },
+ {
+  "name": "textmask: background, a colour, off; nothing to mask",
+  "steps": [
+   "TEXT",
+   "0,0",
+   "2.5",
+   "0",
+   "One",
+   "",
+   "TEXT",
+   "0,10",
+   "2.5",
+   "0",
+   "Two",
+   "",
+   "LINE",
+   "0,20",
+   "10,20",
+   "",
+   "TEXTMASK",
+   {
+    "window": [
+     -1,
+     -1,
+     20,
+     25
+    ],
+    "ids": [
+     1,
+     2,
+     3
+    ]
+   },
+   "",
+   "",
+   "",
+   "TMASK",
+   {
+    "click": [
+     1,
+     0
+    ],
+    "pick": 1
+   },
+   "",
+   "C",
+   "3",
+   "2",
+   "TEXTMASK",
+   {
+    "click": [
+     1,
+     10
+    ],
+    "pick": 2
+   },
+   "",
+   "C",
+   "300",
+   "TEXTMASK",
+   {
+    "click": [
+     1,
+     10
+    ],
+    "pick": 2
+   },
+   "",
+   "O",
+   "TEXTMASK",
+   {
+    "click": [
+     5,
+     20
+    ],
+    "pick": 3
+   },
+   "",
+   "U",
+   "REDO"
+  ]
+ },
+ {
+  "name": "xclip: a rectangle, a polygon, delete; only references",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "CIRCLE",
+   "5,5",
+   "3",
+   "BLOCK",
+   "B",
+   "0,0",
+   {
+    "window": [
+     -1,
+     -1,
+     11,
+     9
+    ],
+    "ids": [
+     1,
+     2
+    ]
+   },
+   "",
+   "INSERT",
+   "B",
+   "20,0",
+   "INSERT",
+   "B",
+   "40,0",
+   "LINE",
+   "0,30",
+   "5,30",
+   "",
+   "XCLIP",
+   {
+    "click": [
+     20,
+     0
+    ],
+    "pick": 4
+   },
+   "",
+   "",
+   "",
+   "20,0",
+   "25,5",
+   "XC",
+   {
+    "click": [
+     40,
+     0
+    ],
+    "pick": 5
+   },
+   "",
+   "N",
+   "P",
+   "40,0",
+   "46,0",
+   "44,6",
+   "",
+   "XCLIP",
+   {
+    "click": [
+     2,
+     30
+    ],
+    "pick": 6
+   },
+   "",
+   "XCLIP",
+   {
+    "window": [
+     19,
+     -1,
+     60,
+     9
+    ],
+    "ids": [
+     4,
+     5
+    ]
+   },
+   "",
+   "D",
+   "U"
+  ]
+ },
+ {
+  "name": "settings without a drawing window: polarang, linkviews, openin3d, lassomode, lwdisplay",
+  "steps": [
+   "POLARANG",
+   "LINKVIEWS",
+   "SYNCVIEWS",
+   "OPENIN3D",
+   "LASSOMODE",
+   "LWDISPLAY",
+   "LWT"
+  ]
+ }
+]

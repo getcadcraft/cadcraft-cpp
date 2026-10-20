@@ -1,5 +1,5 @@
 cc_library(docview LAYER 4
-  SOURCES src/walk.cpp src/walk_events.cpp src/to_drawing.cpp
+  SOURCES src/walk.cpp src/walk_events.cpp src/to_drawing.cpp src/xclip.cpp
   DEPS cc::base cc::cad cc::doc cc::drawing)
 target_include_directories(cc_docview PRIVATE src)
 

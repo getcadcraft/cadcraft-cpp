@@ -225,7 +225,9 @@ class Viewer {
   std::optional<std::pair<std::string, bool>> save_request_;  // SAVE / DXFOUT (format, false) or SAVEAS (…, true)
   std::optional<render::View> prev_view_;                     // ZOOM P
   bool plot_request_ = false;
-  cmd::Clipboard clipboard_;                        // COPYCLIP / PASTECLIP: kept when another drawing opens
+  cmd::Clipboard clipboard_;
+  base::Value settings_ = base::make_object({{"polarInc", 90}});  // host.settings (POLARANG, LWDISPLAY) // COPYCLIP /
+                                                                  // PASTECLIP: kept when another drawing opens
   bool new_request_ = false, new_confirm_ = false;  // NEW: a blank drawing (asked first when this one has changes) //
                                                     // PLOT asked: the PDF is made once the command ends
   std::optional<std::size_t> tab_select_;           // a tab the document opened (LAYOUT, VPVIEW): selected next frame

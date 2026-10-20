@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.7b (the clipboard, NEW / OPEN).
+Last updated 2026-10-20 · Change: M5.8a (TTR / TTT, TEXTMASK, XCLIP, the settings commands, HELP).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -357,4 +357,12 @@ Last updated 2026-10-20 · Change: M5.7b (the clipboard, NEW / OPEN).
   with unsaved changes 0.5's "Unsaved changes" dialog asks first), OPEN (the file picker), Ctrl+C / Ctrl+X / Ctrl+V.
   Command parity 141/141 (3 new scripts in tests/commands/clipboard.json). Parity found a dangling pointer of my own
   (a map of blocks pointing into a `get()` copy) before any test ran it under ASan.
+- M5.8a (2026-10-20): tancircle.js (libs/cad tancircle.hpp: curveAt, circleTTR, circleTTT by Newton from seeded
+  starts) behind CIRCLE T / TTT and TTR; TEXTMASK (textmask-cmd.js) and XCLIP (xclip.js) — registered after
+  commands.js's own, as cadcraft.js does (the harness now loads textmask-cmd.js and xclip-cmd.js too); clipped
+  references draw clipped (libs/docview xclip.hpp: clipLine, clipArc, clipRing, clipPoly; the walk keeps a stack of
+  clips, applied innermost first like 0.5's nested clipOut outputs — so screen, plots and extents clip); POLARANG,
+  LINKVIEWS, OPENIN3D, LASSOMODE, LWDISPLAY through Host::settings (the viewer keeps the polar angle and drives LWT;
+  a script answers as 0.5 without a browser); HELP. Command parity 145/145 (4 new scripts in
+  tests/commands/drafting-extras.json), walk 108/108, a unit test for a clipped reference.
 

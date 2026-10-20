@@ -22,6 +22,8 @@ const { init } = await imp('i18n.js');
 init({ locale: 'en', strings: JSON.parse(readFileSync(join(app, 'lang/en.json'), 'utf8')) });
 const { Doc } = await imp('doc.js');
 const { Engine } = await imp('commands.js');
+await imp('textmask-cmd.js');   // what cadcraft.js registers when it loads (TEXTMASK, XCLIP)
+await imp('xclip-cmd.js');
 const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
 const { readValue } = await imp('propexpr.js');
 const NUMERIC = ['len', 'ang', 'num', 'int', 'area'];

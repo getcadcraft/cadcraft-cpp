@@ -135,6 +135,18 @@ class Host {
   virtual Clipboard& clipboard() { return own_clipboard_; }
   [[nodiscard]] virtual bool clipboard_shared() const { return false; }
   [[nodiscard]] virtual std::string paste_base() const { return "lower-left"; }
+  // the drawing window's settings (host.settings: polarInc, lwt, lasso …), or nullptr when there are none
+  virtual base::Value* settings() { return nullptr; }
+  virtual void save_settings() {}
+  /// LINKVIEWS: `on` given sets it; the state after, or nothing when the host has no panes
+  virtual std::optional<bool> link_views(std::optional<bool> on) {
+    (void)on;
+    return std::nullopt;
+  }
+  [[nodiscard]] virtual bool can_set_lasso() const { return false; }
+  virtual void set_lasso(bool lasso) { (void)lasso; }
+  [[nodiscard]] virtual bool can_set_toggle() const { return false; }
+  virtual void set_toggle(const std::string& key, bool on) { (void)key, (void)on; }
 
  private:
   Clipboard own_clipboard_;

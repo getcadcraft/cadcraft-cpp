@@ -12,6 +12,7 @@
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
 #include "cc/base/js_math.hpp"
+#include "cc/cad/tancircle.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -263,6 +264,61 @@ Task<void> pline_cmd(Ctx& c) {
 
 // ---- CIRCLE
 
+/// pickTangent(c, prompt): an object a circle can touch (a line, a circle, an arc …) and where it was picked
+Task<std::pair<cad::Curve, Pt>> pick_tangent(Ctx& c, std::string prompt) {
+  for (;;) {
+    const Answer pick = co_await c.entity(prompt);
+    const Value* e = c.doc.entities().get(pick.id);
+    const std::optional<cad::Curve> o =
+        e != nullptr
+            ? cad::curve_at(*e, {pick.p.x, pick.p.y}, [&c](const std::string& n) { return c.doc.blocks().get(n); })
+            : std::nullopt;
+    if (o) {
+      co_return std::pair{*o, pick.p};
+    }
+    c.print(c.t("cmd.circle.tan.not_curve"));
+  }
+}
+Value circle_of(const cad::Circle& k) {
+  return circle_e(k.cx, k.cy, k.r);
+}
+/// CIRCLE Ttr / TTR (0.5 DR.1): tangent to two objects, with a radius
+Task<void> circle_ttr_cmd(Ctx& c) {
+  const auto [ao, at] = co_await pick_tangent(c, c.t("cmd.circle.tan.first"));
+  const auto [bo, bt] = co_await pick_tangent(c, c.t("cmd.circle.tan.second"));
+  c.preview([ao, at, bo, bt](Pt cur) {
+    const auto k = cad::circle_ttr(ao, {at.x, at.y}, bo, {bt.x, bt.y}, std::max(dist(at, cur), 1e-9));
+    return k ? base::Array{circle_of(*k)} : base::Array{};
+  });
+  Ask ar;
+  ar.base = at;
+  ar.def = c.engine.state.get("lastRadius");
+  const Answer ra = co_await c.distance(c.t("cmd.circle.specify_radius_circle"), std::move(ar));
+  const double r = ra.kind == Answer::Kind::number ? ra.number : base::js_to_number(ra.typed);
+  if (!(r > 0)) {
+    co_return;
+  }
+  const auto k = cad::circle_ttr(ao, {at.x, at.y}, bo, {bt.x, bt.y}, r);
+  if (!k) {
+    c.print(c.t("cmd.circle.no_circle"));
+    co_return;
+  }
+  c.engine.state.set("lastRadius", r);
+  c.add(c.ent(circle_of(*k)));
+}
+/// CIRCLE TTT (0.5 DR.2): tangent to three objects
+Task<void> circle_ttt_cmd(Ctx& c) {
+  const auto [ao, at] = co_await pick_tangent(c, c.t("cmd.circle.tan.first"));
+  const auto [bo, bt] = co_await pick_tangent(c, c.t("cmd.circle.tan.second"));
+  const auto [co, ct] = co_await pick_tangent(c, c.t("cmd.circle.tan.third"));
+  const auto k = cad::circle_ttt(ao, {at.x, at.y}, bo, {bt.x, bt.y}, co, {ct.x, ct.y});
+  if (!k) {
+    c.print(c.t("cmd.circle.no_circle"));
+    co_return;
+  }
+  c.add(c.ent(circle_of(*k)));
+}
+
 // NOLINTNEXTLINE(readability-function-cognitive-complexity) — the JS's CIRCLE
 Task<void> circle_cmd(Ctx& c) {
   Ask a0;
@@ -271,8 +327,12 @@ Task<void> circle_cmd(Ctx& c) {
                 c.opt("T", "Ttr (tan tan radius)"),
                 {.key = "TTT", .label = "TTT", .en = {}, .hidden = true}};
   const Answer r0 = co_await c.point(c.t("cmd.circle.specify_center_point_circle"), std::move(a0));
-  if (r0.is("T") || r0.is("TTT")) {
-    c.print(c.t("cmd.circle.no_circle"));  // tangent circles (tancircle.js): not ported yet (docs/gaps.md)
+  if (r0.is("T")) {
+    co_await circle_ttr_cmd(c);
+    co_return;
+  }
+  if (r0.is("TTT")) {
+    co_await circle_ttt_cmd(c);
     co_return;
   }
   if (r0.is("2P")) {
@@ -735,6 +795,7 @@ Value rect(Pt a, Pt b) {
 void add_draw(std::vector<CommandDef>& t) {
   t.push_back(def("LINE", {"L"}, line_cmd, "cmd.line.straight_segments_each_own"));
   t.push_back(def("PLINE", {"PL"}, pline_cmd, "cmd.pline.polyline_line_arc_segments"));
+  t.push_back(def("TTR", {}, circle_ttr_cmd, "cmd.ttr.help"));
   t.push_back(def("CIRCLE", {"C"}, circle_cmd, "cmd.circle.center_radius_diameter_2"));
   t.push_back(def("XLINE", {"XL"}, xline_cmd, "cmd.xline.help"));
   t.push_back(def("RAY", {}, ray_cmd, "cmd.ray.help"));

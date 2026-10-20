@@ -18,6 +18,7 @@
 #include "cc/cad/dims.hpp"
 #include "cc/cad/save_parts.hpp"
 #include "cc/doc/linetypes.hpp"
+#include "cc/docview/xclip.hpp"
 
 namespace cc::docview {
 
@@ -306,12 +307,43 @@ class Walker {
     Value lt, lw, tr;
   };
 
-  void stroke(const std::string& color, const std::vector<Prim>& ps, double lw, const Opts& o) const {
+  // a clipped reference (XCLIP, WL.16): what is drawn inside it passes through every clip around it, the innermost
+  // first (as 0.5's nested clipOut outputs); infinite lines and viewports pass as they are
+  std::vector<std::vector<cad::P2>> clips_;
+  [[nodiscard]] bool inside_clips(cad::P2 p) const {
+    return std::ranges::all_of(clips_, [p](const std::vector<cad::P2>& poly) { return inside_poly(p, poly); });
+  }
+  void stroke(const std::string& color, const std::vector<Prim>& ps0, double lw, const Opts& o) const {
+    std::vector<Prim> ps = ps0;
+    for (auto it = clips_.rbegin(); it != clips_.rend() && !ps.empty(); ++it) {
+      std::vector<Prim> cut;
+      for (const Prim& q : ps) {
+        std::vector<Prim> pieces = q.arc ? clip_arc(q, *it) : clip_line(q, *it);
+        cut.insert(cut.end(), pieces.begin(), pieces.end());
+      }
+      ps = std::move(cut);
+    }
+    if (!clips_.empty() && ps.empty()) {
+      return;
+    }
     if (out_.stroke) {
       out_.stroke(color, ps, lw, o);
     }
   }
-  void fill(const std::string& color, const std::vector<std::vector<double>>& loops, bool solid, const Opts& o) const {
+  void fill(const std::string& color, const std::vector<std::vector<double>>& loops0, bool solid, const Opts& o) const {
+    std::vector<std::vector<double>> loops = loops0;
+    for (auto it = clips_.rbegin(); it != clips_.rend() && !loops.empty(); ++it) {
+      std::vector<std::vector<double>> cut;
+      for (const std::vector<double>& l : loops) {
+        if (auto c = clip_ring(l, *it)) {
+          cut.push_back(std::move(*c));
+        }
+      }
+      loops = std::move(cut);
+    }
+    if (!clips_.empty() && loops.empty()) {
+      return;
+    }
     if (out_.fill) {
       out_.fill(color, loops, solid, o);
     }
@@ -425,12 +457,24 @@ class Walker {
           .lt = resolve_lt(doc_, e, blk.lt, parent_layer), .lw = lw, .tr = tr};  // what ByBlock means inside
       const Blk solid{.lt = Value("Continuous"), .lw = lw, .tr = tr};  // dimension and leader lines stay solid
       const Value col(color);
+      // a clipped reference (XCLIP, 0.5 WL.16): its contents pass through an output that keeps what is inside the clip
+      const std::optional<std::vector<cad::P2>> cp = type == "insert" ? clip_poly(e) : std::nullopt;
+      if (cp) {
+        std::vector<cad::P2> world;
+        for (const cad::P2 q : *cp) {
+          world.push_back(m2 ? m_apply(*m2, q.x, q.y) : q);
+        }
+        clips_.push_back(std::move(world));
+      }
       for (const Value& c : *parts) {
         const Value cl = c.get("layer");
         if (!shown(cl == Value("0") ? layer : cl)) {
           continue;
         }
         emit(c, col, layer, m2, depth + 1, type == "insert" ? inner : solid);
+      }
+      if (cp) {
+        clips_.pop_back();
       }
       return;
     }
@@ -447,14 +491,20 @@ class Walker {
           mc = resolve_color(doc_, ce, by_block, parent_layer);
         }
         if (out_.mask) {
-          out_.mask(mc, loop, win);
+          std::optional<std::vector<double>> clipped = loop;
+          for (auto it = clips_.rbegin(); it != clips_.rend() && clipped; ++it) {
+            clipped = clip_ring(*clipped, *it);
+          }
+          if (clipped) {
+            out_.mask(mc, *clipped, win);
+          }
         } else {
           Opts wo;
           wo.wipe = win;
           fill(mc, {loop}, true, wo);
         }
       }
-      if (out_.text) {
+      if (out_.text && inside_clips({base::js_to_number(te.get("x")), base::js_to_number(te.get("y"))})) {
         out_.text(color, te, o);
       }
       return;
@@ -463,7 +513,7 @@ class Walker {
       const double x = num(e.get("x"));
       const double y = num(e.get("y"));
       const cad::P2 p = mm ? m_apply(*mm, x, y) : cad::P2{x, y};
-      if (out_.point) {
+      if (out_.point && inside_clips(p)) {
         out_.point(color, p.x, p.y);
       }
       return;

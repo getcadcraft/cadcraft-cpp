@@ -249,6 +249,18 @@ class Viewer::CmdHost final : public cmd::Host {
     return true;
   }
   cmd::Clipboard& clipboard() override { return v_.clipboard_; }
+  // host.settings: the polar angle (POLARANG; polar tracking itself is not ported yet) and the lineweight display
+  base::Value* settings() override {
+    v_.settings_.set("lwt", v_.print_);
+    return &v_.settings_;
+  }
+  [[nodiscard]] bool can_set_toggle() const override { return true; }
+  void set_toggle(const std::string& key, bool on) override {
+    if (key == "lwt") {
+      v_.print_ = on;
+      v_.redraw_ = std::max(v_.redraw_, 2);
+    }
+  }
   [[nodiscard]] bool clipboard_shared() const override { return true; }  // every drawing this window opens
   void new_drawing() override { v_.new_request_ = true; }
   void open_file() override {
