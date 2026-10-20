@@ -335,6 +335,38 @@ void append_number(std::string& out, double d) {
 }
 
 // ---------------------------------------------------------------- text
+std::vector<std::uint8_t> unbase64(std::string_view text) {
+  std::vector<std::uint8_t> out;
+  out.reserve(text.size() / 4 * 3 + 3);
+  std::uint32_t acc = 0;
+  unsigned bits = 0;
+  for (const char ch : text) {
+    std::uint32_t v = 0;
+    if (ch >= 'A' && ch <= 'Z') {
+      v = static_cast<std::uint32_t>(ch - 'A');
+    } else if (ch >= 'a' && ch <= 'z') {
+      v = static_cast<std::uint32_t>(ch - 'a') + 26U;
+    } else if (ch >= '0' && ch <= '9') {
+      v = static_cast<std::uint32_t>(ch - '0') + 52U;
+    } else if (ch == '+' || ch == '-') {
+      v = 62;
+    } else if (ch == '/' || ch == '_') {
+      v = 63;
+    } else if (ch == '=') {
+      break;
+    } else {
+      continue;
+    }
+    acc = ((acc << 6U) | v) & 0xFFFFFFU;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out.push_back(static_cast<std::uint8_t>((acc >> bits) & 0xFFU));
+    }
+  }
+  return out;
+}
+
 std::string base64(std::span<const std::uint8_t> b) {
   static constexpr std::string_view kAlpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
   std::string out;

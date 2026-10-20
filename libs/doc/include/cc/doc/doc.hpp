@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "cc/base/value.hpp"
+#include "cc/doc/pictures.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/m3d/model.hpp"
 
@@ -228,6 +229,9 @@ class Doc {
     std::function<void(Doc&, const std::vector<Op>&)> fn;
   };
   std::vector<EditHook> edit_hooks;
+  /// doc.pictures (pictures.js): the picture files the drawing uses, key → file, in the order kept; not undoable
+  std::vector<std::pair<std::string, PictureFile>> pictures;
+  std::uint64_t picture_version = 0;
   Value vports;  // panes.js shape or null
   Value ucs;     // { x, y, ang } or null (the world)
   Value ucs_named = base::Value::array();

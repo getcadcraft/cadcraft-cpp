@@ -42,6 +42,13 @@ base::Value walk_events(const doc::Doc& d, const doc::EntityMap& space) {
   };
   out.point = [&](const std::string& color, double x, double y) { ev.emplace_back(Array{"p", color, x, y}); };
   out.viewport = [&](const Value& e) { ev.emplace_back(Array{"v", e.get("id")}); };
+  out.picture = [&](const PictureOut& p) {
+    Array clip;
+    for (const double v : p.clip) {
+      clip.emplace_back(v);
+    }
+    ev.emplace_back(Array{"pic", p.file, p.x, p.y, p.ux, p.uy, p.vx, p.vy, p.w, p.h, std::move(clip), p.alpha});
+  };
   out.mask = [&](const std::string& color, const std::vector<double>& loop, bool wipe) {
     Array a;
     for (const double v : loop) {

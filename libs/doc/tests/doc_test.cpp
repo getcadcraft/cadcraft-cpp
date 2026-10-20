@@ -179,3 +179,26 @@ TEST_CASE("the document after load equals the JS Doc's on the public fixtures") 
   }
   CHECK(checked >= 4);
 }
+
+TEST_CASE("pictures (pictures.js): files sniffed by content, kept by base name, found by a prefixed name too") {
+  // a 4 × 2 PNG's signature and IHDR are all sniffPicture reads
+  std::vector<std::uint8_t> png{0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 'I', 'H', 'D',
+                                'R',  0,   0,   0,   4,    0,    0,    0,    2, 8, 2, 0,  0,   0};
+  const auto sniffed = cc::doc::sniff_picture(png);
+  CHECK((sniffed && sniffed->w == 4 && sniffed->h == 2));
+  CHECK_FALSE(cc::doc::sniff_picture(std::vector<std::uint8_t>{'t', 'e', 'x', 't'}));
+  const std::vector<std::uint8_t> jpg{0xff, 0xd8, 0xff, 0xc0, 0, 17, 8, 0, 3, 0, 5, 3, 0, 0, 0, 0};
+  const auto info = cc::doc::jpeg_info(jpg);
+  CHECK((info && info->w == 5 && info->components == 3));
+  CHECK(cc::doc::picture_key("C:\\Logos\\Logo.PNG") == "logo.png");
+  cc::doc::Doc d;
+  CHECK(cc::doc::add_picture(d, "notes.txt", std::vector<std::uint8_t>{1, 2}).error() == "pic.not_picture");
+  const auto rec = cc::doc::add_picture(d, "/x/Proj-Logo.png", png);
+  REQUIRE(rec);
+  CHECK((*rec)->name == "Proj-Logo.png");
+  CHECK(cc::doc::find_picture(d, "D:\\PROJ-LOGO.PNG") == *rec);
+  CHECK(cc::doc::find_picture(d, "logo.png") == *rec);   // eTransmit adds a prefix
+  CHECK(cc::doc::find_picture(d, "lo.png") == nullptr);  // too short a stem to match inside another name
+  CHECK(d.picture_version == 1);
+  CHECK(cc::doc::free_picture_name(d) == "*I1");
+}

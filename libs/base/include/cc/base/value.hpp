@@ -296,6 +296,9 @@ void append_number(std::string& out, double d);
 
 // ---- text helpers
 [[nodiscard]] std::string base64(std::span<const std::uint8_t> bytes);
+/// Base64 → bytes as Node's Buffer.from(s, 'base64') reads it: characters outside the alphabet skipped, the first '='
+/// ends it, '-' and '_' taken as '+' and '/'.
+[[nodiscard]] std::vector<std::uint8_t> unbase64(std::string_view text);
 /// UTF-16 code units → UTF-8; valid pairs combine, a lone surrogate becomes its 3-byte WTF-8 form.
 void append_utf16(std::string& out, std::span<const std::uint16_t> units);
 /// Appends one code point (0..0x10FFFF, surrogates allowed as WTF-8).

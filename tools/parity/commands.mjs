@@ -22,7 +22,8 @@ const { init } = await imp('i18n.js');
 init({ locale: 'en', strings: JSON.parse(readFileSync(join(app, 'lang/en.json'), 'utf8')) });
 const { Doc } = await imp('doc.js');
 const { Engine } = await imp('commands.js');
-await imp('textmask-cmd.js');   // what cadcraft.js registers when it loads (TEXTMASK, XCLIP)
+await imp('pictures-cmd.js');   // what cadcraft.js registers when it loads (IMAGEATTACH…, TEXTMASK, XCLIP)
+await imp('textmask-cmd.js');
 await imp('xclip-cmd.js');
 const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
 const { readValue } = await imp('propexpr.js');
@@ -83,10 +84,13 @@ async function runJs(script) {
     pickAt() { const id = this.nextPick; this.nextPick = null; return id; },
     pickWindow() { const ids = this.windowIds || []; this.windowIds = null; return ids; },
     preview() {}, onCommand() {},
+    pictures: [],
+    async pickPictures() { const f = this.pictures; this.pictures = []; return f; },
   };
   const eng = new Engine(doc, host);
   for (const s of script.steps) {
     if (typeof s === 'string') eng.text(s);
+    else if (s.pictures) host.pictures = s.pictures.map((f) => ({ name: f.name, bytes: new Uint8Array(Buffer.from(f.bytes?.$base64 || '', 'base64')) }));
     else if (s.click) { host.nextPick = typeof s.pick === 'number' ? s.pick : null; eng.click({ x: s.click[0], y: s.click[1] }); }
     else if (s.cursor) host.cursor = { x: s.cursor[0], y: s.cursor[1] };
     else if (s.esc) eng.escape();

@@ -344,6 +344,9 @@ AskAwait Ctx::distance(std::string prompt, Ask o) {
 AskAwait Ctx::angle(std::string prompt, Ask o) {
   return {engine, "angle", std::move(prompt), std::move(o)};
 }
+AskAwait Ctx::files(bool multiple) {
+  return {engine, multiple ? "files+" : "files", std::string(), Ask{}};
+}
 AskAwait Ctx::number(std::string prompt, Ask o) {
   return {engine, "number", std::move(prompt), std::move(o)};
 }
@@ -474,8 +477,28 @@ void Engine::wait(std::string kind, std::string prompt, Ask opts, std::coroutine
     w.set = select_set_;
   }
   rubber_base = w.opts.base;
+  const bool files = w.kind == "files" || w.kind == "files+";
+  const bool multiple = w.kind == "files+";
   waiting_ = std::move(w);
+  if (files) {  // the picker, not the command line, has the user's attention
+    host_.pick_pictures(multiple);
+    return;
+  }
   host_.prompt(prompt_text());
+}
+
+bool Engine::waiting_for_files() const noexcept {
+  return waiting_ && (waiting_->kind == "files" || waiting_->kind == "files+");
+}
+
+void Engine::give_files(std::vector<PickedFile> files) {
+  if (!waiting_for_files()) {
+    return;
+  }
+  Answer a;
+  a.kind = Answer::Kind::files;
+  a.files = std::move(files);
+  resolve(std::move(a));
 }
 
 void Engine::set_preview(std::function<base::Array(Pt)> fn) {
@@ -636,6 +659,9 @@ void Engine::text(std::string_view raw) {
     run(typed);
     return;
   }
+  if (waiting_for_files()) {  // the picker is open: typing waits for it
+    return;
+  }
   Waiting& w = *waiting_;
   const std::string kind = w.kind;
   if (kind == "string") {
@@ -751,7 +777,7 @@ void Engine::text(std::string_view raw) {
 }
 
 bool Engine::click(Pt point, std::optional<Pt> raw_in) {
-  if (!waiting_) {
+  if (!waiting_ || waiting_for_files()) {
     return false;
   }
   const Pt raw = raw_in.value_or(point);

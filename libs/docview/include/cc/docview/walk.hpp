@@ -33,6 +33,15 @@ struct Opts {
   bool wipe = false;
 };
 
+/// A picture as the walk reports it (pictures.js / walk.js pictureOut): its placement through the transform (one pixel
+/// along its width and up), its frame as the clip, and its alpha (transparency and fade).
+struct PictureOut {
+  std::string file;
+  double x = 0, y = 0, ux = 0, uy = 0, vx = 0, vy = 0, w = 0, h = 0;
+  std::vector<double> clip;
+  double alpha = 1;
+};
+
 struct Out {
   std::function<void(const std::string& color, const std::vector<cad::Prim>& prims, double lw, const Opts& o)> stroke;
   std::function<void(const std::string& color, const std::vector<std::vector<double>>& loops, bool solid,
@@ -45,6 +54,8 @@ struct Out {
   std::function<void(const std::string& color, const std::vector<double>& loop, bool wipe)> mask;
   /// An xline / ray after the transform, for the output to clip (absent: its ±FAR stand-in as a stroke).
   std::function<void(const std::string& color, const base::Value& e, double lw, const Opts& o)> infinite;
+  /// A picture's frame (0.5 WL.14): where the picture goes (absent: the frame and the name are all that draw).
+  std::function<void(const PictureOut& p)> picture;
 };
 
 struct WalkOptions {

@@ -135,6 +135,10 @@ class Host {
   virtual Clipboard& clipboard() { return own_clipboard_; }
   [[nodiscard]] virtual bool clipboard_shared() const { return false; }
   [[nodiscard]] virtual std::string paste_base() const { return "lower-left"; }
+  // pictures (host.pickPictures): PNG / JPEG files from the host's picker, one or several; the choice comes back
+  // through Engine::give_files (an empty list = cancelled). No picker: IMAGEATTACH and IMAGE say so.
+  [[nodiscard]] virtual bool can_pick_pictures() const { return false; }
+  virtual void pick_pictures(bool multiple) { (void)multiple; }
   // the drawing window's settings (host.settings: polarInc, lwt, lasso …), or nullptr when there are none
   virtual base::Value* settings() { return nullptr; }
   virtual void save_settings() {}
@@ -172,9 +176,15 @@ struct Ask {
   std::function<base::Value(std::string_view)> accept;  // a command's own token
 };
 
+/// A file the host's picker gave (host.pickPictures): its name and bytes — untrusted.
+struct PickedFile {
+  std::string name;
+  std::vector<std::uint8_t> bytes;
+};
+
 /// An answer to a prompt (the JS's resolved value).
 struct Answer {
-  enum class Kind : std::uint8_t { nothing, point, option, number, text, set, entity, empty, path, typed };
+  enum class Kind : std::uint8_t { nothing, point, option, number, text, set, entity, empty, path, typed, files };
   Kind kind = Kind::nothing;
   Pt p;                // point, entity (the pick), empty (where)
   std::string option;  // option: its key
@@ -184,7 +194,8 @@ struct Answer {
   Id id = 0;           // entity
   bool shift = false;  // entity, empty, path
   std::vector<Pt> path;
-  base::Value typed;  // accept()'s value
+  base::Value typed;              // accept()'s value
+  std::vector<PickedFile> files;  // files: what the picker gave (none: cancelled)
   /// JS truthiness of the value (0, NaN and '' are falsy; null / undefined too).
   [[nodiscard]] bool truthy() const noexcept;
   [[nodiscard]] bool is(std::string_view key) const { return kind == Kind::option && option == key; }
@@ -250,6 +261,8 @@ class Ctx {
   AskAwait point(std::string prompt, Ask o = {});
   AskAwait distance(std::string prompt, Ask o = {});
   AskAwait angle(std::string prompt, Ask o = {});
+  /// The host's picture picker (Host::pick_pictures); answers Kind::files. No prompt is shown while it is open.
+  AskAwait files(bool multiple);
   AskAwait number(std::string prompt, Ask o = {});
   AskAwait string(std::string prompt, Ask o = {});
   AskAwait keyword(std::string prompt, Ask o = {});
@@ -297,6 +310,9 @@ class Engine {
   IdSet prev_selection;
 
   // ---- for Ctx
+  /// The files the host's picker gave (none: cancelled), when a command waits for them.
+  void give_files(std::vector<PickedFile> files);
+  [[nodiscard]] bool waiting_for_files() const noexcept;
   void wait(std::string kind, std::string prompt, Ask opts, std::coroutine_handle<> h, Answer* out);
   void set_preview(std::function<base::Array(Pt)> fn);
   Task<bool> select_option(const std::string& key, IdSet& set, bool remove);

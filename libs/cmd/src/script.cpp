@@ -31,6 +31,7 @@ class ScriptHost final : public Host {
   std::optional<Id> next_pick;
   std::vector<Id> window_ids;
   bool shift_down = false;
+  std::vector<PickedFile> pictures;  // what the next picker gives ({pictures} steps)
 
   void print(const std::string& text) override { log.emplace_back(base::Array{"print", text}); }
   void prompt(const std::string& text) override { log.emplace_back(base::Array{"prompt", text}); }
@@ -42,6 +43,7 @@ class ScriptHost final : public Host {
   [[nodiscard]] bool shift() const override { return shift_down; }
   /// One clock for every script (a new sheet's title block is dated): 2026-10-16, UTC, as the parity harness's.
   [[nodiscard]] double now_ms() const override { return 1792108800000.0; }
+  [[nodiscard]] bool can_pick_pictures() const override { return true; }
 };
 
 double num(const Value& v) {
@@ -167,6 +169,22 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
       }
       if (s.is_string()) {
         eng.text(s.as_string());
+      } else if (const Value* pf = s.is_object() && !s.is_point() ? s.find("pictures") : nullptr) {
+        host.pictures.clear();
+        if (pf->is_array()) {
+          for (const Value& f : pf->as_array()) {
+            // bytes as the parity kit writes them, {"$base64": "…"}
+            const Value b = f.get("bytes");
+            const Value b64 = b.is_object() && !b.is_point() ? b.get("$base64") : Value();
+            PickedFile file{.name = base::js_string(f.get("name")), .bytes = {}};
+            if (b.is_bytes()) {
+              file.bytes = b.as_bytes();
+            } else if (b64.is_string()) {
+              file.bytes = base::unbase64(b64.as_string());
+            }
+            host.pictures.push_back(std::move(file));
+          }
+        }
       } else if (s.is_object() && !s.is_point()) {
         if (const Value* c = s.find("click")) {
           const Value pk = s.get("pick");
@@ -206,6 +224,9 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                              });
           d.set_space(known ? sp->as_string() : std::string());
         }
+      }
+      if (eng.waiting_for_files()) {
+        eng.give_files(std::exchange(host.pictures, {}));
       }
     }
   }

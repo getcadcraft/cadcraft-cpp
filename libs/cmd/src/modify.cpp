@@ -273,6 +273,7 @@ const std::vector<CommandDef>& command_table() {
     add_help(t);
     add_layers(t);
     add_props(t);
+    add_pictures(t);  // cadcraft.js imports pictures-cmd.js before textmask-cmd.js and xclip-cmd.js
     add_registered(t);
     return t;
   }();

@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8a (TTR / TTT, TEXTMASK, XCLIP, the settings commands, HELP).
+Last updated 2026-10-20 · Change: M5.8b (pictures: IMAGEATTACH, IMAGE, IMAGECLIP).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -365,4 +365,12 @@ Last updated 2026-10-20 · Change: M5.8a (TTR / TTT, TEXTMASK, XCLIP, the settin
   LINKVIEWS, OPENIN3D, LASSOMODE, LWDISPLAY through Host::settings (the viewer keeps the polar angle and drives LWT;
   a script answers as 0.5 without a browser); HELP. Command parity 145/145 (4 new scripts in
   tests/commands/drafting-extras.json), walk 108/108, a unit test for a clipped reference.
+- M5.8b (2026-10-20): pictures (pictures.js, pictures-cmd.js; WL.14). The drawing keeps the picture files it is given
+  (libs/doc pictures.hpp: sniffPicture / jpegInfo by content, 64 MB and 100 Mpixel caps, findPicture by base name or a
+  name containing it); IMAGEATTACH (IAT) places a PNG or JPEG by corner, width and angle, IMAGE (IM) lists the files
+  and takes the missing ones, IMAGECLIP (ICL) clips to a rectangle or polygon (a shared picture block gets a copy of its
+  own) or removes the clip. A command waits for the host's picker through a new wait (Ctx::files →
+  Host::pick_pictures → Engine::give_files); scripts queue files with a `{pictures}` step, as the harness's host does.
+  The walk reports pictures (out.picture: placement, frame, fade) and leaves a picture's name out once its file is
+  there. Command parity 148/148 (tests/commands/pictures.json), a fuzz target (picture), a unit test.
 

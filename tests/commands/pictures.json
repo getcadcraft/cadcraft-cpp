@@ -1,0 +1,168 @@
+[
+ {
+  "name": "imageattach: a PNG placed by corner, width and angle; clipped to a rectangle, then a polygon, then unclipped; undo",
+  "steps": [
+   {
+    "pictures": [
+     {
+      "name": "C:\\Logos\\Logo.PNG",
+      "bytes": {
+       "$base64": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAIAAADwyuo0AAAAIUlEQVR4nAXBMQEAAAzCsMqZCEQgh7PSlwAeFocQLzYuPkvCBtHF9Q60AAAAAElFTkSuQmCC"
+      }
+     }
+    ]
+   },
+   "IMAGEATTACH",
+   "10,10",
+   "40",
+   "30",
+   "IMAGEATTACH",
+   "IMAGECLIP",
+   {
+    "click": [
+     20,
+     20
+    ],
+    "pick": 1
+   },
+   "R",
+   "12,12",
+   "30,20",
+   "IMAGECLIP",
+   {
+    "click": [
+     20,
+     20
+    ],
+    "pick": 1
+   },
+   "P",
+   "12,12",
+   "30,12",
+   "20,25",
+   "",
+   "IMAGECLIP",
+   {
+    "click": [
+     20,
+     20
+    ],
+    "pick": 1
+   },
+   "D",
+   "U",
+   "U"
+  ]
+ },
+ {
+  "name": "imageattach: defaults (Enter for width and angle), a JPEG, a file that is no picture, a picture moved then clipped",
+  "steps": [
+   {
+    "pictures": [
+     {
+      "name": "photo.jpg",
+      "bytes": {
+       "$base64": "/9j/4AAQSkZJRgAAAAAAAAAAAAD/wAARCAADAAUDAAAAAAAAAAAA/9k="
+      }
+     }
+    ]
+   },
+   "IMAGEATTACH",
+   "0,0",
+   "",
+   "",
+   {
+    "pictures": [
+     {
+      "name": "notes.txt",
+      "bytes": {
+       "$base64": "iVBORw0K"
+      }
+     }
+    ]
+   },
+   "IMAGEATTACH",
+   {
+    "select": [
+     1
+    ]
+   },
+   "MOVE",
+   "0,0",
+   "5,5",
+   "IMAGECLIP",
+   {
+    "click": [
+     1,
+     1
+    ],
+    "pick": 1
+   },
+   "R",
+   "5,5",
+   "7,6",
+   "IMAGECLIP",
+   {
+    "click": [
+     1,
+     1
+    ],
+    "pick": 99
+   },
+   "LINE",
+   "0,0",
+   "3,3",
+   "",
+   "IMAGECLIP",
+   {
+    "click": [
+     1,
+     1
+    ],
+    "pick": 2
+   }
+  ]
+ },
+ {
+  "name": "image: no pictures, then all loaded; a shared picture block gets a copy of its own when clipped",
+  "steps": [
+   "IMAGE",
+   {
+    "pictures": [
+     {
+      "name": "a.png",
+      "bytes": {
+       "$base64": "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAIAAADwyuo0AAAAIUlEQVR4nAXBMQEAAAzCsMqZCEQgh7PSlwAeFocQLzYuPkvCBtHF9Q60AAAAAElFTkSuQmCC"
+      }
+     }
+    ]
+   },
+   "IMAGEATTACH",
+   "0,0",
+   "8",
+   "0",
+   "IMAGE",
+   {
+    "select": [
+     1
+    ]
+   },
+   "COPY",
+   "0,0",
+   "20,0",
+   "",
+   "IMAGECLIP",
+   {
+    "click": [
+     21,
+     1
+    ],
+    "pick": 2
+   },
+   "R",
+   "20,0",
+   "24,1",
+   "IMAGE"
+  ]
+ }
+]

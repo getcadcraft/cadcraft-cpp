@@ -44,6 +44,7 @@ function events(doc, entities) {
     text(color, e, o) { ev.push(['t', color, alpha(o), e]); },
     point(color, x, y) { ev.push(['p', color, x, y]); },
     viewport(e) { ev.push(['v', e.id]); },
+    picture(p) { const q = p.place; ev.push(['pic', p.file, q.x, q.y, q.ux, q.uy, q.vx, q.vy, q.w, q.h, [...p.clip], p.alpha]); },
     mask(color, loop, o) { ev.push(['m', color, !!o?.wipe, [...loop]]); },
     infinite(color, e, lw, o) { ev.push(['i', color, lw, alpha(o), e.type, e.x, e.y, e.dx, e.dy]); },
   });

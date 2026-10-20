@@ -18,6 +18,7 @@
 #include "cc/cad/dims.hpp"
 #include "cc/cad/save_parts.hpp"
 #include "cc/doc/linetypes.hpp"
+#include "cc/doc/pictures.hpp"
 #include "cc/docview/xclip.hpp"
 
 namespace cc::docview {
@@ -408,6 +409,42 @@ class Walker {
     stroke(color, tx(d, mm), lw, o);
   }
 
+  /// walk.js pictureOut(e, mm, o): the picture's placement and its frame, through the transform
+  [[nodiscard]] static PictureOut picture_out(const Value& e, const std::optional<Mat2>& mm, const Opts& o) {
+    const Value p = e.get("pic");
+    const double px = num(p.get("x"));
+    const double py = num(p.get("y"));
+    const cad::P2 at = mm ? m_apply(*mm, px, py) : cad::P2{px, py};
+    const auto vec = [&mm](double x, double y) {
+      return mm ? cad::P2{(*mm)[0] * x + (*mm)[2] * y, (*mm)[1] * x + (*mm)[3] * y} : cad::P2{x, y};
+    };
+    const cad::P2 u = vec(num(p.get("ux")), num(p.get("uy")));
+    const cad::P2 v = vec(num(p.get("vx")), num(p.get("vy")));
+    PictureOut out{.file = base::js_string(p.get("file")),
+                   .x = at.x,
+                   .y = at.y,
+                   .ux = u.x,
+                   .uy = u.y,
+                   .vx = v.x,
+                   .vy = v.y,
+                   .w = num(p.get("w")),
+                   .h = num(p.get("h")),
+                   .clip = {},
+                   .alpha = 1};
+    const Value pts = e.get("pts");
+    for (const Value& q : arr(pts)) {
+      const cad::P2 r = mm ? m_apply(*mm, num(q.get("x")), num(q.get("y"))) : cad::P2{num(q.get("x")), num(q.get("y"))};
+      out.clip.push_back(r.x);
+      out.clip.push_back(r.y);
+    }
+    const Value fade = p.get("fade");
+    const double f = fade.is_number() && std::isfinite(fade.as_number())
+                         ? std::max(0.0, std::min(100.0, fade.as_number())) / 100
+                         : 0;
+    out.alpha = o.alpha.value_or(1) * (1 - f);
+    return out;
+  }
+
   // NOLINTNEXTLINE(misc-no-recursion,readability-function-cognitive-complexity) — depth-capped (17 levels), as walk.js
   void emit(const Value& e, const Value& by_block, const Value& parent_layer, const std::optional<Mat2>& mm, int depth,
             const Blk& blk) {
@@ -479,7 +516,10 @@ class Walker {
       return;
     }
     if (type == "text") {
-      // e.picName: a picture's name stands in for it until its file is loaded (pictures are not loaded here)
+      // a picture's name stands in for it only until its file is loaded
+      if (e.get("picName").truthy() && doc::find_picture(doc_, base::js_string(e.get("s"))) != nullptr) {
+        return;
+      }
       const Value te = mm ? cad::tx_entity(e, *mm) : e;
       if (const Value bgm = e.get("bgm"); bgm.truthy()) {  // a background mask (0.5 WL.8): before the text
         const bool win = bgm.get("color") == Value("bg");
@@ -551,6 +591,9 @@ class Walker {
       return;
     }
     if (type == "poly") {
+      if (e.get("pic").truthy() && out_.picture) {
+        out_.picture(picture_out(e, mm, o));
+      }
       const auto b = poly_bands(e);
       if (!b) {
         stroke_of(e, cad::entity_prims(e, nullptr), color, lw, mm, blk.lt, parent_layer, o);
