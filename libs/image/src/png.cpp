@@ -85,4 +85,14 @@ base::Result<std::vector<std::byte>> encode_png(std::span<const std::uint8_t> rg
   return out;
 }
 
+std::vector<std::uint8_t> zlib_compress(std::span<const std::uint8_t> data) {
+  uLongf size = compressBound(static_cast<uLong>(data.size()));
+  std::vector<std::uint8_t> out(size);
+  if (compress2(out.data(), &size, data.data(), static_cast<uLong>(data.size()), 6) != Z_OK) {
+    return {};
+  }
+  out.resize(size);
+  return out;
+}
+
 }  // namespace cc::image

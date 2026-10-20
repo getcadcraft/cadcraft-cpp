@@ -1,6 +1,6 @@
 # Gaps
 
-Last updated 2026-10-19 · Change: #19 properties: the panel is done (M5.5c); what is still left.
+Last updated 2026-10-20 · Change: #20 plotting.
 
 What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it matters.
 
@@ -25,4 +25,5 @@ What the C++ fork does not do yet that CadCraft 0.5 does, ranked by how much it 
 | 17 | Drawing a document (libs/docview walk): pictures (pictures.js out.picture; a picture's frame and name are drawn), clipped references (XCLIP: xclip.js clipOut draws only what is inside), per-viewport layer overrides (VP.3) are not ported. No corpus drawing has a clipped reference or overrides (108/108 draw the same) | 2026-10-18 | With the viewer's sheets (M4.7b) |
 | 18 | Drafting in the viewer (M4.7b–c): no polar or object snap tracking, dynamic input, grip stretch of several objects at once or snap kind settings panel yet (F3 / F8 toggle the snaps and ortho); a DXF opens view-only (CadCraft's own DXF reader, dxf.js readDxf, is not ported: the file is drawn as compiled); text width factor and oblique angle are not drawn; per-viewport frozen layers are not applied on sheets; a click in the same frame as the Enter that starts a command reaches the selection, not the command; on Linux the save dialog needs zenity (#10), else Save as answers Not saved | 2026-10-18 | M4.7c / M4.7d |
 | 19 | Properties (M5.5b–c, libs/cmd props.hpp, libs/ui-imgui props_panel.cpp): the model is at parity (tests/commands/props.json) and the panel edits through it. Not ported: what the panel shows with nothing selected (props.js renderNone: the new objects' layer, colour, linetype, text height, units and length format) and a sheet's own section; the per-object extras (a viewport's scale list, attribute definitions and values, library items, notes); choosing which fields show (P.12 Customize) and auto-hide; typing a vertex number (the arrows step); dynamic-block parameters in Custom (dyn-blocks.js); sections added by add-ons (addSection); a viewport's fields (ported, untested until sheets have viewports, M5.6); expression variables (0.5 passes none either); the layers panel's colour picker, new-layer form and per-viewport freeze (VP.2) | 2026-10-19 | M5.6 (sheets, viewports), M5.8 |
+| 20 | Plotting (libs/plot, M5.6b): pictures are not plotted (pictures.js is not ported, #17), per-viewport layer overrides (VP.3) are not applied, there is no plot preview (drawPreview) and no PLOT dialog in the viewer yet (M5.6c; the CLI plots); PUBLISH writes nothing yet | 2026-10-20 | M5.6c, pictures with M5.8 |
 | known issue | Screen readers: Dear ImGui has no accessibility tree | 2026-10-15 | Owner, 2026-10-15: known issue, skipped for now. Never claim screen-reader support. |

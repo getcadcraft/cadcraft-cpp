@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// cc::cmd::sheets — CadCraft 0.5 sheets.js: paper sizes, drawing scales, viewports aimed at the model, a new sheet's
+// cc::sheets — L4. CadCraft 0.5 sheets.js: paper sizes, drawing scales, viewports aimed at the model, a new sheet's
 // border and title block. A layout's paper is { w, h, unit: 'mm' | 'in', x0, y0, key } in paper units; a viewport's
 // `s` is paper units per model unit, and a scale 1:N means one real unit on paper stands for N in the model.
 //
@@ -17,7 +17,7 @@
 #include "cc/doc/doc.hpp"
 #include "cc/i18n/i18n.hpp"
 
-namespace cc::cmd::sheets {
+namespace cc::sheets {
 
 /// One of PAPERS (landscape: w ≥ h). `label_key`: a language key when the label is translated, else empty.
 struct Paper {
@@ -80,4 +80,4 @@ struct SheetContents {
 /// "2026-10-16": a date as Date.toISOString().slice(0, 10).
 [[nodiscard]] std::string iso_date(double ms);
 
-}  // namespace cc::cmd::sheets
+}  // namespace cc::sheets

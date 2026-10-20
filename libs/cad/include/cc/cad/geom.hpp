@@ -26,6 +26,10 @@ inline constexpr double kFontEm = 1 / 0.718;
 /// geom.js LINE_SPACING: × text height, baseline to baseline.
 inline constexpr double kLineSpacing = 5.0 / 3.0;
 
+/// font.js charAdvance(ch): one character's width in 1/1000 em (Helvetica).
+[[nodiscard]] double char_width(std::uint32_t cp);
+/// The code point of UTF-8 (WTF-8) text at i, as `for (const ch of s)` reads it; i moves past it.
+[[nodiscard]] std::uint32_t next_char(std::string_view s, std::size_t& i);
 /// font.js advance: the width of a string in 1/1000 em.
 [[nodiscard]] double text_advance(std::string_view s);
 /// geom.js textWidth(s, e): a line of e's text in drawing units.

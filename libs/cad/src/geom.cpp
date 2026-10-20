@@ -804,4 +804,16 @@ base::Array leader_geometry(const base::Value& e) {
   return out;
 }
 
+// ---------------------------------------------------------------- for the PDF writer (plot.js)
+
+double char_width(std::uint32_t cp) {
+  return char_advance(cp);
+}
+std::uint32_t next_char(std::string_view s, std::size_t& i) {
+  return next_code_point(s, i);
+}
+void grow_prim(const Prim& p, Bounds& b) {
+  prim_bounds(p, b);
+}
+
 }  // namespace cc::cad

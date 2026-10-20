@@ -106,7 +106,8 @@ bool flag_button(const char* id, Flag f, bool active, const std::string& tip, fl
       break;
     case Flag::locked:  // a padlock, open when unlocked
       dl->AddRect(at(5, 9), at(15, 16), ink, 1.0F, 1.2F);
-      dl->PathArcTo(at(10, active ? 9 : 7), 3.5F * s, std::numbers::pi_v<float>, 2 * std::numbers::pi_v<float>, 8);
+      dl->PathArcTo(at(10, active ? 9.0F : 7.0F), 3.5F * s, std::numbers::pi_v<float>, 2 * std::numbers::pi_v<float>,
+                    8);
       dl->PathStroke(ink, 1.2F);
       break;
     case Flag::plot:  // a printer, struck through when the layer does not plot

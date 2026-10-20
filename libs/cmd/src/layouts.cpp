@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "cc/base/js.hpp"
-#include "cc/cmd/sheets.hpp"
+#include "cc/sheets/sheets.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -85,9 +85,9 @@ Task<void> layout_cmd(Ctx& c) {
     ++n;
   }
   const std::string name = "Layout" + std::to_string(n);
-  const sheets::Paper& p = sheets::default_paper(d);
-  const sheets::SheetContents made = sheets::sheet_contents(
-      d, sheets::make_paper(p.key),
+  const cc::sheets::Paper& p = cc::sheets::default_paper(d);
+  const cc::sheets::SheetContents made = cc::sheets::sheet_contents(
+      d, cc::sheets::make_paper(p.key),
       {.title = std::nullopt, .sheet_no = static_cast<int>(d.layouts().size()) + 1, .date_ms = c.host.now_ms()},
       c.words);
   for (const Value& l : made.layers) {
@@ -106,7 +106,7 @@ Task<void> layout_cmd(Ctx& c) {
     }
   });
   d.set_space(name);
-  c.print(c.t("cmd.layout.made", {{"name", name}, {"paper", sheets::paper_label(p, c.words)}}));
+  c.print(c.t("cmd.layout.made", {{"name", name}, {"paper", cc::sheets::paper_label(p, c.words)}}));
   co_return;
 }
 
@@ -130,7 +130,7 @@ Task<void> mview_cmd(Ctx& c) {
   }
   const doc::Layout* lay = c.doc.layout();
   const std::string unit = paper_unit(*lay);
-  const sheets::Aim aim = sheets::aim_viewport(c.doc, unit, w, h, sheets::model_extents(c.doc));
+  const cc::sheets::Aim aim = cc::sheets::aim_viewport(c.doc, unit, w, h, cc::sheets::model_extents(c.doc));
   if (c.doc.layers().get("Viewports") == nullptr) {
     (void)c.doc.add_layer(base::make_object({{"name", "Viewports"}, {"color", 8}, {"plot", false}}));
   }
@@ -154,7 +154,7 @@ Task<void> mview_cmd(Ctx& c) {
     vp.set("frz", std::move(frz));
   }
   c.doc.change("MVIEW", [&] { (void)c.doc.add(vp); });
-  c.print(c.t("cmd.mview.made", {{"scale", sheets::scale_label(c.doc, unit, aim.s)}}));
+  c.print(c.t("cmd.mview.made", {{"scale", cc::sheets::scale_label(c.doc, unit, aim.s)}}));
 }
 
 // ---- VPORTS / SPLIT: panes in the drawing window (panes.js)
@@ -311,10 +311,10 @@ Task<void> vpview_cmd(Ctx& c) {
       }
     });
     c.print(c.t("cmd.vpview.view_done",
-                {{"name", base::js_string(named->get("name"))}, {"scale", sheets::scale_label(c.doc, unit, s)}}));
+                {{"name", base::js_string(named->get("name"))}, {"scale", cc::sheets::scale_label(c.doc, unit, s)}}));
     co_return;
   }
-  const sheets::Aim aim = sheets::aim_viewport(c.doc, unit, num(vp, "w"), num(vp, "h"), *win);
+  const cc::sheets::Aim aim = cc::sheets::aim_viewport(c.doc, unit, num(vp, "w"), num(vp, "h"), *win);
   c.doc.change("VPVIEW", [&] {
     if (const Value* cur = c.doc.entities().get(vid)) {
       Value n = *cur;
@@ -324,7 +324,7 @@ Task<void> vpview_cmd(Ctx& c) {
       (void)c.doc.update(vid, n);
     }
   });
-  c.print(c.t("cmd.vpview.done", {{"scale", sheets::scale_label(c.doc, unit, aim.s)}}));
+  c.print(c.t("cmd.vpview.done", {{"scale", cc::sheets::scale_label(c.doc, unit, aim.s)}}));
 }
 
 // ---- VPLAYER (VP.2): layers frozen in some viewports only

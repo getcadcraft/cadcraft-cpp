@@ -65,8 +65,12 @@
 #include "cc/dwg/read.hpp"
 #include "cc/dwg/write.hpp"
 #include "cc/dxf/read.hpp"
+#if defined(CC_HAVE_IMAGE)
+#include "cc/image/png.hpp"
+#endif
 #include "cc/i18n/i18n.hpp"
 #include "cc/importer/importer.hpp"
+#include "cc/plot/plot.hpp"
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
 
@@ -76,24 +80,28 @@ constexpr std::string_view kVersion = "0.0.0";
 constexpr std::uint64_t kMaxFile = std::uint64_t{1} << 31U;  // 2 GiB
 
 void usage(std::FILE* out) {
-  std::print(out,
-             "usage: cadcraft-cli <command> [options]\n"
-             "  info [--isolated] <file.dwg>        version, counts and notes\n"
-             "  convert [--isolated] --json <file>  the drawing model as JSON\n"
-             "                                      (--isolated: parse in the sandboxed import helper)\n"
-             "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
-             "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
-             "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
-             "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
-             "  doc <file.dwg>                      the document after loading that drawing, as JSON\n"
-             "  dwg-write <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--bench <runs>]\n"
-             "                                      write the drawing as a DWG of that version; prints the report\n"
-             "  dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]\n"
-             "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
-             "  walk <in.dwg>                         what the drawing draws (walk.js events of each space, JSON)\n"
-             "  script <scripts.json>                 command scripts on a fresh drawing (one JSON line each)\n"
-             "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
-             "  version                             print the version\n");
+  std::print(
+      out,
+      "usage: cadcraft-cli <command> [options]\n"
+      "  info [--isolated] <file.dwg>        version, counts and notes\n"
+      "  convert [--isolated] --json <file>  the drawing model as JSON\n"
+      "                                      (--isolated: parse in the sandboxed import helper)\n"
+      "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
+      "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
+      "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
+      "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
+      "  doc <file.dwg>                      the document after loading that drawing, as JSON\n"
+      "  dwg-write <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--bench <runs>]\n"
+      "                                      write the drawing as a DWG of that version; prints the report\n"
+      "  dwg-save <in.dwg> <version> <out.dwg> [--created <ms>] [--seeded] [--model] [--bench <runs>]\n"
+      "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
+      "  walk <in.dwg>                         what the drawing draws (walk.js events of each space, JSON)\n"
+      "  script <scripts.json>                 command scripts on a fresh drawing (one JSON line each)\n"
+      "  plot <in.dwg> --out <out.pdf> [--sheet NAME | --model] [--pen MM] [--colour]\n"
+      "                                        a PDF of a sheet, of the model at its extents, or of every sheet\n"
+      "  plot-parity <in.dwg>                  each sheet and the model as uncompressed PDFs (the parity kit)\n"
+      "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
+      "  version                             print the version\n");
 }
 
 // The last word on a failure: never throws (std::print could).
@@ -420,31 +428,188 @@ int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
   return 0;
 }
 
-int cmd_walk(const std::filesystem::path& in, std::string_view argv0) {
+/// A DWG opened as CadCraft opens it (readDwg → importDwg → Doc.load), with the English words; false + an error
+/// printed.
+bool open_cad(const std::filesystem::path& in, std::string_view argv0, std::unique_ptr<cc::i18n::Catalog>& words,
+              cc::doc::Doc& d) {
   const auto bytes = cc::base::read_file(in, kMaxFile);
   if (!bytes) {
     print_error_json("io", bytes.error().message);
-    return 1;
+    return false;
   }
   const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
   if (!lang) {
     print_error_json("io", "the language file is missing: " + lang.error().message);
-    return 1;
+    return false;
   }
-  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
-  if (!words) {
-    print_error_json("invalid", words.error().message);
-    return 1;
+  auto w = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!w) {
+    print_error_json("invalid", w.error().message);
+    return false;
   }
+  words = std::make_unique<cc::i18n::Catalog>(std::move(*w));
   const cc::base::Value model = cc::dwg::read_dwg(*bytes);
   if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
     print_error_json("invalid", "unreadable");
-    return 1;
+    return false;
   }
   const std::span<const std::byte> head =
       std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
-  cc::doc::Doc d;
   d.load(cc::cad::import_dwg(model, cc::base::as_text(head), *words), *words);
+  return true;
+}
+
+/// The sheets a drawing plots as for the parity kit: each layout, then the model at its extents on A3.
+std::vector<std::pair<std::string, cc::plot::DisplayList>> plot_lists(const cc::doc::Doc& d) {
+  std::vector<std::pair<std::string, cc::plot::DisplayList>> out;
+  for (const cc::doc::Layout& l : d.layouts()) {
+    out.emplace_back(l.name, cc::plot::display_list(d, cc::plot::layout_sheet(d, l)));
+  }
+  if (const auto ext = cc::plot::extents_of(d)) {
+    out.emplace_back("*model*", cc::plot::display_list(d, cc::plot::model_sheet(d, *ext)));
+  }
+  return out;
+}
+
+int cmd_plot_parity(const std::filesystem::path& in, std::string_view argv0, int runs = 0) {
+  std::unique_ptr<cc::i18n::Catalog> words;
+  cc::doc::Doc d;
+  if (!open_cad(in, argv0, words, d)) {
+    return 1;
+  }
+  if (runs > 0) {  // --time N: the plotting alone (display lists + PDFs), best of N, on stderr
+    double best = 1e300;
+    double best_lists = 1e300;
+    for (int r = 0; r < runs; ++r) {
+      const auto t0 = std::chrono::steady_clock::now();
+      const auto lists = plot_lists(d);
+      const auto t1 = std::chrono::steady_clock::now();
+      std::size_t bytes = 0;
+      for (const auto& [name, list] : lists) {
+        bytes += cc::plot::to_pdf(list, {.pen = 0.25, .title = {}, .date_ms = 0, .compress = {}}).bytes.size();
+      }
+      best = std::min(best, std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+      best_lists = std::min(best_lists, std::chrono::duration<double, std::milli>(t1 - t0).count());
+      (void)bytes;
+    }
+    std::println(stderr, "plot ms (best of {}): {:.1f} (display lists {:.1f})", runs, best, best_lists);
+    return 0;
+  }
+  cc::base::Array out;
+  for (const auto& [name, list] : plot_lists(d)) {
+    // tools/parity/plot.mjs: the content uncompressed, the file dated 2026-10-16 (UTC), as the JS side
+    const cc::plot::PdfResult pdf =
+        cc::plot::to_pdf(list, {.pen = 0.25, .title = {}, .date_ms = 1792108800000.0, .compress = {}});
+    out.emplace_back(cc::base::make_object({{"name", name}, {"pdf", cc::base::base64(pdf.bytes)}}));
+  }
+  std::string js;
+  cc::base::write_json(cc::base::Value(std::move(out)), js);
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  return 0;
+}
+
+/// plot <file.dwg> --out <file.pdf> [--sheet <layout name> | --model] [--pen mm] [--colour]: one PDF page, or every
+/// sheet (no --sheet / --model) as one PDF with a page each.
+int cmd_plot(std::span<const std::string_view> args, std::string_view argv0) {
+  std::filesystem::path in;
+  std::filesystem::path out_path;
+  std::optional<std::string> sheet;
+  bool model = false;
+  bool colour = false;
+  double pen = 0.25;
+  for (std::size_t i = 0; i < args.size(); ++i) {
+    const std::string_view a = args[i];
+    const bool has = i + 1 < args.size();
+    if (a == "--out" && has) {
+      out_path = args[++i];
+    } else if (a == "--sheet" && has) {
+      sheet = std::string(args[++i]);
+    } else if (a == "--model") {
+      model = true;
+    } else if (a == "--colour" || a == "--color") {
+      colour = true;
+    } else if (a == "--pen" && has) {
+      double v = 0;
+      const std::span<const char> txt(args[++i]);
+      const auto [ptr, ec] = std::from_chars(txt.data(), std::to_address(txt.end()), v);
+      if (ec != std::errc{} || ptr != std::to_address(txt.end())) {
+        v = 0;
+      }
+      if (v <= 0 || v > 5 || std::isnan(v)) {
+        std::println(stderr, "cadcraft-cli plot: --pen takes a width in mm (up to 5)");
+        return 2;
+      }
+      pen = v;
+    } else if (!a.starts_with("--") && in.empty()) {
+      in = a;
+    } else {
+      std::println(stderr,
+                   "usage: cadcraft-cli plot <file.dwg> --out <file.pdf> [--sheet NAME | --model] [--pen MM] "
+                   "[--colour]");
+      return 2;
+    }
+  }
+  if (in.empty() || out_path.empty()) {
+    std::println(stderr, "usage: cadcraft-cli plot <file.dwg> --out <file.pdf> [--sheet NAME | --model]");
+    return 2;
+  }
+  std::unique_ptr<cc::i18n::Catalog> words;
+  cc::doc::Doc d;
+  if (!open_cad(in, argv0, words, d)) {
+    return 1;
+  }
+  std::vector<cc::plot::DisplayList> lists;
+  std::vector<std::string> names;
+  for (const cc::doc::Layout& l : d.layouts()) {
+    if ((!sheet && !model) || (sheet && *sheet == l.name)) {
+      lists.push_back(cc::plot::display_list(d, cc::plot::layout_sheet(d, l), !colour));
+      names.push_back(l.name);
+    }
+  }
+  if (model || (!sheet && lists.empty())) {
+    const auto ext = cc::plot::extents_of(d);
+    if (!ext) {
+      print_error_json("empty", "the model is empty: nothing to plot");
+      return 1;
+    }
+    lists.push_back(cc::plot::display_list(d, cc::plot::model_sheet(d, *ext), !colour));
+    names.emplace_back("Model");
+  }
+  if (lists.empty()) {
+    print_error_json("invalid", "no sheet named " + sheet.value_or(std::string()));
+    return 1;
+  }
+  const double now = static_cast<double>(
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+          .count());
+  cc::plot::PdfOptions o{.pen = pen, .title = {}, .date_ms = now, .compress = {}};
+#if defined(CC_HAVE_IMAGE)
+  o.compress = [](std::span<const std::uint8_t> b) { return cc::image::zlib_compress(b); };
+#endif
+  const cc::plot::PdfResult pdf =
+      lists.size() == 1 ? cc::plot::to_pdf(lists.front(), o) : cc::plot::to_pdf_pages(lists, o, names);
+  if (auto w = cc::base::write_file_atomic(out_path, std::as_bytes(std::span(pdf.bytes))); !w) {
+    print_error_json("io", w.error().message);
+    return 1;
+  }
+  std::string js;
+  cc::base::write_json(cc::base::make_object({{"pages", static_cast<double>(pdf.pages)},
+                                              {"texts", static_cast<double>(pdf.texts)},
+                                              {"missing", static_cast<double>(pdf.missing)},
+                                              {"size", static_cast<double>(pdf.bytes.size())}}),
+                       js);
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  return 0;
+}
+
+int cmd_walk(const std::filesystem::path& in, std::string_view argv0) {
+  std::unique_ptr<cc::i18n::Catalog> words;
+  cc::doc::Doc d;
+  if (!open_cad(in, argv0, words, d)) {
+    return 1;
+  }
   cc::base::Array lays;
   for (const cc::doc::Layout& l : d.layouts()) {
     lays.push_back(cc::docview::walk_events(d, *l.entities));
@@ -785,6 +950,15 @@ int run(const std::vector<std::string_view>& args) {
     }
     return cmd_dxf_save(std::filesystem::path(args[2]), std::string(args[3]), std::filesystem::path(args[4]), bench,
                         args[0]);
+  }
+  if (cmd == "plot-parity" && args.size() == 3) {
+    return cmd_plot_parity(std::filesystem::path(args[2]), args[0]);
+  }
+  if (cmd == "plot-parity" && args.size() == 5 && args[3] == "--time") {
+    return cmd_plot_parity(std::filesystem::path(args[2]), args[0], args[4] == "1" ? 1 : 5);
+  }
+  if (cmd == "plot" && args.size() >= 3) {
+    return cmd_plot(std::span<const std::string_view>(args).subspan(2), args[0]);
   }
   if (cmd == "walk" && args.size() == 3) {
     return cmd_walk(std::filesystem::path(args[2]), args[0]);

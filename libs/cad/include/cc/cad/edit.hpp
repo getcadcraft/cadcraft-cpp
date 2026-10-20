@@ -27,6 +27,9 @@ struct Prim {
   bool box = false;  // a text box, an arrowhead: for picking and bounds, not for snaps
 };
 
+/// geom.js primBounds(p, b): grows b by a primitive (an arc by its extreme points too).
+void grow_prim(const Prim& p, Bounds& b);
+
 /// geom.js prims(e, blocks): an entity's primitives in world coordinates.
 [[nodiscard]] std::vector<Prim> entity_prims(const base::Value& e, const BlockLookup& blocks);
 /// geom.js txPrim over a list: primitives through a matrix (an arc under a shear or stretch as short lines).

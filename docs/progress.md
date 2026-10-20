@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.6a (sheets: LAYOUT, MVIEW, VPVIEW, VPLAYER, VIEWLABEL …).
+Last updated 2026-10-20 · Change: M5.6b (PLOT: plot.js and the PDF writer).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -316,4 +316,18 @@ Last updated 2026-10-20 · Change: M5.6a (sheets: LAYOUT, MVIEW, VPVIEW, VPLAYER
   (Host::now_ms: the title block's date), panes and viewport entry; a script answers as the JS stub does. The harness
   compares the layouts (paper and objects) and the open space, takes a { space } step, and runs both sides on one
   fixed clock (2026-10-16 UTC). Command parity 138/138 (5 new scripts in tests/commands/sheets.json).
+- M5.6b (2026-10-20): plotting. plot.js in libs/plot (L5): layoutSheet (each viewport not turned off as a clipped view
+  of the model, its frozen layers left out, then the paper), modelSheet (a window on A3 by default, 1:n or fitted),
+  displayList (fills, strokes grouped by colour / lineweight / alpha, masks, points, texts; patterned hatches as a
+  light tone with their outline; construction lines clipped to the view), the PDF 1.4 writer (Helvetica in
+  WinAnsiEncoding, arcs as Béziers, transparency as ExtGState, one or many pages with bookmarks), extentsOf. sheets.js
+  moved down to libs/sheets (L4) so plot and the commands share it. The page content is compressed through an
+  injected compressor (cc::image::zlib_compress where the render libraries are built). `cadcraft-cli plot <in.dwg>
+  --out <out.pdf> [--sheet NAME | --model]` writes a PDF; `plot-parity` gives the uncompressed PDFs to
+  tools/parity/plot.mjs. Parity: 108/108 corpus drawings, 307 PDFs byte for byte (each sheet and the model at its
+  extents; the two 10-byte files the reader refuses are skipped as in walk.mjs). Speed, carey/Carey Foodservice.dwg
+  (11 sheets, ~230 MB of PDF), both in forkrust.slice: C++ 7.5 s (display lists 3.5 s) against JS 19.8–33.3 s
+  (display lists 7.0 s); the first C++ version took 18.7 s — a 52 MB page copied by an initializer list and the
+  content kept as millions of small strings. CI: M5.5c failed MSVC (C4244, an int → float in a layer-switch icon),
+  fixed here.
 

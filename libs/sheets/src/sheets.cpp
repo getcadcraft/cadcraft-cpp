@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // sheets.js (CadCraft 0.5) in C++: paper sizes, drawing scales, new sheets.
-#include "cc/cmd/sheets.hpp"
+#include "cc/sheets/sheets.hpp"
 
 #include <algorithm>
 #include <array>
@@ -12,7 +12,7 @@
 
 #include "cc/base/js.hpp"
 
-namespace cc::cmd::sheets {
+namespace cc::sheets {
 
 namespace {
 
@@ -355,4 +355,4 @@ SheetContents sheet_contents(const doc::Doc& doc, const Value& paper, const Shee
   return {.paper = paper, .entities = std::move(kept), .scale = aim, .layers = std::move(layers)};
 }
 
-}  // namespace cc::cmd::sheets
+}  // namespace cc::sheets

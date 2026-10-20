@@ -16,4 +16,7 @@ namespace cc::image {
 [[nodiscard]] base::Result<std::vector<std::byte>> encode_png(std::span<const std::uint8_t> rgba, std::uint32_t width,
                                                               std::uint32_t height);
 
+/// zlib's compress (the zlib format, level 6): what PDF's /FlateDecode reads. Empty when zlib refuses.
+[[nodiscard]] std::vector<std::uint8_t> zlib_compress(std::span<const std::uint8_t> data);
+
 }  // namespace cc::image
