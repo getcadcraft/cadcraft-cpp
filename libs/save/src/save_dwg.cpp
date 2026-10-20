@@ -18,6 +18,7 @@
 #include "cc/cad/dims.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/save_parts.hpp"
+#include "cc/doc/gcons.hpp"
 #include "cc/dwg/write.hpp"
 #include "cc/m3d/drawing3d.hpp"
 #include "cc/save/dwg.hpp"
@@ -1225,13 +1226,43 @@ DwgSaveResult Saver::run() {
     }
     blocks_.push_back(base::make_object({{"name", b.get("name")}, {"base", base_pt}, {"entities", std::move(ents)}}));
   });
-  // model space (constraints: forFile(doc) is null — the fork keeps none yet)
+  // constraints + parameters (gcons.js): CADCRAFT xdata "CCREF:<key>" on each constrained entity, block
+  // CADCRAFT_PARAMETRIC
+  const auto pf = doc::gcons::for_file(doc_);
+  const auto strings = [](const std::vector<std::string>& strs) {
+    Array a;
+    for (const std::string& s : strs) {
+      a.push_back(pair(1000, s));
+    }
+    return base::make_object({{"CADCRAFT", Value(std::move(a))}});
+  };
   Array entities;
-  doc_.model()->each([&](const doc::Id&, const Value& e) {
-    for (Value& x : conv(e)) {
+  doc_.model()->each([&](const doc::Id& id, const Value& e) {
+    std::vector<Value> out = conv(e);
+    if (pf && !out.empty()) {
+      for (const auto& [rid, key] : pf->refs) {
+        if (rid == static_cast<double>(id)) {
+          // { ...(out[0].xdata || {}), ...strings(['CCREF:' + key]) }: the CADCRAFT strings are replaced
+          const Value had = out.front().get("xdata");
+          Value xd = had.is_object() && !had.is_point() ? had : Value::object();
+          xd.set("CADCRAFT", strings({"CCREF:" + key}).get("CADCRAFT"));
+          out.front().set("xdata", xd);
+        }
+      }
+    }
+    for (Value& x : out) {
       entities.push_back(std::move(x));
     }
   });
+  if (pf) {
+    Array pts;
+    for (const std::string& s : pf->points) {
+      pts.push_back(
+          base::make_object({{"type", "POINT"}, {"layer", "0"}, {"position", P(0, 0)}, {"xdata", strings({s})}}));
+    }
+    blocks_.push_back(base::make_object(
+        {{"name", std::string(doc::gcons::kParamBlock)}, {"base", P(0, 0)}, {"entities", std::move(pts)}}));
+  }
   // the 3D model
   const Value units_v = doc_.meta.get("units");
   const std::string units = units_v.truthy() ? str(units_v) : std::string();

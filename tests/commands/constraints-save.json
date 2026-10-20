@@ -1,0 +1,121 @@
+[
+ {
+  "name": "constraints saved: DXF R12 and DWG 2018 keep every constraint and parameter (opened again)",
+  "save": [
+   "dxf",
+   "dwg2018"
+  ],
+  "steps": [
+   "LINE",
+   "0,0",
+   "100,0",
+   "",
+   "LINE",
+   "100,0",
+   "100,60",
+   "",
+   "CIRCLE",
+   "50,30",
+   "10",
+   "PLINE",
+   "0,70",
+   "40,70",
+   "40,90",
+   "",
+   "GCHORIZONTAL",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   "GCPERPENDICULAR",
+   {
+    "click": [
+     50,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     100,
+     30
+    ],
+    "pick": 2
+   },
+   "GCCOINCIDENT",
+   {
+    "click": [
+     99,
+     1
+    ],
+    "pick": 2
+   },
+   {
+    "click": [
+     99,
+     0
+    ],
+    "pick": 1
+   },
+   "DCHORIZONTAL",
+   {
+    "click": [
+     1,
+     0
+    ],
+    "pick": 1
+   },
+   {
+    "click": [
+     99,
+     0
+    ],
+    "pick": 1
+   },
+   "50,-10",
+   "",
+   "DCRADIUS",
+   {
+    "click": [
+     60,
+     30
+    ],
+    "pick": 3
+   },
+   "70,45",
+   "r=d1/10",
+   "GCHORIZONTAL",
+   {
+    "click": [
+     20,
+     70
+    ],
+    "pick": 4
+   },
+   "-PARAMETERS",
+   "N",
+   "note",
+   "1.5in"
+  ]
+ },
+ {
+  "name": "nothing constrained: no CADCRAFT_PARAMETRIC block, a parameter only still makes one",
+  "save": [
+   "dxf",
+   "dwg2018"
+  ],
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,10",
+   "",
+   "-PARAMETERS",
+   "N",
+   "w",
+   "12"
+  ]
+ }
+]

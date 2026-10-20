@@ -29,6 +29,12 @@ await imp('xclip-cmd.js');
 const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
 const { readValue } = await imp('propexpr.js');
 const { modelSheet, displayList, toPdf, extentsOf } = await imp('plot.js');
+const { writeDxf, readDxf } = await imp('dxf.js');
+const { saveDwg } = await imp('dwg-save.js');
+const { CLASSED } = await imp('dwg/objects-write.js');
+const classedKeys = new Set(Object.keys(CLASSED));
+const { readDwg } = await imp('dwg/read.js');
+const { importDwg } = await imp('dwg-import.js');
 const NUMERIC = ['len', 'ang', 'num', 'int', 'area'];
 
 /** The Properties panel (props.js): {props, ids?, group?, vertex?} lists the group's fields with the value they share;
@@ -137,6 +143,28 @@ async function runJs(script) {
       const r = await toPdf(displayList(doc, modelSheet(doc, { area: ext }), { mono: script.plot.mono !== false }), { maxDpi: script.plot.maxDpi || 0 });
       pdf = { pdf: pdfCanonical(r.bytes), pdfReport: { pictures: r.report.pictures, shrunk: r.report.shrunk, kept: r.report.kept } };
     }
+  }
+  // a script may ask for its drawing saved (and opened again: the constraints that come back)
+  if (script.save) {
+    const saved = {}, again = (d) => ({ constraints: d.constraints, params: d.params });
+    for (const fmt of script.save) {
+      if (fmt === 'dxf') {
+        const text = writeDxf(doc).text, d2 = new Doc();
+        d2.load(readDxf(text));
+        saved.dxf = text; saved.dxfReopened = again(d2);
+      } else if (fmt.startsWith('dwg')) {
+        for (const k of Object.keys(CLASSED)) if (!classedKeys.has(k)) delete CLASSED[k];
+        const was = Object.getOwnPropertyDescriptor(globalThis, 'crypto');
+        let seed = 1;   // tools/parity/dwg-save.mjs's GUID bytes
+        Object.defineProperty(globalThis, 'crypto', { value: { getRandomValues(a) { for (let i = 0; i < a.length; i++) { seed = (Math.imul(seed, 1103515245) + 12345) >>> 0; a[i] = seed >>> 24; } return a; } }, configurable: true });
+        let r;
+        try { r = saveDwg(doc, { version: fmt.slice(3), created: new Date(FIXED_NOW) }); } finally { if (was) Object.defineProperty(globalThis, 'crypto', was); }
+        const d2 = new Doc(), model = readDwg(r.bytes);
+        if (model?.blocks?.length) d2.load(importDwg(model, { versionTag: new TextDecoder().decode(r.bytes.subarray(0, 6)) }));
+        saved[fmt] = Buffer.from(r.bytes).toString('base64'); saved[fmt + 'Reopened'] = again(d2);
+      }
+    }
+    pdf.saved = saved;
   }
   return { ...pdf, name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,

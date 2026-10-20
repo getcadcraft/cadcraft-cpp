@@ -5,7 +5,7 @@ target_include_directories(cc_cmd PRIVATE src)
 
 cc_test(cmd
   SOURCES tests/cmd_test.cpp
-  DEPS cc::cmd cc::doc cc::i18n cc::plot)
+  DEPS cc::cmd cc::doc cc::i18n cc::plot cc::engine)
 if(TARGET test_cmd)
   target_include_directories(test_cmd PRIVATE ${PROJECT_SOURCE_DIR}/tests/support)
   set(_golden ${CMAKE_CURRENT_BINARY_DIR}/golden-js-0.5)

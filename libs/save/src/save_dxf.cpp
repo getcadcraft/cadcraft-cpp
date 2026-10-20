@@ -25,6 +25,7 @@
 #include "cc/cad/files.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/save_parts.hpp"
+#include "cc/doc/gcons.hpp"
 #include "cc/m3d/drawing3d.hpp"
 #include "cc/save/dxf.hpp"
 #include "dxf_common.hpp"
@@ -296,6 +297,7 @@ class R12 {
   void viewport(const Value& e, int id, const std::function<void()>& extra);
   void head(std::string_view type, const Value& e, const Opt& o);
   void xd(const Value& e);
+  std::string ref_;  // the CCREF key of the top-level entity being written (o.ref)
   void grow(double x, double y, const Opt& o) {
     if (!o.top) {
       return;
@@ -525,6 +527,9 @@ void R12::head(std::string_view type, const Value& e, const Opt& o) {
 void R12::xd(const Value& e) {
   const Value x = cad::props_xdata(e, true);
   std::vector<std::string> cc;
+  if (!ref_.empty()) {
+    cc.push_back("CCREF:" + ref_);
+  }
   for (const Value& it : arr(x, "CADCRAFT")) {
     const Array& p = arr(it);
     cc.push_back(p.size() > 1 ? str(p[1]) : std::string("undefined"));
@@ -1072,7 +1077,8 @@ void R12::block(const std::string& name, const Value& base_pt, const std::vector
 
 // NOLINTNEXTLINE(readability-function-cognitive-complexity,readability-function-size) — writeDxf's body, in order
 DxfSaveResult R12::run() {
-  // constraints + parameters (gcons.js forFile): null — the fork keeps none yet (docs/gaps.md)
+  // constraints + parameters: CCREF xdata on entities, block CADCRAFT_PARAMETRIC (gcons.js)
+  const auto pf = doc::gcons::for_file(doc_);
   doc_.layers().each([&](const std::string&, const Value& l) { layer_name(l.get("name")); });
 
   // Which blocks to write: every named block; anonymous ones unless only a dimension draws them
@@ -1134,6 +1140,9 @@ DxfSaveResult R12::run() {
   }
   for (const auto& [l, name] : extra_layouts) {
     used_.insert(name);
+  }
+  if (pf) {
+    used_.insert(std::string(doc::gcons::kParamBlock));
   }
   const Value units_v = doc_.meta.get("units");
   // the 3D model (model3d.js): 3DFACEs on layer CC-3D + its exact copy in block CADCRAFT_3D
@@ -1610,6 +1619,19 @@ DxfSaveResult R12::run() {
   for (const DimBlock& d : dim_blocks_) {
     block(d.name, base::pt2(0, 0), ptrs(d.ents()), nullptr);
   }
+  if (pf) {
+    block(std::string(doc::gcons::kParamBlock), base::pt2(0, 0), {}, [&] {
+      for (const std::string& t : pf->points) {
+        w(0, "POINT");
+        w(8, "0");
+        w(10, "0.0");
+        w(20, "0.0");
+        w(30, "0.0");
+        w(1001, "CADCRAFT");
+        w(1000, t);
+      }
+    });
+  }
   if (m3) {
     block(std::string(m3d::kM3dBlock), base::pt2(0, 0), {}, [&] {
       for (const std::string& t : m3->points) {
@@ -1641,7 +1663,18 @@ DxfSaveResult R12::run() {
   // ENTITIES: the model, then the first layout in paper space
   w(0, "SECTION");
   w(2, "ENTITIES");
-  doc_.model()->each([&](const doc::Id&, const Value& e) { entity(e, {.top = true}); });
+  doc_.model()->each([&](const doc::Id& id, const Value& e) {
+    ref_.clear();  // entity(e, { top: true, ref: pf?.refs.get(e.id) })
+    if (pf) {
+      for (const auto& [rid, key] : pf->refs) {
+        if (rid == static_cast<double>(id)) {
+          ref_ = key;
+        }
+      }
+    }
+    entity(e, {.top = true});
+  });
+  ref_.clear();
   if (m3) {
     const std::string m3l = layer_name(m3_layer);
     for (const auto& fc : m3->faces) {

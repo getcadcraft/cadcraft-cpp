@@ -6,7 +6,9 @@
 //
 //   auto r = cc::save::save_dwg(doc, {.version = "2018"}, words);   // r.bytes; r.report: version, notes, counts, top
 //
-// Not ported yet (docs/gaps.md): the constraints payload (CADCRAFT_PARAMETRIC; the fork does not keep constraints),
+// Constraints are written as 0.5 writes them: "CCREF:<key>" on each constrained entity, the payload in the unused
+// block CADCRAFT_PARAMETRIC (gcons.js forFile).
+// Not ported yet (docs/gaps.md):
 // a visibility parameter written again after its states were edited (no block editor yet).
 #pragma once
 

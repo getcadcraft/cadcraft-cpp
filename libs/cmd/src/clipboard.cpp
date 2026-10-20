@@ -13,6 +13,7 @@
 #include "cc/base/js.hpp"
 #include "cc/cad/edit.hpp"
 #include "cc/cad/geom.hpp"
+#include "cc/doc/gcons.hpp"
 
 namespace cc::cmd {
 
@@ -289,6 +290,17 @@ std::optional<Value> make_clip(const doc::Doc& doc, const std::vector<doc::Id>& 
   }
   if (skipped > 0) {
     clip.set("skipped", static_cast<double>(skipped));
+  }
+  // constraints whose objects are all in the copy (gcons.js; refs by index into `entities`)
+  std::vector<std::pair<double, double>> index;
+  for (const doc::Id id : ids) {
+    const Value* e = doc.entities().get(id);
+    if (e != nullptr && !(e->get("type") == Value("viewport"))) {
+      index.emplace_back(static_cast<double>(id), static_cast<double>(index.size()));
+    }
+  }
+  if (base::Array cons = doc::gcons::clip_constraints(doc, index); !cons.empty()) {
+    clip.set("constraints", Value(std::move(cons)));
   }
   return clip;
 }
@@ -591,6 +603,16 @@ PasteResult paste_clip(doc::Doc& doc, const Value& clip, double dx, double dy, c
   const std::string b = doc.meta.get("units").truthy() ? str(doc.meta.get("units")) : std::string();
   if (!a.empty() && !b.empty() && a != b) {
     out.note = words.t("clip.units_differ", {{"from", a}, {"to", b}});
+  }
+  // constraints among the copied objects come along (model space; dimensional ones get new names)
+  if (const Value cons = clip.get("constraints"); cons.is_array() && !cons.as_array().empty()) {
+    std::vector<std::optional<double>> new_ids;
+    new_ids.reserve(out.ids.size());
+    for (const doc::Id id : out.ids) {
+      new_ids.emplace_back(static_cast<double>(id));
+    }
+    out.constraints =
+        doc::gcons::paste_constraints(doc, cons.as_array(), new_ids, moved ? dx : 0, moved ? dy : 0, words);
   }
   return out;
 }

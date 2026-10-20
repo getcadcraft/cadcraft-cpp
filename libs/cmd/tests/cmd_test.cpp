@@ -15,6 +15,7 @@
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
+#include "cc/engine/script_save.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/plot/plot.hpp"
 #include "golden.hpp"
@@ -75,6 +76,9 @@ TEST_CASE("golden: the command scripts give what CadCraft 0.5's command line gav
           scripts.as_array()[i], words(), {}, [](const Value& sc, const cc::doc::Doc& d, Value& result) {
             if (const Value* p = sc.find("plot"); p != nullptr && p->is_object() && !p->is_point()) {
               cc::plot::script_pdf(*p, d, 1792108800000.0, result);  // the harness's clock
+            }
+            if (const Value* s = sc.find("save"); s != nullptr && s->is_array()) {
+              cc::engine::script_save(*s, d, 1792108800000.0, words(), result);
             }
           });
       INFO(entry.path().filename().string() << ": " << cc::base::js_string(scripts.as_array()[i]["name"]));

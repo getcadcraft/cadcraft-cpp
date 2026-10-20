@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8e (constraints and parameters).
+Last updated 2026-10-20 · Change: M5.8f (constraints in saved files, through MIRROR, TRIM and the clipboard).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -399,4 +399,12 @@ Last updated 2026-10-20 · Change: M5.8e (constraints and parameters).
   (tests/commands/constraints.json: 7 scripts — every geometric and dimensional type, a move the rest follows, a
   move refused, AUTOCONSTRAIN with settings, conversions, parameters driven back through a chain, a cycle refused);
   doc parity with constraints compared. Fuzz target parametric; unit tests.
+- M5.8f (2026-10-20): constraints in files and through edits. The DWG and DXF R12 writers put "CCREF:<key>" on each
+  constrained entity and the payload in the block CADCRAFT_PARAMETRIC, as dwg-save.js and dxf.js do (gcons.forFile);
+  ckeep.js (libs/doc ckeep.hpp) keeps them through MIRROR (copied onto the copies, or re-signed when the source is
+  erased) and TRIM (onto the piece that still has what each holds, direction rules on every piece); the clipboard
+  carries the constraints among the copied objects (clipConstraints / pasteConstraints, dimensional ones renamed). A
+  command script may ask for its drawing saved (`{"save": ["dxf", "dwg2018"]}`, libs/engine script_save): the files
+  compare byte for byte and are opened again, their constraints compared too. tests/commands/constraints-save.json and
+  constraints-keep.json (5 scripts); commands 164/164; corpus DXF and DWG saving unchanged.
 

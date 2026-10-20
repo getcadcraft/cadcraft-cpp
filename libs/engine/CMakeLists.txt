@@ -1,6 +1,6 @@
 cc_library(engine LAYER 5
-  SOURCES src/open.cpp
-  DEPS cc::base cc::drawing cc::io-dwg cc::io-dxf)
+  SOURCES src/open.cpp src/script_save.cpp
+  DEPS cc::base cc::drawing cc::io-dwg cc::io-dxf cc::cad cc::doc cc::save cc::i18n)
 
 cc_test(engine
   SOURCES tests/open_test.cpp

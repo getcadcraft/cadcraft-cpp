@@ -8,7 +8,7 @@
 // R2000 goes through the writer model DWG saving builds (save_dwg with model_only and explode_leaders), so it keeps
 // what a DWG keeps. R12 writes the document directly: what R12 lacks becomes what it draws, with a note.
 //
-// Not ported yet (docs/gaps.md): the constraints payload (CADCRAFT_PARAMETRIC; the fork does not keep constraints).
+// Constraints go in as 0.5 writes them (CCREF xdata, block CADCRAFT_PARAMETRIC).
 #pragma once
 
 #include <string>

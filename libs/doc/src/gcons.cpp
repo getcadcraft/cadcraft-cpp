@@ -3,6 +3,7 @@
 #include "cc/doc/gcons.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <limits>
 #include <numbers>
@@ -1458,6 +1459,165 @@ Resolved resolve_parametric(const Value& raw, const std::vector<std::pair<std::s
   out.constraints = Value(std::move(kept));
   out.params = std::move(params);
   return out;
+}
+
+// ---------------------------------------------------------------- clipboard
+
+namespace {
+
+/// literalWord(w): a unit, a function or a constant name (any case)
+bool literal_word(std::string_view w0) {
+  const std::string w = base::js_to_lower(w0);
+  static constexpr std::array<std::string_view, 30> kWords{
+      "mm",  "cm",   "m",    "in",    "ft",    "deg",   "rad", "pi",  "sin", "cos",
+      "tan", "asin", "acos", "atan",  "atan2", "sqrt",  "pow", "exp", "ln",  "log",
+      "abs", "sign", "ceil", "floor", "int",   "round", "min", "max", "if",  "e"};
+  return std::ranges::find(kWords, w) != kWords.end();
+}
+/// /^(<names>|\d+<axis>)$/ for a fixed field of axis 'x' or 'y'
+bool on_axis(const std::string& key, char axis) {
+  const bool named = axis == 'x' ? (key == "x1" || key == "x2" || key == "cx" || key == "x")
+                                 : (key == "y1" || key == "y2" || key == "cy" || key == "y");
+  if (named) {
+    return true;
+  }
+  return key.size() >= 2 && key.back() == axis &&
+         std::ranges::all_of(key.substr(0, key.size() - 1), [](char ch) { return ch >= '0' && ch <= '9'; });
+}
+/// fitsIn(model, c)
+bool fits_in(const Doc& doc, const Value& c) {
+  return fits(doc, c);
+}
+
+}  // namespace
+
+base::Array clip_constraints(const Doc& doc, const std::vector<std::pair<double, double>>& index) {
+  base::Array out;
+  if (!doc.in_model() || !doc.constraints.is_array()) {
+    return out;
+  }
+  const auto at = [&index](double id) -> std::optional<double> {
+    for (const auto& [k, i] : index) {
+      if (k == id) {
+        return i;
+      }
+    }
+    return std::nullopt;
+  };
+  const pr::Params params = pr::from_value(doc.params);
+  for (const Value& c : doc.constraints.as_array()) {
+    const Value refs = c.get("refs");
+    if (!std::ranges::all_of(refs.as_array(), [&at](const Value& r) { return at(gs::ref_id(r)).has_value(); })) {
+      continue;
+    }
+    Value k = c;  // { ...c, refs: [{ i, k }] }
+    base::Array rs;
+    for (const Value& r : refs.as_array()) {
+      rs.push_back(base::make_object({{"i", at(gs::ref_id(r)).value_or(0)}, {"k", r.get("k")}}));
+    }
+    k.set("refs", Value(std::move(rs)));
+    if (is_dim(c)) {
+      const pr::Var* v = pr::var_by_name(params, base::js_string(c.get("name")));
+      k.set("expr", v != nullptr ? v->expr : cad::expr::format_number(num(c.get("value"))));
+    }
+    out.push_back(std::move(k));
+  }
+  return out;
+}
+
+double paste_constraints(Doc& doc, const base::Array& list, const std::vector<std::optional<double>>& ids, double dx,
+                         double dy, const i18n::Catalog& words) {
+  if (list.empty() || !doc.in_model()) {
+    return 0;
+  }
+  base::Array cs = doc.constraints.is_array() ? doc.constraints.as_array() : base::Array{};
+  pr::Params params = pr::from_value(doc.params);
+  double n = 0;
+  const auto id_at = [&ids](const Value& r) -> std::optional<double> {
+    const double i = num(r.get("i"));
+    if (!(i >= 0) || i != std::floor(i) || i >= static_cast<double>(ids.size())) {
+      return std::nullopt;
+    }
+    return ids[static_cast<std::size_t>(i)];
+  };
+  for (const Value& c : list) {
+    const Value refs = c.get("refs");
+    if (!std::ranges::all_of(refs.as_array(), [&](const Value& r) {
+          const auto id = id_at(r);
+          return id && entity(doc, *id) != nullptr;
+        })) {
+      continue;
+    }
+    Value k = c;
+    k.set("id", next_id(Value(cs)));
+    base::Array rs;
+    for (const Value& r : refs.as_array()) {
+      rs.push_back(base::make_object({{"e", id_at(r).value_or(0)}, {"k", r.get("k")}}));
+    }
+    k.set("refs", Value(std::move(rs)));
+    k.erase("expr");
+    if (base::js_string(k.get("type")) == "fix") {
+      const Value v = k.get("value");
+      if (v.truthy()) {
+        k.set("value", base::Array{num(at(v, 0)) + dx, num(at(v, 1)) + dy});
+      }
+      const Value fixed = k.get("fixed");
+      if (fixed.truthy()) {
+        Value f = fixed;
+        for (const base::Member* m : base::js_members(fixed.as_object())) {
+          const std::string& key = m->key;
+          if (on_axis(key, 'x')) {
+            f.set(key, num(m->value) + dx);
+          } else if (on_axis(key, 'y')) {
+            f.set(key, num(m->value) + dy);
+          }
+        }
+        k.set("fixed", f);
+      }
+    }
+    if (!fits_in(doc, k)) {
+      continue;
+    }
+    if (is_dim(k)) {
+      const TypeInfo* T = type_info(base::js_string(k.get("type")));
+      const std::string name = next_name(params, T->prefix);
+      k.set("name", name);
+      const std::string expr = base::js_string(c.get("expr"));
+      // the names it uses: /[A-Za-z_][A-Za-z0-9_]*/g, units and functions left out
+      std::vector<std::string> uses;
+      for (std::size_t i = 0; i < expr.size();) {
+        const char ch = expr[i];
+        if ((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_') {
+          std::size_t j = i + 1;
+          while (j < expr.size() && ((expr[j] >= 'A' && expr[j] <= 'Z') || (expr[j] >= 'a' && expr[j] <= 'z') ||
+                                     (expr[j] >= '0' && expr[j] <= '9') || expr[j] == '_')) {
+            ++j;
+          }
+          const std::string w = expr.substr(i, j - i);
+          if (!literal_word(w)) {
+            uses.push_back(w);
+          }
+          i = j;
+        } else {
+          ++i;
+        }
+      }
+      const bool keep_expr =
+          std::ranges::all_of(uses,
+                              [&params](const std::string& w) { return pr::var_by_name(params, w) != nullptr; }) &&
+          !cad::expr::literal(expr, words);
+      params.vars.push_back({.name = name,
+                             .expr = keep_expr ? expr : cad::expr::format_number(round6(num(k.get("value")))),
+                             .note = std::nullopt});
+      params.links.push_back({.target = target_key(k), .expr = name});
+    }
+    cs.push_back(std::move(k));
+    ++n;
+  }
+  if (n > 0) {
+    doc.set_parametric(Value(cs), pr::to_value(params));
+  }
+  return n;
 }
 
 }  // namespace cc::doc::gcons

@@ -112,6 +112,14 @@ struct Status {
 /// afterEdit(doc, ops): nothing, or the reason the change is refused (Doc::change rolls it back)
 [[nodiscard]] std::optional<std::string> after_edit(Doc& doc, const std::vector<Op>& ops, const i18n::Catalog& words);
 
+// ---- the clipboard (clipboard.js) and ckeep.js
+/// clipConstraints(doc, index): the constraints among copied objects, refs as indexes into the copy (index: id → i)
+[[nodiscard]] base::Array clip_constraints(const Doc& doc, const std::vector<std::pair<double, double>>& index);
+/// pasteConstraints(doc, list, ids, dx, dy): constraints for the new entities (ids[i] = clip entity i's new id), moved;
+/// dimensional ones get fresh names. Inside the paste's change. → how many were added
+double paste_constraints(Doc& doc, const base::Array& list, const std::vector<std::optional<double>>& ids, double dx,
+                         double dy, const i18n::Catalog& words);
+
 // ---- files
 struct ForFile {
   std::vector<std::pair<double, std::string>> refs;  // entity id → key ("1", "2" …)

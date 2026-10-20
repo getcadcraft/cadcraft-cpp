@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 // commands.js's OFFSET, TRIM and EXTEND (CadCraft 0.5, 0.4 part 2 T.1–T.3) in C++: Quick mode (every object round it
 // is a cutting edge or boundary) or Standard (the edges chosen), a pick, a fence (F, or two clicks on nothing), a
-// crossing window (C), EDGEMODE (E), erase (R), undo (U). Constraints kept through a trim (ckeep.js) are not ported:
+// crossing window (C), EDGEMODE (E), erase (R), undo (U). Constraints come through a trim (ckeep.js).
 // the fork keeps none yet (docs/gaps.md).
 #include <algorithm>
 #include <cmath>
@@ -15,6 +15,7 @@
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
 #include "cc/cad/edit.hpp"
+#include "cc/doc/ckeep.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -244,7 +245,23 @@ TrimPlan trim_plan(Ctx& c, const TrimState& s, const std::optional<IdSet>& edges
 
 struct TrimDone {
   int n = 0, erased = 0;
+  double kept = 0;  // constraints kept (ckeep.js)
 };
+/// pieceRange(orig, piece): where a piece lies along the original (line / arc 0 … 1)
+std::pair<double, double> piece_range(const Value& orig, const Value* piece) {
+  const std::string t = base::js_string(orig.get("type"));
+  if (piece == nullptr || t == "circle" || t == "poly") {
+    return {0, 1};
+  }
+  const auto n = [piece](const char* k) { return base::js_to_number(piece->get(k)); };
+  Pt a{n("x1"), n("y1")};
+  Pt b{n("x2"), n("y2")};
+  if (t != "line") {
+    a = polar({n("cx"), n("cy")}, n("a0"), n("r"));
+    b = polar({n("cx"), n("cy")}, n("a1"), n("r"));
+  }
+  return {cad::param_on(orig, {a.x, a.y}), cad::param_on(orig, {b.x, b.y})};
+}
 /// commands.js applyTrim(c, list): one undo step
 TrimDone apply_trim(Ctx& c, const std::vector<TrimItem>& list) {
   TrimDone r;
@@ -261,21 +278,27 @@ TrimDone apply_trim(Ctx& c, const std::vector<TrimItem>& list) {
         continue;
       }
       ++r.n;
-      // the first piece keeps the object's id (so its constraints could stay with it)
+      const Value was = *c.doc.entities().get(it.id);
+      // the first piece keeps the object's id, so its constraints can stay with it (ckeep.js)
+      std::vector<doc::ckeep::Piece> pieces;
       for (std::size_t i = 0; i < out->size(); ++i) {
         Value p = (*out)[i];
         p.erase("id");
+        Id pid = it.id;
         if (i == 0) {
           p.set("id", static_cast<double>(it.id));
           (void)c.doc.update(it.id, p);
         } else {
-          (void)c.doc.add(p);
+          pid = static_cast<Id>(base::js_to_number(c.doc.add(p).get("id")));
         }
+        const auto [t0, t1] = piece_range(was, c.doc.entities().get(pid));
+        pieces.push_back({.id = static_cast<double>(pid), .t0 = t0, .t1 = t1});
       }
       if (out->empty()) {
         c.doc.remove(it.id);
         ++r.erased;
       }
+      r.kept += doc::ckeep::trim_constraints(c.doc, was, pieces, c.words).kept;
     }
   });
   return r;
@@ -422,6 +445,9 @@ Task<void> trim_or_extend(Ctx& c, bool is_trim) {
           std::ranges::any_of(plan.list, [](const TrimItem& it) { return it.split.pieces.size() == 1; });
       if (r.erased != 0 && !s.standard && one_piece) {
         c.print(c.words.tn("cmd.trim.erased", static_cast<double>(r.erased)));
+      }
+      if (r.kept > 0) {
+        c.print(c.words.tn("cmd.trim.constraints", r.kept));
       }
     } else {
       const std::vector<ExtendItem> list = extend_plan(c, s, edges, how);

@@ -9,7 +9,7 @@
 //   doc.change("PASTECLIP", [&] { r = paste_clip(doc, *clip, dx, dy, words); });
 //
 // Not ported yet (docs/gaps.md): sharing between app windows (0.5 keeps a copy in the browser's storage and reads it
-// back through readClip), constraints among the copied objects (the document keeps none yet, #13).
+// back through readClip).
 #pragma once
 
 #include <map>
@@ -49,6 +49,7 @@ struct PasteResult {
   std::vector<std::pair<std::string, std::string>> renamed;  // block old → new, in the order they were renamed
   std::vector<std::string> layers;                           // layers added
   std::string note;                                          // the units differ
+  double constraints = 0;                                    // constraints added among the pasted objects
 };
 /// pasteClip(doc, clip, dx, dy): the copy added to the open space, moved by (dx, dy) — inside doc.change.
 PasteResult paste_clip(doc::Doc& doc, const base::Value& clip, double dx, double dy, const i18n::Catalog& words);

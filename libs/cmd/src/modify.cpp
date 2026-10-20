@@ -6,6 +6,7 @@
 
 #include "cc/base/js.hpp"
 #include "cc/cad/geom.hpp"
+#include "cc/doc/ckeep.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -53,18 +54,24 @@ std::vector<Value> sources(const Ctx& c, const IdSet& ids) {
 }
 
 /// commands.js apply(c, src, m, copy): one undo step that moves (or copies) every object through m.
-void apply(Ctx& c, const std::vector<Value>& src, const Mat& m, bool copy) {
+void apply(Ctx& c, const std::vector<Value>& src, const Mat& m, bool copy,
+           const std::function<void(const std::vector<std::pair<double, double>>&)>& after = {}) {
   c.doc.change(copy ? "COPY" : "MOVE", [&] {
+    std::vector<std::pair<double, double>> pairs;  // source → copy (or itself)
     for (const Value& e : src) {
       const Id id = id_of(e);
       const Value* now = c.doc.entities().get(id);
       Value t = cad::tx_entity(now != nullptr ? *now : e, m);
       if (copy) {
         t.erase("id");
-        (void)c.doc.add(t);
+        pairs.emplace_back(static_cast<double>(id), base::js_to_number(c.doc.add(t).get("id")));
       } else {
         (void)c.doc.update(id, t);
+        pairs.emplace_back(static_cast<double>(id), static_cast<double>(id));
       }
+    }
+    if (after) {
+      after(pairs);
     }
   });
 }
@@ -212,8 +219,22 @@ Task<void> mirror_cmd(Ctx& c) {
   ak.def = "N";
   const Answer k = co_await c.keyword(c.t("cmd.mirror.erase_source_objects"), std::move(ak));
   const bool erase = k.key() == "Y";
-  // constraints come along in the JS (ckeep.js); the fork keeps none yet (docs/gaps.md)
-  apply(c, src, m_mirror(a, b), !erase);
+  // constraints come along: onto the copies (signs and sides worked out again), or kept on the mirrored objects
+  double n = 0;
+  apply(c, src, m_mirror(a, b), !erase, [&](const std::vector<std::pair<double, double>>& pairs) {
+    if (erase) {
+      std::set<double> mirrored;
+      for (const auto& [from, to] : pairs) {
+        mirrored.insert(from);
+      }
+      n = doc::ckeep::resign_among(c.doc, mirrored, c.words);
+    } else {
+      n = doc::ckeep::mirror_constraints(c.doc, pairs, c.words);
+    }
+  });
+  if (n > 0) {
+    c.print(c.words.tn("cmd.mirror.constraints", n));
+  }
 }
 
 Task<void> undo_cmd(Ctx& c) {

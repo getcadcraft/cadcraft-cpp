@@ -66,6 +66,7 @@
 #include "cc/dwg/read.hpp"
 #include "cc/dwg/write.hpp"
 #include "cc/dxf/read.hpp"
+#include "cc/engine/script_save.hpp"
 #if defined(CC_HAVE_IMAGE)
 #include "cc/image/png.hpp"
 #endif
@@ -411,6 +412,10 @@ int cmd_dxf_save(const std::filesystem::path& in, const std::string& format, con
 void script_pdf(const cc::base::Value& script, const cc::doc::Doc& doc, cc::base::Value& result) {
   if (const cc::base::Value* p = script.find("plot"); p != nullptr && p->is_object() && !p->is_point()) {
     cc::plot::script_pdf(*p, doc, 1792108800000.0, result);
+  }
+  if (const cc::base::Value* s = script.find("save"); s != nullptr && s->is_array()) {
+    static const cc::i18n::Catalog kKeys;
+    cc::engine::script_save(*s, doc, 1792108800000.0, doc.catalog != nullptr ? *doc.catalog : kKeys, result);
   }
 }
 
