@@ -226,22 +226,38 @@ std::string_view invalid_key(std::string_view kind) {
 // ---------------------------------------------------------------- IdSet, Answer
 
 bool IdSet::has(Id id) const {
-  return std::ranges::find(ids_, id) != ids_.end();
+  return index_.contains(id);
 }
 bool IdSet::add(Id id) {
-  if (has(id)) {
+  if (!index_.insert(id).second) {
     return false;
   }
-  ids_.push_back(id);
+  ids_.push_back(id);  // an id erased and added again goes to the end, as in a Set (compact keeps the last)
   return true;
 }
 bool IdSet::erase(Id id) {
-  const auto it = std::ranges::find(ids_, id);
-  if (it == ids_.end()) {
+  if (index_.erase(id) == 0) {
     return false;
   }
-  ids_.erase(it);
+  stale_ = true;
   return true;
+}
+void IdSet::compact() const {
+  if (!stale_) {
+    return;
+  }
+  // keep each id still in the set at its last place in the list
+  std::unordered_set<Id> seen;
+  std::vector<Id> kept;
+  kept.reserve(index_.size());
+  for (const Id id : std::views::reverse(ids_)) {
+    if (index_.contains(id) && seen.insert(id).second) {
+      kept.push_back(id);
+    }
+  }
+  std::ranges::reverse(kept);
+  ids_ = std::move(kept);
+  stale_ = false;
 }
 
 bool Answer::truthy() const noexcept {

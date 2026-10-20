@@ -20,6 +20,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 
 #include "cc/base/value.hpp"
@@ -47,16 +48,27 @@ class IdSet {
   bool add(Id id);
   /// Removes; false when it was not there.
   bool erase(Id id);
-  void clear() noexcept { ids_.clear(); }
-  [[nodiscard]] std::size_t size() const noexcept { return ids_.size(); }
-  [[nodiscard]] bool empty() const noexcept { return ids_.empty(); }
-  [[nodiscard]] const std::vector<Id>& ids() const noexcept { return ids_; }
-  [[nodiscard]] auto begin() const noexcept { return ids_.begin(); }
-  [[nodiscard]] auto end() const noexcept { return ids_.end(); }
+  void clear() noexcept {
+    ids_.clear();
+    index_.clear();
+    stale_ = false;
+  }
+  [[nodiscard]] std::size_t size() const noexcept { return index_.size(); }
+  [[nodiscard]] bool empty() const noexcept { return index_.empty(); }
+  [[nodiscard]] const std::vector<Id>& ids() const {
+    compact();
+    return ids_;
+  }
+  [[nodiscard]] auto begin() const { return ids().begin(); }
+  [[nodiscard]] auto end() const { return ids().end(); }
   std::vector<Rect> windows;  // the selection windows that made it (STRETCH)
 
  private:
-  std::vector<Id> ids_;
+  // in the order picked (the JS's Set); erase leaves the id behind until the next read, so removing many stays linear
+  mutable std::vector<Id> ids_;
+  std::unordered_set<Id> index_;  // membership: a selection of every object stays linear (fuzz: SELECT ALL)
+  mutable bool stale_ = false;
+  void compact() const;
 };
 
 /// The view's middle and size in drawing units (ZOOM C, NAMEDVIEW S).

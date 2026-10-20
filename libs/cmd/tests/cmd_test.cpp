@@ -154,3 +154,27 @@ TEST_CASE("a script's pick that no id can be is no pick (fuzz_cmd_script: 1.44e2
   const Value r = cc::cmd::run_script(*parsed, words());
   CHECK(r["model"].as_array().size() == 2);  // the two clicks draw two segments; the picks are ignored
 }
+
+TEST_CASE("a selection of a great many objects stays fast; it keeps the order picked, as the JS's Set") {
+  // fuzz (cmd_script, nightly 2026-10-20): SELECT ALL over a large ARRAY timed out — membership was a linear search
+  cc::cmd::IdSet set;
+  constexpr cc::doc::Id kN = 200000;
+  std::size_t added = 0;
+  for (cc::doc::Id i = 1; i <= kN; ++i) {
+    added += set.add(i) ? 1 : 0;
+  }
+  CHECK(added == kN);
+  CHECK(set.size() == kN);
+  CHECK_FALSE(set.add(5));
+  for (cc::doc::Id i = 1; i <= kN; i += 2) {
+    (void)set.erase(i);
+  }
+  CHECK(set.size() == kN / 2);
+  CHECK(set.ids().front() == 2);
+  (void)set.erase(4);
+  CHECK(set.add(4));  // added again: now last
+  CHECK(set.ids().back() == 4);
+  CHECK(set.ids()[1] == 6);
+  CHECK(set.has(6));
+  CHECK_FALSE(set.has(4 + 1));
+}
