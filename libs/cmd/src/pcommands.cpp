@@ -270,8 +270,8 @@ Task<void> gc_run(Ctx& c, const std::string& name) {
     o.pin_entity = gs::ref_id(p->first.ref);
     add(c, "tangent", refs, o);
   } else if (name == "GCCOINCIDENT") {
-    const auto a = co_await first_point(c, c.t("cmd.select_first_point"),
-                                        {opt("O", "Object"), opt("A", "Autoconstrain")}, Value("Object"));
+    std::vector<Option> options1{opt("O", "Object"), opt("A", "Autoconstrain")};
+    const auto a = co_await first_point(c, c.t("cmd.select_first_point"), std::move(options1), Value("Object"));
     if (!a) {
       co_return;
     }
@@ -299,7 +299,8 @@ Task<void> gc_run(Ctx& c, const std::string& name) {
       co_return;
     }
     set_selection(c, a->id);
-    const auto b = co_await first_point(c, c.t("cmd.select_second_point"), {opt("O", "Object")}, Value("Object"));
+    std::vector<Option> options2{opt("O", "Object")};
+    const auto b = co_await first_point(c, c.t("cmd.select_second_point"), std::move(options2), Value("Object"));
     set_selection(c, std::nullopt);
     if (!b) {
       co_return;
@@ -319,7 +320,8 @@ Task<void> gc_run(Ctx& c, const std::string& name) {
     }
     add(c, "coincident", {b->ref, a->ref}, ao);
   } else if (name == "GCFIX") {
-    const auto a = co_await first_point(c, c.t("cmd.select_point"), {opt("O", "Object")}, Value("Object"));
+    std::vector<Option> options3{opt("O", "Object")};
+    const auto a = co_await first_point(c, c.t("cmd.select_point"), std::move(options3), Value("Object"));
     if (!a) {
       co_return;
     }
@@ -470,7 +472,8 @@ gs::RefPoint rp(Ctx& c, const Value& r) {
 
 /// two point references: picked points, or a line's (segment's) two ends
 Task<std::optional<base::Array>> two_points(Ctx& c) {
-  const auto a = co_await first_point(c, c.t("cmd.geomconstraint.specify_first_constraint_point"), {opt("O", "Object")},
+  std::vector<Option> options4{opt("O", "Object")};
+  const auto a = co_await first_point(c, c.t("cmd.geomconstraint.specify_first_constraint_point"), std::move(options4),
                                       Value("Object"));
   if (!a) {
     co_return std::nullopt;
@@ -691,17 +694,20 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
     if (r) {
       const gs::RefPoint a = rp(c, (*r)[0]);
       const gs::RefPoint b = rp(c, (*r)[1]);
-      co_await place_and_add(c, Placing{.type = {}, .linear = std::pair{a, b}, .refs = *r});
+      Placing placing = Placing{.type = {}, .linear = std::pair{a, b}, .refs = *r};
+      co_await place_and_add(c, std::move(placing));
     }
   } else if (name == "DCHORIZONTAL" || name == "DCVERTICAL") {
     const auto r = co_await two_points(c);
     if (r) {
-      co_await place_and_add(c, fixed(name == "DCHORIZONTAL" ? "hdist" : "vdist", *r));
+      Placing placing = fixed(name == "DCHORIZONTAL" ? "hdist" : "vdist", *r);
+      co_await place_and_add(c, std::move(placing));
     }
   } else if (name == "DCALIGNED") {
-    const auto a = co_await first_point(
-        c, c.t("cmd.geomconstraint.specify_first_constraint_point"),
-        {opt("O", "Object"), opt("P", c.t("cmd.geomconstraint.point_line")), opt("2L", "2Lines")}, Value("Object"));
+    std::vector<Option> aligned{opt("O", "Object"), opt("P", c.t("cmd.geomconstraint.point_line")),
+                                opt("2L", "2Lines")};
+    const auto a = co_await first_point(c, c.t("cmd.geomconstraint.specify_first_constraint_point"), std::move(aligned),
+                                        Value("Object"));
     if (!a) {
       co_return;
     }
@@ -715,7 +721,8 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
       if (!l || l->option) {
         co_return;
       }
-      co_await place_and_add(c, fixed("dist", {p->ref, l->ref}));
+      Placing placing = fixed("dist", {p->ref, l->ref});
+      co_await place_and_add(c, std::move(placing));
       co_return;
     }
     if (a->option == "2L") {
@@ -730,7 +737,8 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
       if (!say(c, pd::add_constraint(c.doc, "parallel", Value(base::Array{l1->ref, l2->ref}), {}, c.words))) {
         co_return;
       }
-      co_await place_and_add(c, fixed("dist", {l1->ref, l2->ref}));
+      Placing placing = fixed("dist", {l1->ref, l2->ref});
+      co_await place_and_add(c, std::move(placing));
       co_return;
     }
     base::Array refs;
@@ -758,11 +766,13 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
       }
       refs = {a->ref, b->ref};
     }
-    co_await place_and_add(c, fixed("dist", refs));
+    Placing placing = fixed("dist", refs);
+    co_await place_and_add(c, std::move(placing));
   } else if (name == "DCRADIUS" || name == "DCDIAMETER") {
     const auto o = co_await pick(c, c.t("cmd.mea.arc"), as_round, c.t("cmd.select_circle_arc_polyline"));
     if (o && !o->option) {
-      co_await place_and_add(c, fixed(name == "DCRADIUS" ? "radius" : "diameter", {o->ref}));
+      Placing placing = fixed(name == "DCRADIUS" ? "radius" : "diameter", {o->ref});
+      co_await place_and_add(c, std::move(placing));
     }
   } else if (name == "DCANGULAR") {
     const auto a = co_await pick(c, c.t("cmd.geomconstraint.select_first_line_arc"), as_line_or_arc,
@@ -771,7 +781,8 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
       co_return;
     }
     if (type_of(*c.doc.entities().get(a->id)) == "arc") {
-      co_await place_and_add(c, fixed("angle", {a->ref}));
+      Placing placing = fixed("angle", {a->ref});
+      co_await place_and_add(c, std::move(placing));
       co_return;
     }
     set_selection(c, a->id);
@@ -780,7 +791,8 @@ Task<void> dc_run(Ctx& c, const std::string& name) {
     if (!b || b->option) {
       co_return;
     }
-    co_await place_and_add(c, fixed("angle", {a->ref, b->ref}));
+    Placing placing = fixed("angle", {a->ref, b->ref});
+    co_await place_and_add(c, std::move(placing));
   } else if (name == "DCCONVERT") {
     const Answer sel = co_await c.select(c.t("cmd.geomconstraint.select_dimensions_convert"));
     double n = 0;

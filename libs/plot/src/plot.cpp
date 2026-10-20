@@ -439,8 +439,8 @@ Page page_of(const DisplayList& list, double pen, const PdfOptions& o, std::vect
         if (!img) {
           continue;
         }
-        shrunk += img->shrunk ? 1 : 0;
-        kept += img->kept ? 1 : 0;
+        shrunk += img->shrunk ? 1U : 0U;
+        kept += img->kept ? 1U : 0U;
         im = images.size();
         images.push_back({.img = std::move(*img), .rec = rec, .max_dpi = o.max_dpi});
       }
@@ -605,7 +605,7 @@ std::vector<std::uint8_t> assemble(const std::vector<Page>& pages, const std::st
     std::size_t k = img_base;
     for (const FileImage& im : images) {
       img_no.push_back(k);
-      k += im.img.smask ? 2 : 1;
+      k += im.img.smask ? 2U : 1U;
     }
   }
   std::size_t total = img_base;
