@@ -1,0 +1,176 @@
+[
+ {
+  "name": "copyclip and pasteclip: objects, a block with a nested block, layers; pasteorig",
+  "steps": [
+   "PASTECLIP",
+   {
+    "layer": "Walls",
+    "patch": {
+     "color": 1
+    }
+   },
+   {
+    "layer": "Walls",
+    "current": true
+   },
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   {
+    "layer": "0",
+    "current": true
+   },
+   "CIRCLE",
+   "5,5",
+   "2",
+   "BLOCK",
+   "Inner",
+   "0,0",
+   {
+    "click": [
+     5,
+     7
+    ],
+    "pick": 2
+   },
+   "",
+   "INSERT",
+   "Inner",
+   "20,0",
+   "LINE",
+   "30,0",
+   "40,0",
+   "",
+   "BLOCK",
+   "Outer",
+   "20,0",
+   {
+    "window": [
+     19,
+     -3,
+     41,
+     3
+    ],
+    "ids": [
+     3,
+     4
+    ]
+   },
+   "",
+   "INSERT",
+   "Outer",
+   "50,0",
+   "COPYCLIP",
+   {
+    "window": [
+     -1,
+     -1,
+     61,
+     8
+    ],
+    "ids": [
+     1,
+     6
+    ]
+   },
+   "",
+   "PASTECLIP",
+   "100,100",
+   "PASTEORIG",
+   "U",
+   "PASTECLIP",
+   "U"
+  ]
+ },
+ {
+  "name": "copybase, cutclip with undo, the selection kept, nothing to copy",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "10,10",
+   "",
+   {
+    "select": [
+     1,
+     2
+    ]
+   },
+   "COPYBASE",
+   "0,0",
+   "",
+   "PASTECLIP",
+   "5,5",
+   "CUTCLIP",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   "",
+   "U",
+   "COPYCLIP",
+   "",
+   {
+    "select": []
+   },
+   "CUTCLIP",
+   "",
+   "PASTEORIG"
+  ]
+ },
+ {
+  "name": "paste where a block of the same name exists keeps this drawing's; a viewport stays on its sheet",
+  "steps": [
+   "LINE",
+   "0,0",
+   "10,0",
+   "",
+   "BLOCK",
+   "B",
+   "0,0",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 1
+   },
+   "",
+   "INSERT",
+   "B",
+   "0,0",
+   "COPYCLIP",
+   {
+    "click": [
+     5,
+     0
+    ],
+    "pick": 2
+   },
+   "",
+   "PASTECLIP",
+   "20,0",
+   "LAYOUT",
+   "COPYCLIP",
+   {
+    "window": [
+     0,
+     0,
+     500,
+     400
+    ],
+    "ids": [
+     6,
+     7,
+     8
+    ]
+   },
+   "",
+   "PASTEORIG"
+  ]
+ }
+]

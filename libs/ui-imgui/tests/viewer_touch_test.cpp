@@ -257,3 +257,39 @@ TEST_CASE("sheets: LAYOUT opens its sheet in the tabs, a tab opens its space, PL
   CHECK(viewer.prompt().empty());
   frame(viewer);
 }
+
+TEST_CASE("files: the clipboard survives another drawing; NEW asks before it replaces changes") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  const std::string_view one =
+      "0\nSECTION\n2\nENTITIES\n0\nLINE\n8\n0\n10\n0\n20\n0\n11\n10\n21\n0\n0\nENDSEC\n0\nEOF\n";
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, {}, CC_ASSETS_DIR, "en");
+  auto a = cc::engine::open_bytes("a.dxf", bytes_of(one));
+  REQUIRE(a);
+  viewer.show(std::move(*a));
+  frame(viewer);
+  REQUIRE(viewer.document() != nullptr);
+  viewer.command("SELECTALL");
+  viewer.command("COPYCLIP");
+  frame(viewer);
+
+  // another drawing: the copy is still there to paste
+  auto b = cc::engine::open_bytes("b.dxf", bytes_of(one));
+  REQUIRE(b);
+  viewer.show(std::move(*b));
+  frame(viewer);
+  REQUIRE(viewer.document()->model()->size() == 1);
+  viewer.command("PASTEORIG");
+  frame(viewer);
+  CHECK(viewer.document()->model()->size() == 2);
+
+  // NEW with unsaved changes asks first: the drawing stays until the person says so
+  REQUIRE(viewer.document()->dirty());
+  viewer.command("NEW");
+  frame(viewer);
+  frame(viewer);
+  CHECK(viewer.document()->model()->size() == 2);  // the dialog is up; nothing was replaced
+}

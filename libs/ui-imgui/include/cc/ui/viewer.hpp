@@ -135,6 +135,13 @@ class Viewer {
   void save_as_dialog();
   /// PLOT (plot.js): the open sheet at 1:1, or the model at its extents on the default paper, as a PDF
   void plot_now();
+  /// NEW (cadcraft.js newDrawing): a blank drawing named Drawing1 in place of this one.
+  void new_drawing();
+  void new_dialog();
+  /// The command line on the document (show() and NEW), and what is drawn from it.
+  void adopt_engine();
+  /// The drawing on screen: its scene, layers, fitted views (show() and NEW).
+  void present();
   [[nodiscard]] std::size_t doc_space_index() const;
   void canvas_window(double x0, double y0, double x1, double y1);
   [[nodiscard]] bool wants_point() const;
@@ -217,9 +224,12 @@ class Viewer {
   bool save_as_open_ = false;
   std::optional<std::pair<std::string, bool>> save_request_;  // SAVE / DXFOUT (format, false) or SAVEAS (…, true)
   std::optional<render::View> prev_view_;                     // ZOOM P
-  bool plot_request_ = false;                                 // PLOT asked: the PDF is made once the command ends
-  std::optional<std::size_t> tab_select_;  // a tab the document opened (LAYOUT, VPVIEW): selected next frame
-  std::vector<bool> need_fit_;             // spaces whose view is fitted on the next frame (new sheets)
+  bool plot_request_ = false;
+  cmd::Clipboard clipboard_;                        // COPYCLIP / PASTECLIP: kept when another drawing opens
+  bool new_request_ = false, new_confirm_ = false;  // NEW: a blank drawing (asked first when this one has changes) //
+                                                    // PLOT asked: the PDF is made once the command ends
+  std::optional<std::size_t> tab_select_;           // a tab the document opened (LAYOUT, VPVIEW): selected next frame
+  std::vector<bool> need_fit_;                      // spaces whose view is fitted on the next frame (new sheets)
   int save_as_format_ = 0, save_as_version_ = 5;
   bool press_ = false;  // a button down on the canvas; `moved_` once it went beyond a click
   bool moved_ = false;

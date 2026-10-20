@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.7a (CadCraft's DXF reader).
+Last updated 2026-10-20 · Change: M5.7b (the clipboard, NEW / OPEN).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -348,4 +348,13 @@ Last updated 2026-10-20 · Change: M5.7a (CadCraft's DXF reader).
   files (decoded UTF-8, else Windows-1252, as the app): 214/214 corpus files (110 DWG, 104 DXF) load the same; the
   doc golden test covers the three public DXF fixtures. A count in a file (vertices, hatch edges, MINSERT copies) is
   capped where the JS would loop on.
+- M5.7b (2026-10-20): the clipboard. clipboard.js and blockcopy.js (libs/cmd clipboard.hpp / .cpp): makeClip (the
+  objects without ids, the blocks they need nested first, their layers' settings; viewports stay on their sheet),
+  basePoint, pastePreview, pasteClip, planCopy / applyCopy (a block of the same name keeps this drawing's definition,
+  anonymous ones get a free name, layers come with their settings); COPYCLIP, CUTCLIP, COPYBASE, PASTECLIP, PASTEORIG
+  (libs/cmd/src/clipcmds.cpp). The clipboard is the host's: the viewer keeps one for every drawing it opens, a script
+  keeps its own (and, like 0.5 without a browser, says only this window can paste). The viewer: NEW (a blank drawing;
+  with unsaved changes 0.5's "Unsaved changes" dialog asks first), OPEN (the file picker), Ctrl+C / Ctrl+X / Ctrl+V.
+  Command parity 141/141 (3 new scripts in tests/commands/clipboard.json). Parity found a dangling pointer of my own
+  (a map of blocks pointing into a `get()` copy) before any test ran it under ASan.
 

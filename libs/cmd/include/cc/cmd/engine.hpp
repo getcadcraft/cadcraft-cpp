@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "cc/base/value.hpp"
+#include "cc/cmd/clipboard.hpp"
 #include "cc/cmd/task.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/i18n/i18n.hpp"
@@ -128,6 +129,15 @@ class Host {
     (void)p;
     return std::nullopt;
   }
+  // the clipboard (clipboard.js): the host's, so a copy survives opening another drawing; `shared` false = only this
+  // window can paste it (0.5 says so when the browser will not keep a copy); PASTECLIP hangs the copy from its
+  // 'lower-left' corner or its 'center'
+  virtual Clipboard& clipboard() { return own_clipboard_; }
+  [[nodiscard]] virtual bool clipboard_shared() const { return false; }
+  [[nodiscard]] virtual std::string paste_base() const { return "lower-left"; }
+
+ private:
+  Clipboard own_clipboard_;
 };
 
 /// A prompt option: `key` to type, `label` shown (translated), `en` the English label (scripts type English words).

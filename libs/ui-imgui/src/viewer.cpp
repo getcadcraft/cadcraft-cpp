@@ -248,6 +248,14 @@ class Viewer::CmdHost final : public cmd::Host {
     v_.plot_request_ = true;
     return true;
   }
+  cmd::Clipboard& clipboard() override { return v_.clipboard_; }
+  [[nodiscard]] bool clipboard_shared() const override { return true; }  // every drawing this window opens
+  void new_drawing() override { v_.new_request_ = true; }
+  void open_file() override {
+    if (v_.services_.pick_open) {
+      v_.services_.pick_open();
+    }
+  }
   std::vector<doc::Id> pick_window(const cmd::Rect& r, bool crossing) override {
     std::vector<doc::Id> out;
     if (!v_.cad_) {
@@ -405,7 +413,6 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
   printed_.clear();
   prompt_.clear();
   preview_.clear();
-  const std::uint64_t t0 = SDL_GetTicksNS();
   // CadCraft opens a DWG as its document (readDwg → importDwg → Doc.load), a DXF through its own reader (readDxf →
   // Doc.load), and draws that; a DXF its reader refuses is shown as the file draws, not edited
   std::optional<base::Value> read;
@@ -420,7 +427,6 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
     }
   }
   if (read) {
-    cad_ = std::make_unique<doc::Doc>();
     // as cadcraft.js opens a file: meta.name = the file's name without its extension, meta.source = the file's name
     base::Value drawing = std::move(*read);
     base::Value meta = drawing.get("meta").is_object() ? drawing.get("meta") : base::Value::object();
@@ -452,14 +458,20 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
     }
     meta.set("format", format);
     drawing.set("meta", std::move(meta));
-    cad_->load(std::move(drawing), *words_);
-    cmd_host_ = std::make_unique<CmdHost>(*this);
-    engine_ = std::make_unique<cmd::Engine>(*cad_, *cmd_host_, *words_);
-    drawing_ = docview::to_drawing(*cad_);
-    drawn_version_ = cad_->version();
+    auto doc = std::make_unique<doc::Doc>();
+    doc->load(std::move(drawing), *words_);
+    cad_ = std::move(doc);
+    adopt_engine();
   } else {
     drawing_ = doc_->drawing;
   }
+  const std::string why = message_;
+  present();
+  message_ = why;
+}
+
+void Viewer::present() {
+  const std::uint64_t t0 = SDL_GetTicksNS();
   scene_ = font_ ? render::build_scene(drawing_, *font_) : render::Scene{};
   const std::uint64_t t1 = SDL_GetTicksNS();
   renderer_.upload(scene_);
@@ -477,6 +489,64 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
   space_ = 0;
   message_.clear();
   redraw_ = 2;
+}
+
+void Viewer::adopt_engine() {
+  cmd_host_ = std::make_unique<CmdHost>(*this);
+  engine_ = std::make_unique<cmd::Engine>(*cad_, *cmd_host_, *words_);
+  drawing_ = docview::to_drawing(*cad_);
+  drawn_version_ = cad_->version();
+}
+
+void Viewer::new_drawing() {
+  // cadcraft.js newDrawing without tabs: a blank drawing that keeps the name (Drawing1 for a first one)
+  const base::Value nm = cad_ ? cad_->meta.get("name") : base::Value();
+  const std::string name = nm.truthy() ? base::js_string(nm) : std::string("Drawing1");
+  engine_.reset();
+  cmd_host_.reset();
+  auto d = std::make_unique<engine::OpenDrawing>();
+  d->name = name + ".dwg";
+  d->kind = "dwg";
+  doc_ = std::move(d);
+  auto doc = std::make_unique<doc::Doc>();
+  doc->load(base::make_object({{"meta", base::make_object({{"name", name}})}}), *words_);
+  cad_ = std::move(doc);
+  source_path_.clear();
+  printed_.clear();
+  prompt_.clear();
+  preview_.clear();
+  adopt_engine();
+  present();
+  cmd_host_->print(words_->t("app.new_drawing_2"));
+}
+
+void Viewer::new_dialog() {
+  if (new_confirm_) {
+    ImGui::OpenPopup("##new");
+    new_confirm_ = false;
+  }
+  if (!ImGui::BeginPopupModal("##new", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+    return;
+  }
+  const base::Value nm = cad_ ? cad_->meta.get("name") : base::Value();
+  ImGui::TextUnformatted(words_->t("doctabs.close.title").c_str());
+  ImGui::Separator();
+  ImGui::TextUnformatted(
+      words_->t("doctabs.close.text", {{"name", nm.truthy() ? base::js_string(nm) : std::string("Drawing1")}}).c_str());
+  if (ImGui::Button(words_->t("doctabs.close.save").c_str())) {
+    ImGui::CloseCurrentPopup();
+    save_as_open_ = true;  // save a copy first; NEW again afterwards
+  }
+  ImGui::SameLine();
+  if (ImGui::Button(words_->t("doctabs.close.discard").c_str())) {
+    ImGui::CloseCurrentPopup();
+    new_drawing();
+  }
+  ImGui::SameLine();
+  if (ImGui::Button(words_->t("doctabs.close.cancel").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+    ImGui::CloseCurrentPopup();
+  }
+  ImGui::EndPopup();
 }
 
 void Viewer::open_item(Inbox::Item item) {
@@ -839,6 +909,14 @@ void Viewer::after_input() {
   if (plot_request_ && engine_ && !engine_->busy()) {
     plot_request_ = false;
     plot_now();
+  }
+  if (new_request_ && engine_ && !engine_->busy()) {
+    new_request_ = false;
+    if (cad_ && cad_->dirty()) {
+      new_confirm_ = true;  // the dialog asks next frame
+    } else {
+      new_drawing();
+    }
   }
   if (save_request_ && engine_ && !engine_->busy()) {  // SAVE / SAVEAS / DXFOUT asked for it
     const auto [format, as] = *save_request_;
@@ -1402,7 +1480,23 @@ void Viewer::ui(float dpr) {
   if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && ImGui::IsKeyPressed(ImGuiKey_P) && cad_) {
     plot_now();
   }
+  if ((ImGui::GetIO().KeyCtrl || ImGui::GetIO().KeySuper) && engine_ && !engine_->busy() && line_[0] == '\0' &&
+      prop_active_.empty()) {
+    const char* clip_cmd = nullptr;
+    if (ImGui::IsKeyPressed(ImGuiKey_C)) {
+      clip_cmd = "COPYCLIP";
+    } else if (ImGui::IsKeyPressed(ImGuiKey_X)) {
+      clip_cmd = "CUTCLIP";
+    } else if (ImGui::IsKeyPressed(ImGuiKey_V)) {
+      clip_cmd = "PASTECLIP";
+    }
+    if (clip_cmd != nullptr) {
+      engine_->run(clip_cmd);
+      after_input();
+    }
+  }
   save_as_dialog();
+  new_dialog();
   layers_panel();
   // the space tabs, above the canvas
   const ImGuiViewport* vp = ImGui::GetMainViewport();
