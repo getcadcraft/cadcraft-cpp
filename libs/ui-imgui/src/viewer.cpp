@@ -287,6 +287,11 @@ class Viewer::CmdHost final : public cmd::Host {
   }
   // the Properties panel (propcmds.js)
   void props_open() override { v_.props_open_ = true; }
+  bool show_parameters() override {
+    v_.params_open_ = true;
+    return true;
+  }
+  void constraint_view_changed() override { v_.redraw_ = std::max(v_.redraw_, 2); }
   void props_close() override { v_.props_open_ = false; }
   void props_toggle_quick() override {
     v_.qp_on_ = !v_.qp_on_;
@@ -506,9 +511,15 @@ void Viewer::present() {
   redraw_ = 2;
 }
 
+cmd::ConstraintView& Viewer::constraint_view() {
+  return cmd_host_->constraint_view();
+}
+
 void Viewer::adopt_engine() {
   cmd_host_ = std::make_unique<CmdHost>(*this);
   engine_ = std::make_unique<cmd::Engine>(*cad_, *cmd_host_, *words_);
+  cad_->on_note = [this](const std::string& m) { printed_.push_back("  " + m); };  // constraints said something
+  c_selected_.clear();
   drawing_ = docview::to_drawing(*cad_);
   drawn_version_ = cad_->version();
 }
@@ -1117,6 +1128,17 @@ void Viewer::canvas_click(double x, double y, bool right) {
     const auto p = wants_point() ? point_for(raw) : raw;
     (void)engine_->click({p[0], p[1]}, cmd::Pt{raw[0], raw[1]});
   } else if (cmd_host_ && cad_) {
+    // a constraint's glyph or label under the click selects it (a second click on a label edits it)
+    const auto now = SDL_GetTicks();
+    if (constraint_click(x, y, false)) {
+      if (c_selected_ == last_click_cid_ && now - last_click_ms_ < 450) {
+        (void)constraint_click(x, y, true);
+      }
+      last_click_cid_ = c_selected_;
+      last_click_ms_ = now;
+      after_input();
+      return;
+    }
     // a grip of the selection under the click picks it up
     const double tol = 6 / std::max(views_[space_].zoom, 1e-300);
     for (const doc::Id id : cmd_host_->selection()) {
@@ -1163,6 +1185,10 @@ void Viewer::event(const SDL_Event& e, bool imgui_wants_mouse) {
                        (flag ? " on" : " off"));
     redraw_ = std::max(redraw_, 2);
     return;
+  }
+  if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_DELETE && !c_selected_.empty() && line_[0] == '\0' &&
+      constraint_delete()) {
+    return;  // the selected constraint goes (params-panel.js deleteKey)
   }
   if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE && grip_) {
     grip_.reset();
@@ -1578,6 +1604,8 @@ void Viewer::ui(float dpr) {
   status_bar();
   command_line();
   props_panel();  // after the command line: a field it focuses wins over the command line's focus
+  params_panel();
+  dc_edit_dialog();
   quick_props();
   // the canvas: what is left
   cx_ = static_cast<double>(vp->WorkPos.x + layers_width());
@@ -1747,6 +1775,7 @@ void Viewer::overlay() {
     dl->AddLine({mx - 20, my}, {mx + 20, my}, action, 1.0F);
     dl->AddLine({mx, my - 20}, {mx, my + 20}, action, 1.0F);
   }
+  constraints_overlay(dl, screen);
   dl->PopClipRect();
 }
 

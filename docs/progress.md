@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8d (pictures on screen).
+Last updated 2026-10-20 · Change: M5.8g (constraints in the viewer).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -416,4 +416,14 @@ Last updated 2026-10-20 · Change: M5.8d (pictures on screen).
   (picture_version); IMAGE giving files redraws without an edit. The viewer picks pictures through the inbox (desktop:
   SDL's dialog, PNG / JPEG; web: a file input), so IMAGEATTACH and IMAGE work in the app. Test: a picture and a clipped
   copy rendered offscreen through the whole pipeline, their pixels checked.
+- M5.8g (2026-10-20): constraints in the viewer (gview.js, params-panel.js). Model space shows constraint bars (a row
+  of glyph boxes beside each constrained line, segment, circle or point; coincident ones a small square) and
+  dimensional constraints drawn as dimensions in their own colour at a fixed size on screen ("d1=40", "fx: r=d1/10");
+  CONSTRAINTBAR and DCDISPLAY switch them. A click on a glyph or label selects that constraint (its objects
+  highlighted), Delete removes it, a second click on a label edits it (value or expression; a number on a driven value
+  solves what drives it). PARAMETERS opens the Parameters panel: name, expression, value per row; typing an expression
+  links it, a number in a driven value solves back (asking which parameter when several could), x deletes (a used
+  parameter can be written into what uses it), Add makes a user parameter; each edit is one undo step. The
+  document's notes (a solve that could not follow) go to the command history. Test: a DWG saved with constraints
+  opens with them, PARAMETERS opens the panel, the overlay draws with both switches.
 

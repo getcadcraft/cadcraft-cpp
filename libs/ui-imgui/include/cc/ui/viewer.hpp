@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -27,6 +28,7 @@
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/props.hpp"
 #include "cc/doc/doc.hpp"
+#include "cc/doc/params_doc.hpp"
 #include "cc/drawing/compile.hpp"
 #include "cc/engine/open.hpp"
 #include "cc/i18n/i18n.hpp"
@@ -35,6 +37,9 @@
 #include "cc/text/font.hpp"
 #include "cc/ui/gpu.hpp"
 #include "cc/ui/scene_renderer.hpp"
+
+struct ImDrawList;
+struct ImVec2;
 
 namespace cc::ui {
 
@@ -118,6 +123,10 @@ class Viewer {
   [[nodiscard]] std::size_t space_index() const noexcept { return space_; }
   /// True while the Properties panel is open (PROPERTIES / PROPERTIESCLOSE, its close button).
   [[nodiscard]] bool properties_open() const noexcept { return props_open_; }
+  /// True while the Parameters panel is open (PARAMETERS, its close button).
+  [[nodiscard]] bool parameters_open() const noexcept { return params_open_; }
+  /// The constraint selected on the drawing ("" none).
+  [[nodiscard]] const std::string& constraint_selected() const noexcept { return c_selected_; }
   /// True while Quick Properties is on (QPMODE).
   [[nodiscard]] bool quick_properties() const noexcept { return qp_on_; }
   /// The canvas colour (the host clears to it).
@@ -188,7 +197,44 @@ class Viewer {
     return touch_ ? 340.0F : 300.0F;
   }
   /// The width between the layers panel and the Properties panel (the tabs, the canvas, the command line).
-  [[nodiscard]] float middle_width(float total) const noexcept { return total - layers_width() - props_width(); }
+  [[nodiscard]] float params_width() const noexcept {
+    if (!params_open_) {
+      return 0.0F;
+    }
+    return touch_ ? 380.0F : 340.0F;
+  }
+  [[nodiscard]] float middle_width(float total) const noexcept {
+    return total - layers_width() - props_width() - params_width();
+  }
+  // constraints on the drawing and the Parameters panel (constraints_view.cpp)
+  struct ConstraintHit {
+    float x = 0, y = 0, w = 0, h = 0;
+    std::string cid;
+    bool dim = false;  // a dimensional constraint's label (else a bar's glyph)
+  };
+  struct Drive {
+    std::string name, cid;  // a parameter, or a dimensional constraint
+    double value = 0;
+    std::vector<std::string> choices;
+  };
+  void constraints_overlay(ImDrawList* dl, const std::function<ImVec2(double, double)>& screen);
+  [[nodiscard]] cmd::ConstraintView& constraint_view();  // the command host's
+  bool constraint_click(double x, double y, bool dbl);
+  bool constraint_delete();
+  void params_panel();
+  void params_said(const doc::params_doc::Result& r, const std::string& done);
+  void run_drive(const std::optional<std::string>& prefer);
+  void dc_edit_dialog();
+  std::vector<ConstraintHit> c_hits_;
+  std::string c_selected_, dc_edit_, dc_text_, dc_error_;
+  std::string last_click_cid_;
+  std::uint64_t last_click_ms_ = 0;
+  bool params_open_ = false;
+  std::string params_message_, params_inline_;
+  std::map<std::string, std::string> params_expr_, params_expr_of_;
+  std::optional<Drive> params_drive_;
+  std::array<char, 64> new_name_{};
+  std::array<char, 1024> new_expr_{};
 
   Services services_;
   Inbox inbox_;

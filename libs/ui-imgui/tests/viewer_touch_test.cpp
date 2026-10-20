@@ -14,6 +14,7 @@
 
 #include "cc/base/value.hpp"
 #include "cc/doc/doc.hpp"
+#include "cc/doc/params_doc.hpp"
 #include "cc/engine/open.hpp"
 #include "cc/i18n/i18n.hpp"
 #include "cc/render/view.hpp"
@@ -292,4 +293,48 @@ TEST_CASE("files: the clipboard survives another drawing; NEW asks before it rep
   frame(viewer);
   frame(viewer);
   CHECK(viewer.document()->model()->size() == 2);  // the dialog is up; nothing was replaced
+}
+
+TEST_CASE("constraints: a drawing saved with them opens with them; PARAMETERS opens the panel; the overlay draws") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  cc::doc::Doc src;
+  const cc::i18n::Catalog words;
+  src.change("LINE", [&] {
+    (void)src.add(cc::base::make_object({{"type", "line"}, {"x1", 0}, {"y1", 0}, {"x2", 10}, {"y2", 1}}));
+  });
+  const auto r = cc::doc::params_doc::add_constraint(
+      src, "horizontal", cc::base::Value(cc::base::Array{cc::base::make_object({{"e", 1}, {"k", "L"}})}), {}, words);
+  REQUIRE(r.ok);
+  REQUIRE(cc::doc::params_doc::set_parameter(src, "w", "12", std::nullopt, std::nullopt, words).ok);
+  cc::save::DwgSaveOptions opts;
+  opts.version = "2018";
+  opts.created_ms = 0;
+  const auto saved = cc::save::save_dwg(src, opts, words);
+  std::vector<std::byte> dwg(saved.bytes.size());
+  for (std::size_t i = 0; i < dwg.size(); ++i) {
+    dwg[i] = static_cast<std::byte>(saved.bytes[i]);
+  }
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, {}, CC_ASSETS_DIR, "en");
+  auto d = cc::engine::open_bytes("c.dwg", dwg);
+  REQUIRE(d);
+  viewer.show(std::move(*d));
+  frame(viewer);
+  REQUIRE(viewer.document() != nullptr);
+  CHECK(viewer.document()->constraints.as_array().size() == 1);
+  CHECK_FALSE(viewer.parameters_open());
+  viewer.command("PARAMETERS");
+  frame(viewer);
+  CHECK(viewer.parameters_open());
+  frame(viewer);  // the canvas shrinks for the panel; the bars and the panel draw
+  viewer.command("CONSTRAINTBAR");
+  viewer.command("H");
+  frame(viewer);
+  viewer.command("DCDISPLAY");
+  viewer.command("H");
+  frame(viewer);
+  CHECK(viewer.constraint_selected().empty());
 }

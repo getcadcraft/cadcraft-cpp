@@ -1,5 +1,5 @@
 cc_library(ui-imgui LAYER 6
-  SOURCES src/gpu.cpp src/scene_renderer.cpp src/viewer.cpp src/props_panel.cpp src/host.cpp
+  SOURCES src/gpu.cpp src/scene_renderer.cpp src/viewer.cpp src/props_panel.cpp src/constraints_view.cpp src/host.cpp
   DEPS cc::base cc::i18n cc::engine cc::render cc::picture-decode cc::text cc::cad cc::doc cc::docview cc::cmd cc::save cc::plot cc::sheets cc::image
   EXTERNAL dawn::webgpu_dawn SDL3::SDL3 imgui)
 if(TARGET cc::engine AND NOT EMSCRIPTEN)
