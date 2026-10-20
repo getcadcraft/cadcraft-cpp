@@ -26,9 +26,9 @@ app's document loads, canonical. Made with `node tools/parity/import.mjs build/c
 then the same `tar` line with `import`. The test `cad.golden` compares them at the DWG tolerance; the full check (110
 files) is `tools/parity/import.mjs`.
 
-`js-0.5-doc.tar.gz` — the 0.5 `Doc` (doc.js) after `load()` of that drawing, dumped by `tools/parity/doc.mjs` (maps as
+`js-0.5-doc.tar.gz` — the 0.5 `Doc` (doc.js) after `load()` of that drawing (a DXF: of dxf.js readDxf's drawing), dumped by `tools/parity/doc.mjs` (maps as
 [key, value] lists), canonical. Made with `node tools/parity/doc.mjs build/corpus/fixtures --golden-out <dir>/doc`. The
-test `doc.golden` compares them; the full check (110 files) is `tools/parity/doc.mjs`.
+test `doc.golden` compares them; the full check (214 files: 110 DWG, 104 DXF) is `tools/parity/doc.mjs`.
 
 `js-0.5-dwg-write.tar.gz` — the 0.5 `writeDwg` (lib/dwg/write.js) for the four public DWG fixtures in all six versions,
 with a fixed date and the harness's seeded random bytes: size, CRC-32 of the bytes and the canonical report of each

@@ -83,6 +83,8 @@ class Importer {
       : db_(&db), tag_(version_tag), words_(&words), limits_(limits) {}
 
   Value run();
+  bool tag_extras = false;  // extrasFrom: mark what MULTILEADER / IMAGE / WIPEOUT made (the JS's EXTRA set)
+  static Value mask(const Value& e) { return mask_of(e); }
 
  private:
   const Value* db_;
@@ -210,6 +212,12 @@ class Importer {
   Value convert(const Value& e);
   void with_props(Value& c, const Value& e) const;
   static Value mask_of(const Value& e);
+  [[nodiscard]] Value extra(Value v) const {
+    if (tag_extras && v.is_object()) {
+      v.set("$extra", true);
+    }
+    return v;
+  }
   [[nodiscard]] Value style_from(const Value& src, const Value& base) const;
   void layer_overrides();
 };
@@ -1326,10 +1334,10 @@ Value Importer::convert_base(const Value& e) {
     return face3d_from_dwg(e, base);
   }
   if (type == "MULTILEADER") {
-    return multileader(e, base);
+    return extra(multileader(e, base));
   }
   if (type == "IMAGE" || type == "WIPEOUT") {
-    return picture(e, base);
+    return extra(picture(e, base));
   }
   if (type == "MLINE") {
     Array pts;
@@ -2401,5 +2409,82 @@ base::Value import_dwg(const base::Value& db, std::string_view version_tag, cons
   Importer imp(db, version_tag, words, limits);
   return imp.run();
 }
+
+namespace detail {
+
+Value mask_of(const Value& e) {
+  return Importer::mask(e);
+}
+
+Value extras_from(const Value& db, const i18n::Catalog& words) {
+  Importer imp(db, "", words, {});
+  imp.tag_extras = true;
+  Value r = imp.run();
+  const auto pick = [](const Value& list) {
+    base::Array out;
+    if (list.is_array()) {
+      for (const Value& e : list.as_array()) {
+        if (e.get("$extra").truthy()) {
+          Value c = e;
+          c.erase("$extra");
+          out.push_back(std::move(c));
+        }
+      }
+    }
+    return out;
+  };
+  base::Array model = pick(r.get("entities"));
+  base::Array blocks;
+  base::Array layouts;
+  std::set<std::string> anon_names;
+  const auto note_refs = [&anon_names](const base::Array& list) {
+    for (const Value& e : list) {
+      if (e.get("type") == Value("insert")) {
+        anon_names.insert(str(e.get("block")));
+      }
+    }
+  };
+  note_refs(model);
+  for (const Value& b : r.get("blocks").as_array()) {
+    base::Array x = pick(b.get("entities"));
+    if (!x.empty()) {
+      note_refs(x);
+      blocks.emplace_back(base::Array{b.get("name"), Value(std::move(x))});
+    }
+  }
+  for (const Value& l : r.get("layouts").as_array()) {
+    base::Array x = pick(l.get("entities"));
+    if (!x.empty()) {
+      note_refs(x);
+      layouts.emplace_back(base::Array{l.get("name"), Value(std::move(x))});
+    }
+  }
+  base::Array anon;
+  for (const Value& b : r.get("blocks").as_array()) {
+    if (anon_names.contains(str(b.get("name")))) {
+      Value c = b;
+      if (Value* ents = c.find("entities"); ents != nullptr && ents->is_array()) {
+        for (Value& e : ents->as_array()) {
+          e.erase("$extra");
+        }
+      }
+      anon.push_back(std::move(c));
+    }
+  }
+  base::Array notes;
+  for (const Value& n : r.get("report").get("notes").as_array()) {
+    const std::string low = base::js_to_lower(str(n));
+    if (low.contains("multileader") || low.contains("wipeout") || low.contains("picture")) {
+      notes.push_back(n);
+    }
+  }
+  return base::make_object({{"model", Value(std::move(model))},
+                            {"blocks", Value(std::move(blocks))},
+                            {"layouts", Value(std::move(layouts))},
+                            {"anon", Value(std::move(anon))},
+                            {"notes", Value(std::move(notes))}});
+}
+
+}  // namespace detail
 
 }  // namespace cc::cad

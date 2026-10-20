@@ -45,7 +45,8 @@ base::Result<std::unique_ptr<OpenDrawing>> parse(std::string name, std::span<con
       return base::fail(base::Errc::invalid, d->model["report"]["error"].as_string());
     }
   } else if (d->kind == "dxf") {
-    auto m = dxf::read_dxf_model(dxf::decode_text(bytes));
+    d->text = dxf::decode_text(bytes);
+    auto m = dxf::read_dxf_model(d->text);
     if (!m) {
       return std::unexpected(m.error());
     }

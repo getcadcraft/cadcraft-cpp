@@ -28,6 +28,7 @@ struct OpenDrawing {
   std::string name;  // the file name
   std::string kind;  // "dwg" | "dxf"
   base::Value model;
+  std::string text;  // a DXF: its text as read (UTF-8, else Windows-1252), for CadCraft's own reader
   std::vector<std::unique_ptr<base::Value>> xref_models;  // stable addresses: the compile options point at them
   drawing::CompileOptions options;
   drawing::Drawing drawing;

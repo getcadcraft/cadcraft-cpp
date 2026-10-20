@@ -947,4 +947,57 @@ std::string dim_style_text(const Value& e, double v) {
   return "[" + body + "]";
 }
 
+std::optional<AngularLegs> angular_from_lines(const Value& l1, const Value& l2, double lx, double ly) {
+  const auto n = [](const Value& o, std::string_view k) { return base::js_to_number(o.get(k)); };
+  const double d1x = n(l1, "x2") - n(l1, "x1");
+  const double d1y = n(l1, "y2") - n(l1, "y1");
+  const double d2x = n(l2, "x2") - n(l2, "x1");
+  const double d2y = n(l2, "y2") - n(l2, "y1");
+  const double den = d1x * d2y - d1y * d2x;
+  if (std::abs(den) < 1e-12 * base::js_hypot(d1x, d1y) * base::js_hypot(d2x, d2y)) {
+    return std::nullopt;
+  }
+  const double t = ((n(l2, "x1") - n(l1, "x1")) * d2y - (n(l2, "y1") - n(l1, "y1")) * d2x) / den;
+  const double cx = n(l1, "x1") + d1x * t;
+  const double cy = n(l1, "y1") + d1y * t;
+  const double al = base::js_atan2(ly - cy, lx - cx);
+  struct Ray {
+    double ang, x, y;
+  };
+  std::array<std::array<Ray, 2>, 2> legs{};
+  const std::array<const Value*, 2> lines{&l1, &l2};
+  for (std::size_t li = 0; li < 2; ++li) {
+    const Value& l = *lines.at(li);
+    const double a = base::js_atan2(n(l, "y2") - n(l, "y1"), n(l, "x2") - n(l, "x1"));
+    const std::array<double, 2> angs{a, a + std::numbers::pi};
+    for (std::size_t k = 0; k < 2; ++k) {
+      const double ang = angs.at(k);
+      // the far end of the line in this direction, else a unit step along it
+      std::optional<std::array<double, 3>> best;  // along, x, y
+      for (const auto& [px, py] : {std::pair{n(l, "x1"), n(l, "y1")}, std::pair{n(l, "x2"), n(l, "y2")}}) {
+        const double along = (px - cx) * base::js_cos(ang) + (py - cy) * base::js_sin(ang);
+        if (along > 1e-9 && (!best || along > (*best)[0])) {
+          best = std::array<double, 3>{along, px, py};
+        }
+      }
+      const double step0 = base::js_hypot(d1x, d1y) * 1e-3;
+      const double step = step0 != 0 && !std::isnan(step0) ? step0 : 1;
+      legs.at(li).at(k) = best ? Ray{norm_angle(ang), (*best)[1], (*best)[2]}
+                               : Ray{norm_angle(ang), cx + base::js_cos(ang) * step, cy + base::js_sin(ang) * step};
+    }
+  }
+  // the two rays (one per line) whose CCW sector, under 180°, holds loc
+  for (const Ray& r1 : legs[0]) {
+    for (const Ray& r2 : legs[1]) {
+      for (const auto& [a, b] : {std::pair{r1, r2}, std::pair{r2, r1}}) {
+        const double sw = norm_angle(b.ang - a.ang);
+        if (sw > 1e-9 && sw < std::numbers::pi - 1e-9 && on_sweep(norm_angle(al), a.ang, a.ang + sw)) {
+          return AngularLegs{.cx = cx, .cy = cy, .x1 = a.x, .y1 = a.y, .x2 = b.x, .y2 = b.y};
+        }
+      }
+    }
+  }
+  return std::nullopt;
+}
+
 }  // namespace cc::cad

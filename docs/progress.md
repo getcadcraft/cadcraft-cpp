@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.6c (sheets and PLOT in the viewer).
+Last updated 2026-10-20 · Change: M5.7a (CadCraft's DXF reader).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -335,4 +335,17 @@ Last updated 2026-10-20 · Change: M5.6c (sheets and PLOT in the viewer).
   plots the open sheet at 1:1 or the model at its extents on the default paper (A3, Tabloid for imperial drawings):
   the desktop's save dialog (a PDF filter), a download on the web; a plot never touches the drawing's saved state.
   Checked under Xvfb: LAYOUT on dwg-samples/example_2018.dwg opens Layout3 with its title block and viewport.
+- M5.7a (2026-10-20): CadCraft's own DXF reader, dxf.js readDxf (libs/cad/src/read_dxf.cpp, cc/cad/read_dxf.hpp):
+  HEADER (units, length format, dimension variables, UCS, insertion base), TABLES (layers, dimension and text
+  styles, linetypes, views, panes, UCSs, block records), BLOCKS (attribute definitions, xrefs, CadCraft's constraint
+  and 3D blocks, CCLAYOUT_n sheets), ENTITIES (every type dxf.js reads, ATTRIBs onto their references, hidden objects
+  left out) and OBJECTS (layouts, XCLIP dictionaries and filters); layouts from LAYOUT objects or an R12 paper space;
+  multileaders, pictures and wipeouts through importDwg on the drawing model (extrasFrom: the import now tags what
+  it made of them, as the JS's EXTRA set). libs/cad cannot reach io-dxf (L3), so the caller hands in
+  dxf::read_dxf_model. dims.js angularFromLines moved down to libs/cad (DIMANGULAR and the reader share it).
+  `cadcraft-cli doc / import` read a DXF this way, the viewer opens a DXF as an editable document (format labels as
+  cadcraft.js: "DWG 2018 (AC1032)"), and fuzz/fuzz_cad_dxf.cpp fuzzes it. Parity: tools/parity/doc.mjs takes DXF
+  files (decoded UTF-8, else Windows-1252, as the app): 214/214 corpus files (110 DWG, 104 DXF) load the same; the
+  doc golden test covers the three public DXF fixtures. A count in a file (vertices, hatch edges, MINSERT copies) is
+  capped where the JS would loop on.
 

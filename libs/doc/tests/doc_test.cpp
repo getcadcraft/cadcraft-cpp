@@ -15,7 +15,9 @@
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cad/read_dxf.hpp"
 #include "cc/dwg/read.hpp"
+#include "cc/dxf/read.hpp"
 #include "golden.hpp"
 
 namespace fs = std::filesystem;
@@ -159,9 +161,16 @@ TEST_CASE("the document after load equals the JS Doc's on the public fixtures") 
     const auto bytes = cc::base::read_file(src, std::uint64_t{1} << 30U);
     REQUIRE(bytes.has_value());
     Doc d;
-    d.load(cc::cad::import_dwg(cc::dwg::read_dwg(*bytes),
-                               cc::base::as_text(std::span<const std::byte>(*bytes).first(6)), words),
-           words);
+    if (dwg.ends_with(".dxf")) {  // dxf.js readDxf, the text as cadcraft.js decodes it
+      auto drawing = cc::cad::read_dxf(cc::dxf::decode_text(*bytes), words,
+                                       [](std::string_view t) { return cc::dxf::read_dxf_model(t); });
+      REQUIRE(drawing.has_value());
+      d.load(std::move(*drawing), words);
+    } else {
+      d.load(cc::cad::import_dwg(cc::dwg::read_dwg(*bytes),
+                                 cc::base::as_text(std::span<const std::byte>(*bytes).first(6)), words),
+             words);
+    }
     std::vector<std::string> diffs;
     cc::test::compare(*want, d.dump(), "", diffs);
     INFO(dwg << ": " << (diffs.empty() ? std::string() : diffs.front()));

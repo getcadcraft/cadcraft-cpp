@@ -81,6 +81,10 @@ TEST_CASE("touch: layout, pinch, two-finger pan, double tap") {
   viewer.show(std::move(*d));
   frame(viewer);
   frame(viewer);
+  // a DXF opens as CadCraft's document (dxf.js readDxf), as a DWG does
+  REQUIRE(viewer.document() != nullptr);
+  CHECK(viewer.document()->model()->size() == 1);
+  CHECK(viewer.document()->meta.get("format") == cc::base::Value("DXF"));
   const cc::render::View fitted = viewer.view();
   REQUIRE(fitted.zoom > 0);
   CHECK_FALSE(viewer.touch_layout());

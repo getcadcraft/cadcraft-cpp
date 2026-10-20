@@ -618,6 +618,8 @@ double precision12(double x) {
   return n > 0 ? base::js_parse_float(std::string_view(buf.data(), static_cast<std::size_t>(n))) : x;
 }
 
+}  // namespace
+
 Value clean_view(const Value& v) {
   if (!v.is_object()) {
     return {nullptr};
@@ -659,6 +661,8 @@ Value clean_view(const Value& v) {
   }
   return out;
 }
+
+namespace {
 
 Mat insert_matrix2(const Value& e, const Value& b) {
   const Value rot = g(e, "rot");

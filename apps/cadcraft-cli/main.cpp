@@ -58,6 +58,7 @@
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cad/read_dxf.hpp"
 #include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/docview/walk.hpp"
@@ -202,14 +203,27 @@ int cmd_import(const std::filesystem::path& file, std::string_view argv0, bool a
     print_error_json("invalid", words.error().message);
     return 1;
   }
-  const cc::base::Value model = cc::dwg::read_dwg(*bytes);
-  if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
-    print_error_json("invalid", "unreadable");
-    return 1;
+  cc::base::Value drawing;
+  std::string ext = file.extension().string();
+  std::ranges::transform(ext, ext.begin(), [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+  if (ext == ".dxf") {  // cadcraft.js readDrawing: the text (UTF-8, else Windows-1252), then dxf.js readDxf
+    auto r = cc::cad::read_dxf(cc::dxf::decode_text(*bytes), *words,
+                               [](std::string_view t) { return cc::dxf::read_dxf_model(t); });
+    if (!r) {
+      print_error_json("invalid", r.error().message);
+      return 1;
+    }
+    drawing = std::move(*r);
+  } else {
+    const cc::base::Value model = cc::dwg::read_dwg(*bytes);
+    if (!model["blocks"].is_array() || model["blocks"].as_array().empty()) {
+      print_error_json("invalid", "unreadable");
+      return 1;
+    }
+    const std::span<const std::byte> head =
+        std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
+    drawing = cc::cad::import_dwg(model, cc::base::as_text(head), *words);
   }
-  const std::span<const std::byte> head =
-      std::span<const std::byte>(*bytes).first(std::min<std::size_t>(6, bytes->size()));
-  cc::base::Value drawing = cc::cad::import_dwg(model, cc::base::as_text(head), *words);
   std::string out;
   if (as_doc) {
     cc::doc::Doc d;

@@ -4,7 +4,7 @@ cc_library(doc LAYER 3
 
 cc_test(doc
   SOURCES tests/doc_test.cpp
-  DEPS cc::doc cc::cad cc::io-dwg cc::i18n)
+  DEPS cc::doc cc::cad cc::io-dwg cc::io-dxf cc::i18n)
 if(TARGET test_doc)
   target_include_directories(test_doc PRIVATE ${PROJECT_SOURCE_DIR}/tests/support)
   # CadCraft 0.5's Doc after load() for the public fixtures (tests/golden/README.md), unpacked into the build tree.

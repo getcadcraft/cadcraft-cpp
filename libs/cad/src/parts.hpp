@@ -42,6 +42,8 @@ Value picture_block(const std::string& name, const Value& pic, const Value* clip
 Value clip_from_filter(const Value& o);
 
 // ---- model3d.js
+/// cleanView(v): a saved 3D camera made safe, or null.
+Value clean_view(const Value& v);
 Value face3d_from_dwg(const Value& e, const Value& base);
 /// read3dFromDwg(db, drawing): CadCraft's 3D JSON from block CADCRAFT_3D, then split3d (3D faces out of the 2D
 /// drawing). Notes through `words`.
@@ -70,5 +72,12 @@ struct DynHooks {
 Value dyn_block_from_dwg(const Value& b, const DynHooks& hooks);
 Value dyn_ref_from_dwg(const Value& e);
 Value dyn_source(const Value& db);
+
+// ---- dwg-import.js (the DXF reader's share of it)
+/// maskOf(e): an MTEXT's background mask fields ({ bg, bgScale … }) or {}.
+Value mask_of(const Value& e);
+/// extrasFrom(db): what importDwg makes of a drawing model's MULTILEADER / IMAGE / WIPEOUT objects →
+/// { model, blocks: [[name, ents]…], layouts: [[name, ents]…], anon: [the blocks they use], notes }.
+Value extras_from(const Value& db, const i18n::Catalog& words);
 
 }  // namespace cc::cad::detail

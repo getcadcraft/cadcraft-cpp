@@ -55,7 +55,7 @@ TEST_CASE("plot: text in Windows-1252, escaped, with what has no glyph counted")
   CHECK(m.str == "-\\330");
 }
 
-TEST_CASE("plot: arcs become quarter Béziers at most") {
+TEST_CASE("plot: arcs become quarter Beziers at most") {
   CHECK(cc::plot::arc_beziers(0, 0, 1, 0, std::numbers::pi).size() == 2);
   const auto q = cc::plot::arc_beziers(0, 0, 10, 0, std::numbers::pi / 2);
   REQUIRE(q.size() == 1);

@@ -279,63 +279,16 @@ Task<void> dimdiameter_cmd(Ctx& c) {
   co_await radial(c, "diameter");
 }
 
-/// geom.js onSweep(a, a0, a1, tol)
-bool on_sweep(double a, double a0, double a1, double tol = 1e-9) {
-  return norm_angle(a - a0) <= (a1 - a0) + tol;
-}
-
 struct Angular {
   Pt c, p1, p2;
 };
-/// dims.js angularFromLines(l1, l2, loc)
+/// dims.js angularFromLines(l1, l2, loc) (cc::cad)
 std::optional<Angular> angular_from_lines(const Value& l1, const Value& l2, Pt loc) {
-  const double d1x = num(l1, "x2") - num(l1, "x1");
-  const double d1y = num(l1, "y2") - num(l1, "y1");
-  const double d2x = num(l2, "x2") - num(l2, "x1");
-  const double d2y = num(l2, "y2") - num(l2, "y1");
-  const double den = d1x * d2y - d1y * d2x;
-  if (std::abs(den) < 1e-12 * base::js_hypot(d1x, d1y) * base::js_hypot(d2x, d2y)) {
+  const auto r = cad::angular_from_lines(l1, l2, loc.x, loc.y);
+  if (!r) {
     return std::nullopt;
   }
-  const double t = ((num(l2, "x1") - num(l1, "x1")) * d2y - (num(l2, "y1") - num(l1, "y1")) * d2x) / den;
-  const Pt c{num(l1, "x1") + d1x * t, num(l1, "y1") + d1y * t};
-  const double al = angle_of(c, loc);
-  struct Ray {
-    double ang;
-    Pt p;
-  };
-  std::array<std::array<Ray, 2>, 2> legs{};
-  const std::array<const Value*, 2> lines{&l1, &l2};
-  for (std::size_t li = 0; li < 2; ++li) {
-    const Value& l = *lines[li];
-    const double a = base::js_atan2(num(l, "y2") - num(l, "y1"), num(l, "x2") - num(l, "x1"));
-    const std::array<double, 2> angs{a, a + kPi};
-    for (std::size_t k = 0; k < 2; ++k) {
-      const double ang = angs[k];
-      // the far end of the line in this direction, else a unit step along it
-      std::optional<std::pair<double, Pt>> best;
-      for (const Pt p : {Pt{num(l, "x1"), num(l, "y1")}, Pt{num(l, "x2"), num(l, "y2")}}) {
-        const double along = (p.x - c.x) * base::js_cos(ang) + (p.y - c.y) * base::js_sin(ang);
-        if (along > 1e-9 && (!best || along > best->first)) {
-          best = {along, p};
-        }
-      }
-      const double step = base::js_hypot(d1x, d1y) * 1e-3;
-      legs[li][k] = {norm_angle(ang), best ? best->second : polar(c, ang, step != 0 && !std::isnan(step) ? step : 1)};
-    }
-  }
-  // the two rays (one per line) whose CCW sector, under 180°, holds loc
-  for (const Ray& r1 : legs[0]) {
-    for (const Ray& r2 : legs[1]) {
-      for (const auto& [a, b] : {std::pair{r1, r2}, std::pair{r2, r1}}) {
-        const double sw = norm_angle(b.ang - a.ang);
-        if (sw > 1e-9 && sw < kPi - 1e-9 && on_sweep(norm_angle(al), a.ang, a.ang + sw)) {
-          return Angular{c, a.p, b.p};
-        }
-      }
-    }
-  }
-  return std::nullopt;
+  return Angular{{r->cx, r->cy}, {r->x1, r->y1}, {r->x2, r->y2}};
 }
 
 Task<void> dimangular_cmd(Ctx& c) {

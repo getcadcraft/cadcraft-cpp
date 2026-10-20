@@ -32,6 +32,14 @@ namespace cc::cad {
 /// 4 architectural, 5 fractional); prec null = the format's default (4).
 [[nodiscard]] std::string format_length(double v, const base::Value& lunits, const base::Value& prec = base::Value());
 
+/// dims.js angularFromLines(l1, l2, loc): the vertex and the two legs whose sector (under 180°) holds loc, or nothing
+/// for parallel lines. l1 / l2: { x1, y1, x2, y2 }.
+struct AngularLegs {
+  double cx = 0, cy = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+};
+[[nodiscard]] std::optional<AngularLegs> angular_from_lines(const base::Value& l1, const base::Value& l2, double lx,
+                                                            double ly);
+
 /// propdefs.js dst(e): { ...DIM_DEFAULTS, ...DIM_EXTRA, ...e.st } — every style key a dimension has.
 [[nodiscard]] base::Value dim_style_full(const base::Value& e);
 /// dimstyle.js dimStyleText(e, v): the text with the override, tolerances added.

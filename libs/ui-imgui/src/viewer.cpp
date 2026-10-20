@@ -27,9 +27,11 @@
 #include "cc/cad/edit.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cad/read_dxf.hpp"
 #include "cc/cad/snap.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/docview/drawing.hpp"
+#include "cc/dxf/read.hpp"
 #include "cc/engine/open.hpp"
 #include "cc/image/png.hpp"
 #include "cc/plot/plot.hpp"
@@ -404,17 +406,51 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
   prompt_.clear();
   preview_.clear();
   const std::uint64_t t0 = SDL_GetTicksNS();
+  // CadCraft opens a DWG as its document (readDwg → importDwg → Doc.load), a DXF through its own reader (readDxf →
+  // Doc.load), and draws that; a DXF its reader refuses is shown as the file draws, not edited
+  std::optional<base::Value> read;
   if (doc_->kind == "dwg") {
-    // CadCraft opens a DWG as its document (readDwg → importDwg → Doc.load) and draws that
+    read = cad::import_dwg(doc_->model, doc_->options.version_tag, *words_);
+  } else if (doc_->kind == "dxf" && !doc_->text.empty()) {
+    auto r = cad::read_dxf(doc_->text, *words_, [](std::string_view t) { return dxf::read_dxf_model(t); });
+    if (r) {
+      read = std::move(*r);
+    } else {
+      message_ = r.error().message;
+    }
+  }
+  if (read) {
     cad_ = std::make_unique<doc::Doc>();
     // as cadcraft.js opens a file: meta.name = the file's name without its extension, meta.source = the file's name
-    base::Value drawing = cad::import_dwg(doc_->model, doc_->options.version_tag, *words_);
+    base::Value drawing = std::move(*read);
     base::Value meta = drawing.get("meta").is_object() ? drawing.get("meta") : base::Value::object();
     const std::string& file = doc_->name;
     const std::size_t dot = file.find_last_of('.');
     meta.set("name", dot == std::string::npos ? file : file.substr(0, dot));
     meta.set("source", file);
-    meta.set("format", "dwg");
+    // cadcraft.js readDrawing: "DWG 2018 (AC1032)", "DXF R12 (AC1009)" (dwg-import.js VERSIONS)
+    static constexpr std::array<std::pair<std::string_view, std::string_view>, 9> kVersions{{{"AC1009", "R12"},
+                                                                                             {"AC1012", "R13"},
+                                                                                             {"AC1014", "R14"},
+                                                                                             {"AC1015", "2000"},
+                                                                                             {"AC1018", "2004"},
+                                                                                             {"AC1021", "2007"},
+                                                                                             {"AC1024", "2010"},
+                                                                                             {"AC1027", "2013"},
+                                                                                             {"AC1032", "2018"}}};
+    const std::string tag =
+        doc_->kind == "dwg" ? doc_->options.version_tag
+                            : base::js_string(meta.get("version").is_string() ? meta.get("version") : base::Value(""));
+    std::string format = doc_->kind == "dwg" ? "DWG" : "DXF";
+    for (const auto& [k, label] : kVersions) {
+      if (k == tag) {
+        format += " " + std::string(label);
+      }
+    }
+    if (!tag.empty()) {
+      format += " (" + tag + ")";
+    }
+    meta.set("format", format);
     drawing.set("meta", std::move(meta));
     cad_->load(std::move(drawing), *words_);
     cmd_host_ = std::make_unique<CmdHost>(*this);
