@@ -16,6 +16,7 @@
 #include "cc/base/js.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/props.hpp"
+#include "cc/doc/swsketch.hpp"
 
 namespace cc::cmd {
 
@@ -160,6 +161,25 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
   doc::Doc d;
   ScriptHost host;
   Engine eng(d, host, words);
+  // {"swsketch": {"export": …, "sketch": name}}: a SolidWorks sketch export opened first (cadcraft.js openSketchExport)
+  Value sketch;
+  if (const Value* sw = script.find("swsketch"); sw != nullptr && sw->is_object() && !sw->is_point()) {
+    const doc::swsketch::Loaded r =
+        doc::swsketch::load_sketch(d, sw->get("export"), base::js_string(sw->get("sketch")), words);
+    if (r.ok) {
+      base::Array notes;
+      for (const std::string& n : r.notes) {
+        notes.emplace_back(n);
+      }
+      sketch = base::make_object({{"ok", true},
+                                  {"sketch", r.sketch},
+                                  {"notes", std::move(notes)},
+                                  {"read", static_cast<double>(r.read)},
+                                  {"constraints", static_cast<double>(r.constraints)}});
+    } else {
+      sketch = base::make_object({{"ok", false}, {"error", r.error}});
+    }
+  }
   const Value& steps = script["steps"];
   std::size_t n = 0;
   if (steps.is_array()) {
@@ -272,6 +292,12 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                                     {"redo", std::move(redo)},
                                     {"constraints", d.constraints},
                                     {"params", d.params}});
+  if (eng.last_swb) {
+    result.set("swb", *eng.last_swb);
+  }
+  if (!sketch.is_undefined()) {
+    result.set("sketch", std::move(sketch));
+  }
   if (finish) {
     finish(script, d, result);
   }

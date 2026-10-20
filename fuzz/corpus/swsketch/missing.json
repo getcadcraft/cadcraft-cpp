@@ -1,0 +1,1 @@
+{"format": "cadcraft-sw-export", "version": 1, "features": [{"type": "sketch", "name": "S", "points": [{"id": "a", "x": 0, "y": 0}], "segments": [{"id": "L", "type": "line", "a": "a", "b": "z"}]}]}

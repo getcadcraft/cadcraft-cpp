@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8g (constraints in the viewer).
+Last updated 2026-10-20 · Change: M5.8g2 (SWBOUT, SolidWorks sketch exports).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -426,4 +426,18 @@ Last updated 2026-10-20 · Change: M5.8g (constraints in the viewer).
   parameter can be written into what uses it), Add makes a user parameter; each edit is one undo step. The
   document's notes (a solve that could not follow) go to the command history. Test: a DWG saved with constraints
   opens with them, PARAMETERS opens the panel, the overlay draws with both switches.
+- M5.8g2 (2026-10-20): SWBOUT and SolidWorks sketch exports (swsketch.js), in libs/doc swsketch. SWBOUT (SWMACRO)
+  writes the model as a VBA macro for SolidWorks (.swb, CRLF, Windows-1252): lines, circles, arcs, points and
+  polylines (bulges as arcs, vertices joined by coincident relations) on the Front Plane in metres, the geometric
+  constraints as sketch relations (a line's middle as a held construction point), the dimensional ones as named
+  dimensions, user parameters as global variables and expressions as equations (sqrt as sqr, atan as atn …; %,
+  comparisons and functions SolidWorks lacks written as their value, with a note). The app saves it (desktop) or
+  downloads it (web); headless the engine keeps it. A .json export from the SolidWorks-side macro is untrusted input
+  (format, version, limits, ids, every reference checked) and one of its sketches opens as the drawing: segments and
+  loose points as entities (construction ones on CONSTRUCTION), the origin as a fixed construction point, shared
+  points as coincident constraints, relations and dimensions as constraints, globals and equations as parameters; a
+  dialog asks which sketch when there are several; never saved back over the .json in place. Parity: tests/commands
+  swsketch.json, 13 scripts (macro text, notes, opened document, constraints, parameters, seven malformed exports), the
+  same as the JS; commands 177/177. Fuzz target swsketch (reader, opener, macro writer). Known difference: an export
+  whose globals list holds a null opens here; 0.5 throws on it (g.name of null).
 

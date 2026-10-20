@@ -275,6 +275,16 @@ class Viewer {
     std::uint64_t version = 0;
   };
   std::optional<PendingSave> pending_save_;  // a save waiting for the dialog's path
+  /// A file a command made (SWBOUT): the save dialog (desktop) or a download (web); false when there is neither
+  bool download_file(const std::string& name, const std::vector<std::byte>& bytes);
+  // a SolidWorks sketch export: which sketch (a dialog when there are several), then it becomes the drawing
+  void pick_sketch(std::unique_ptr<engine::OpenDrawing> d);
+  void open_sketch();
+  void sketch_dialog();
+  void say(const std::string& text);  // the history when a drawing is open, else the canvas message
+  std::unique_ptr<engine::OpenDrawing> sketch_pick_, sketch_ready_;
+  std::vector<std::string> sketch_names_;
+  std::size_t sketch_count_ = 0;
   bool save_as_open_ = false;
   std::optional<std::pair<std::string, bool>> save_request_;  // SAVE / DXFOUT (format, false) or SAVEAS (…, true)
   std::optional<render::View> prev_view_;                     // ZOOM P

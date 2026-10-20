@@ -12,6 +12,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <imgui.h>
 
+#include "cc/base/js.hpp"
 #include "cc/base/value.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/doc/params_doc.hpp"
@@ -337,4 +338,46 @@ TEST_CASE("constraints: a drawing saved with them opens with them; PARAMETERS op
   viewer.command("H");
   frame(viewer);
   CHECK(viewer.constraint_selected().empty());
+}
+
+TEST_CASE("sketch export: a .json from the SolidWorks macro opens as the drawing; several sketches wait on a choice") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  const std::string one = R"({"format":"cadcraft-sw-export","version":1,"units":"mm","features":[{"type":"sketch",
+    "name":"Sketch1","points":[{"id":"a","x":0,"y":0},{"id":"b","x":50,"y":0}],
+    "segments":[{"id":"L","type":"line","a":"a","b":"b"}],"relations":[{"type":"horizontal","refs":["L"]}],
+    "dimensions":[{"type":"distance","name":"D1","value":50,"refs":["L"]}]}]})";
+  CHECK(cc::engine::kind_of("Part.JSON", bytes_of(one)) == "sketch");
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, {}, CC_ASSETS_DIR, "en");
+  auto d = cc::engine::open_bytes("Part.json", bytes_of(one));
+  REQUIRE(d);
+  viewer.show(std::move(*d));
+  frame(viewer);
+  REQUIRE(viewer.document() != nullptr);
+  CHECK(viewer.document()->constraints.as_array().size() == 2);
+  CHECK(cc::base::js_string(viewer.document()->meta.get("source")) == "export.json");
+  CHECK_FALSE(viewer.document()->can_undo());
+  frame(viewer);
+
+  // two sketches: nothing changes until one is picked (the dialog draws)
+  const std::string two = R"({"format":"cadcraft-sw-export","version":1,"features":[
+    {"type":"sketch","name":"A","points":[{"id":"p","x":1,"y":2}]},
+    {"type":"sketch","name":"B","points":[{"id":"q","x":3,"y":4}]}]})";
+  auto d2 = cc::engine::open_bytes("Two.json", bytes_of(two));
+  REQUIRE(d2);
+  const cc::doc::Doc* before = viewer.document();
+  viewer.show(std::move(*d2));
+  frame(viewer);
+  CHECK(viewer.document() == before);
+  frame(viewer);
+
+  // not an export: the drawing stays, the history says why
+  auto d3 = cc::engine::open_bytes("x.json", bytes_of(R"({"format":"other"})"));
+  REQUIRE(d3);
+  viewer.show(std::move(*d3));
+  frame(viewer);
+  CHECK(viewer.document() == before);
 }

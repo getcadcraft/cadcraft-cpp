@@ -115,12 +115,14 @@ int run(std::span<char*> argv) {
   int rc = 0;
   {
     cc::ui::Inbox* inbox = nullptr;
-    static constexpr std::array<SDL_DialogFileFilter, 1> kFilters{{{"DWG, DXF", "dwg;dxf"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kFilters{
+        {{"DWG, DXF, SolidWorks sketch export", "dwg;dxf;json"}}};
     cc::ui::Services services;
     services.pick_open = [&] { SDL_ShowOpenFileDialog(picked, inbox, window, kFilters.data(), 1, nullptr, false); };
     static constexpr std::array<SDL_DialogFileFilter, 1> kDwg{{{"DWG", "dwg"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kDxf{{{"DXF", "dxf"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kPdf{{{"PDF", "pdf"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kSwb{{{"SolidWorks macro", "swb"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kPictures{{{"PNG, JPEG", "png;jpg;jpeg"}}};
     services.pick_pictures = [&](bool multiple) {
       SDL_ShowOpenFileDialog(pictures_picked, inbox, window, kPictures.data(), 1, nullptr, multiple);
@@ -131,6 +133,8 @@ int run(std::span<char*> argv) {
         f = kDwg.data();
       } else if (ext == "pdf") {
         f = kPdf.data();
+      } else if (ext == "swb") {
+        f = kSwb.data();
       }
       SDL_ShowSaveFileDialog(save_picked, inbox, window, f, 1, name.c_str());
     };

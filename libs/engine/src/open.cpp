@@ -51,6 +51,8 @@ base::Result<std::unique_ptr<OpenDrawing>> parse(std::string name, std::span<con
       return std::unexpected(m.error());
     }
     d->model = std::move(*m);
+  } else if (d->kind == "sketch") {
+    d->text = std::string(base::as_text(bytes));  // read (and checked) by doc::swsketch when it opens
   } else {
     return base::fail(base::Errc::unsupported, "This is not a DWG or DXF file.");
   }
@@ -59,6 +61,9 @@ base::Result<std::unique_ptr<OpenDrawing>> parse(std::string name, std::span<con
 }
 
 void finish(OpenDrawing& d) {
+  if (d.kind == "sketch") {
+    return;  // no file model: the sketch becomes a document
+  }
   const auto t0 = Clock::now();
   d.drawing = drawing::compile_drawing(d.model, d.options);
   d.times.compile_ms = ms_since(t0);
@@ -72,6 +77,9 @@ std::string kind_of(std::string_view name, std::span<const std::byte> bytes) {
     return "dwg";
   }
   const std::string lower = base::js_to_lower(name);
+  if (lower.ends_with(".json")) {
+    return "sketch";
+  }
   if (lower.ends_with(".dxf")) {
     return "dxf";
   }

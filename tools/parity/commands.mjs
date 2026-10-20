@@ -35,6 +35,7 @@ const { CLASSED } = await imp('dwg/objects-write.js');
 const classedKeys = new Set(Object.keys(CLASSED));
 const { readDwg } = await imp('dwg/read.js');
 const { importDwg } = await imp('dwg-import.js');
+const { loadSwSketch } = await imp('swsketch.js');
 const NUMERIC = ['len', 'ang', 'num', 'int', 'area'];
 
 /** The Properties panel (props.js): {props, ids?, group?, vertex?} lists the group's fields with the value they share;
@@ -118,6 +119,12 @@ async function runJs(script) {
     async pickPictures() { const f = this.pictures; this.pictures = []; return f; },
   };
   const eng = new Engine(doc, host);
+  // a SolidWorks sketch export opened first (cadcraft.js openSketchExport)
+  let sketch;
+  if (script.swsketch) {
+    const r = loadSwSketch(doc, script.swsketch.export, script.swsketch.sketch);
+    sketch = r.ok ? { ok: true, sketch: r.sketch, notes: r.report.notes, read: r.report.read, constraints: r.report.constraints } : { ok: false, error: r.error };
+  }
   for (const s of script.steps) {
     if (typeof s === 'string') eng.text(s);
     else if (s.pictures) host.pictures = s.pictures.map((f) => ({ name: f.name, bytes: new Uint8Array(Buffer.from(f.bytes?.$base64 || '', 'base64')) }));
@@ -168,7 +175,8 @@ async function runJs(script) {
   }
   return { ...pdf, name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,
-    undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label), constraints: doc.constraints, params: doc.params };
+    undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label), constraints: doc.constraints, params: doc.params,
+    ...(eng.lastSwb ? { swb: eng.lastSwb.text } : {}), ...(sketch ? { sketch } : {}) };
 }
 
 let same = 0, n = 0;

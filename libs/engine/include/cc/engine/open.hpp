@@ -25,8 +25,9 @@ struct OpenTimes {
 };
 
 struct OpenDrawing {
-  std::string name;  // the file name
-  std::string kind;  // "dwg" | "dxf"
+  std::string name;    // the file name
+  std::string kind;    // "dwg" | "dxf" | "sketch" (a SolidWorks sketch export, .json: its text in `text`)
+  std::string sketch;  // a sketch export: the sketch that opens (empty: not chosen yet)
   base::Value model;
   std::string text;  // a DXF: its text as read (UTF-8, else Windows-1252), for CadCraft's own reader
   std::vector<std::unique_ptr<base::Value>> xref_models;  // stable addresses: the compile options point at them
@@ -43,8 +44,8 @@ inline constexpr std::uint64_t kMaxFile = std::uint64_t{1} << 31U;
 /// Opens bytes already in memory (the web's file picker, a drop): no xrefs.
 [[nodiscard]] base::Result<std::unique_ptr<OpenDrawing>> open_bytes(std::string name, std::span<const std::byte> bytes);
 
-/// "dwg" when the bytes start like a DWG (AC10…), else "dxf" when the name ends in .dxf or the text starts with a
-/// group code, else empty.
+/// "dwg" when the bytes start like a DWG (AC10…), else "sketch" when the name ends in .json (cadcraft.js: a
+/// SolidWorks sketch export), else "dxf" when the name ends in .dxf or the text starts with a group code, else empty.
 [[nodiscard]] std::string kind_of(std::string_view name, std::span<const std::byte> bytes);
 
 }  // namespace cc::engine

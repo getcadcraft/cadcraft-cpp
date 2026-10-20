@@ -41,7 +41,7 @@ EM_JS(void, cc_web_install, (), {
     _free(p); _free(n);
   };
   const input = document.createElement("input");
-  input.type = "file"; input.accept = ".dwg,.dxf"; input.hidden = true; input.id = "cc-file";
+  input.type = "file"; input.accept = ".dwg,.dxf,.json"; input.hidden = true; input.id = "cc-file";
   input.addEventListener("change", () => { if (input.files[0]) send(input.files[0]); input.value = ""; });
   document.body.appendChild(input);
   const pics = document.createElement("input");

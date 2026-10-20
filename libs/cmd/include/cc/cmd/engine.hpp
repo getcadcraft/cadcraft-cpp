@@ -164,6 +164,12 @@ class Host {
   // through Engine::give_files (an empty list = cancelled). No picker: IMAGEATTACH and IMAGE say so.
   [[nodiscard]] virtual bool can_pick_pictures() const { return false; }
   virtual void pick_pictures(bool multiple) { (void)multiple; }
+  /// host.download(name, data, mime): a file the command made, handed to the user (saved or downloaded); false when
+  /// the host has none (SWBOUT then keeps it as Engine::last_swb)
+  virtual bool download(const std::string& name, const std::vector<std::byte>& bytes, const std::string& mime) {
+    (void)name, (void)bytes, (void)mime;
+    return false;
+  }
   // the drawing window's settings (host.settings: polarInc, lwt, lasso …), or nullptr when there are none
   virtual base::Value* settings() { return nullptr; }
   virtual void save_settings() {}
@@ -330,6 +336,7 @@ class Engine {
 
   // ---- what commands keep between runs (the JS engine's fields)
   std::optional<Pt> last_point;               // for @ input
+  std::optional<std::string> last_swb;        // SWBOUT's macro when the host could not download it (engine.lastSwb)
   std::string last_gc, last_dc;               // GEOMCONSTRAINT / DIMCONSTRAINT: the last type (the default next)
   std::pair<double, double> autoc{0.05, 1};   // AUTOCONSTRAIN: distance and angle (degrees) tolerances
   std::optional<Pt> rubber_base;              // ortho and direct distance use it

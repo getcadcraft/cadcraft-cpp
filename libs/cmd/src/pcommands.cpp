@@ -20,6 +20,8 @@
 #include "cc/cad/gsolve.hpp"
 #include "cc/doc/gcons.hpp"
 #include "cc/doc/params_doc.hpp"
+#include "cc/doc/swsketch.hpp"
+#include "cc/sheets/sheets.hpp"
 #include "commands.hpp"
 
 namespace cc::cmd::detail {
@@ -1242,6 +1244,29 @@ Task<void> dcdisplay_cmd(Ctx& c) {
   c.host.constraint_view_changed();
 }
 
+/// SWBOUT: the model as a macro that SolidWorks runs to build one constrained sketch (swsketch.js docToSwb)
+Task<void> swbout_cmd(Ctx& c) {
+  const Value mn = c.doc.meta.get("name");
+  const std::string name = doc::swsketch::safe_chars(mn.truthy() ? base::js_string(mn) : std::string("Drawing1"));
+  doc::swsketch::Swb out = doc::swsketch::to_swb(c.doc, name, sheets::iso_date(c.host.now_ms()), c.words);
+  if (!out.ok) {
+    c.print(out.error);
+    co_return;
+  }
+  if (!c.host.download(name + ".swb", out.bytes, "text/plain")) {
+    c.engine.last_swb = out.text;
+  }
+  // i18n-ignore: the JS prints this sentence in English
+  c.print(
+      "Wrote " + name +
+      ".swb: a macro that SolidWorks runs (Tools, Macro, Run) to build a part with one sketch on the Front Plane. " +
+      out.summary);
+  for (const std::string& n : out.notes) {
+    c.print("  " + n);
+  }
+  c.print(c.t("cmd.swbout.not_yet_tested_solidworks"));
+}
+
 Task<void> parameters_cmd(Ctx& c) {
   if (c.host.show_parameters()) {
     co_return;
@@ -1301,6 +1326,9 @@ void add_parametric(std::vector<CommandDef>& t) {
   CommandDef dcd = def("DCDISPLAY", {}, dcdisplay_cmd, "cmd.dcdisplay.show_hide_dimensional_constraints", true);
   dcd.keep_selection = true;
   t.push_back(std::move(dcd));
+  CommandDef swb = def("SWBOUT", {"SWMACRO"}, swbout_cmd, "cmd.swbout.download_macro_solidworks_swb", true);
+  swb.keep_selection = true;
+  t.push_back(std::move(swb));
 }
 
 }  // namespace cc::cmd::detail

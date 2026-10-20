@@ -22,14 +22,17 @@
 
 #include "cc/base/file.hpp"
 #include "cc/base/js.hpp"
+#include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/edit.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/import.hpp"
+#include "cc/cad/params.hpp"
 #include "cc/cad/read_dxf.hpp"
 #include "cc/cad/snap.hpp"
 #include "cc/cmd/engine.hpp"
+#include "cc/doc/swsketch.hpp"
 #include "cc/docview/drawing.hpp"
 #include "cc/dxf/read.hpp"
 #include "cc/engine/open.hpp"
@@ -287,6 +290,10 @@ class Viewer::CmdHost final : public cmd::Host {
   }
   // the Properties panel (propcmds.js)
   void props_open() override { v_.props_open_ = true; }
+  bool download(const std::string& name, const std::vector<std::byte>& bytes, const std::string& mime) override {
+    (void)mime;
+    return v_.download_file(name, bytes);
+  }
   bool show_parameters() override {
     v_.params_open_ = true;
     return true;
@@ -425,6 +432,10 @@ render::Rgba Viewer::background() const {
 }
 
 void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
+  if (d->kind == "sketch" && d->sketch.empty()) {
+    pick_sketch(std::move(d));
+    return;
+  }
   engine_.reset();
   cmd_host_.reset();
   cad_.reset();
@@ -446,7 +457,9 @@ void Viewer::show(std::unique_ptr<engine::OpenDrawing> d) {
       message_ = r.error().message;
     }
   }
-  if (read) {
+  if (doc_->kind == "sketch") {
+    open_sketch();
+  } else if (read) {
     // as cadcraft.js opens a file: meta.name = the file's name without its extension, meta.source = the file's name
     base::Value drawing = std::move(*read);
     base::Value meta = drawing.get("meta").is_object() ? drawing.get("meta") : base::Value::object();
@@ -613,7 +626,107 @@ void Viewer::give_pictures(std::vector<Inbox::Item> files) {
   after_input();
 }
 
+void Viewer::say(const std::string& text) {
+  if (cmd_host_) {
+    printed_.push_back(text);
+  } else {
+    message_ = text;
+  }
+  redraw_ = std::max(redraw_, 2);
+}
+
+void Viewer::pick_sketch(std::unique_ptr<engine::OpenDrawing> d) {
+  const doc::swsketch::Export e = doc::swsketch::read_export_text(d->text, *words_);
+  if (!e.ok) {
+    say(words_->t("app.open.failed", {{"file", d->name}, {"why", e.error}}));
+    return;
+  }
+  if (e.sketches.size() == 1) {
+    d->sketch = e.sketches.front();
+    sketch_ready_ = std::move(d);  // opened at the next frame's start
+    redraw_ = std::max(redraw_, 2);
+    return;
+  }
+  sketch_count_ = e.sketches.size();
+  sketch_names_.assign(e.sketches.begin(),
+                       e.sketches.begin() + static_cast<std::ptrdiff_t>(std::min<std::size_t>(8, e.sketches.size())));
+  sketch_pick_ = std::move(d);
+  redraw_ = std::max(redraw_, 2);
+}
+
+/// cadcraft.js openSketchExport: the chosen sketch becomes the drawing; its report goes to the history
+void Viewer::open_sketch() {
+  std::string_view text = doc_->text;
+  if (text.starts_with("\xEF\xBB\xBF")) {
+    text.remove_prefix(3);
+  }
+  const auto j = base::parse_json(text);
+  auto doc = std::make_unique<doc::Doc>();
+  const doc::swsketch::Loaded r =
+      j ? doc::swsketch::load_sketch(*doc, *j, doc_->sketch, *words_) : doc::swsketch::Loaded{};
+  if (!r.ok) {
+    message_ = words_->t("app.open.failed", {{"file", doc_->name}, {"why", r.error}});
+    drawing_ = doc_->drawing;
+    return;
+  }
+  source_path_.clear();  // never saved back over the export
+  cad_ = std::move(doc);
+  adopt_engine();
+  std::string objects;
+  const std::string n = std::to_string(cad_->model()->size());
+  for (std::size_t i = 0; i < n.size(); ++i) {  // toLocaleString('en-US')
+    if (i > 0 && (n.size() - i) % 3 == 0) {
+      objects += ',';
+    }
+    objects += n[i];
+  }
+  printed_.push_back(
+      words_->t("app.sketch.opened", {{"sketch", r.sketch},
+                                      {"file", doc_->name},
+                                      {"objects", objects},
+                                      {"constraints", std::to_string(r.constraints)},
+                                      {"params", std::to_string(cad::params::from_value(cad_->params).vars.size())}}));
+  for (const std::string& note : r.notes) {
+    printed_.push_back("  " + note);
+  }
+}
+
+void Viewer::sketch_dialog() {
+  if (!sketch_pick_) {
+    return;
+  }
+  ImGui::OpenPopup("###sketchpick");
+  if (!ImGui::BeginPopupModal((words_->t("app.open_which_sketch") + "###sketchpick").c_str(), nullptr,
+                              ImGuiWindowFlags_AlwaysAutoResize)) {
+    return;
+  }
+  ImGui::TextUnformatted(
+      words_->t("app.sketch.which", {{"file", sketch_pick_->name}, {"n", std::to_string(sketch_count_)}}).c_str());
+  bool cancel = ImGui::Button(words_->t("opt.cancel").c_str()) || ImGui::IsKeyPressed(ImGuiKey_Escape);
+  std::optional<std::string> pick;
+  for (const std::string& name : sketch_names_) {
+    ImGui::SameLine();
+    if (ImGui::Button(name.c_str())) {
+      pick = name;
+    }
+  }
+  if (cancel || pick) {
+    ImGui::CloseCurrentPopup();
+  }
+  ImGui::EndPopup();
+  if (pick) {
+    sketch_pick_->sketch = *pick;
+    sketch_ready_ = std::exchange(sketch_pick_, nullptr);  // opened at the next frame's start
+  } else if (cancel) {
+    sketch_pick_.reset();
+    say(words_->t("app.not_opened"));
+  }
+}
+
 void Viewer::take_inbox() {
+  if (sketch_ready_) {
+    show(std::exchange(sketch_ready_, nullptr));  // the sketch the dialog picked
+  }
   for (Inbox::Item& it : inbox_.take()) {
     if (it.pictures) {
       give_pictures(std::move(it.files));
@@ -798,6 +911,21 @@ void Viewer::plot_now() {
   redraw_ = std::max(redraw_, 2);
 }
 
+bool Viewer::download_file(const std::string& name, const std::vector<std::byte>& bytes) {
+  const std::size_t dot = name.rfind('.');
+  const std::string ext = dot == std::string::npos ? std::string() : name.substr(dot + 1);
+  if (services_.pick_save) {
+    pending_save_ = PendingSave{.format = ext, .name = name, .bytes = bytes, .notes = {}, .version = 0};
+    services_.pick_save(name, ext);
+    return true;
+  }
+  if (services_.download) {
+    services_.download(name, bytes);
+    return true;
+  }
+  return false;
+}
+
 void Viewer::save_to(const std::string& path) {
   if (!pending_save_ || !cad_ || !cmd_host_) {
     return;
@@ -812,7 +940,7 @@ void Viewer::save_to(const std::string& path) {
     cmd_host_->print(words_->t("app.save.failed", {{"format", format_label(ps.format)}, {"why", ok.error().message}}));
     return;
   }
-  if (ps.format == "pdf") {  // a plot: the drawing's own file and its saved state stay as they are
+  if (ps.format == "pdf" || ps.format == "swb") {  // a plot or a macro: the drawing's own file and state stay
     for (const base::Value& n : ps.notes) {
       cmd_host_->print(base::js_string(n));
     }
@@ -1606,6 +1734,7 @@ void Viewer::ui(float dpr) {
   props_panel();  // after the command line: a field it focuses wins over the command line's focus
   params_panel();
   dc_edit_dialog();
+  sketch_dialog();
   quick_props();
   // the canvas: what is left
   cx_ = static_cast<double>(vp->WorkPos.x + layers_width());

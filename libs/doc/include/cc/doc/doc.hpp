@@ -200,6 +200,11 @@ class Doc {
   [[nodiscard]] std::vector<std::string> redo_labels() const;
   /// `redoStack.length = 0` (a command's own undo, commands.js undoInside).
   void clear_redo() noexcept { redo_.clear(); }
+  /// Both stacks emptied (opening a file that is built in place: swsketch load_sketch)
+  void clear_history() noexcept {
+    undo_.clear();
+    redo_.clear();
+  }
   /// The id the next added entity gets (doc.js nextId).
   [[nodiscard]] Id next_id() const noexcept { return next_id_; }
   /// doc.nextId++: an id handed out without an edit (the block editor's objects).
