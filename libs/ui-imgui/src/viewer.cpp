@@ -33,6 +33,7 @@
 #include "cc/docview/drawing.hpp"
 #include "cc/dxf/read.hpp"
 #include "cc/engine/open.hpp"
+#include "cc/image/decode.hpp"
 #include "cc/image/png.hpp"
 #include "cc/plot/plot.hpp"
 #include "cc/render/scene.hpp"
@@ -268,6 +269,8 @@ class Viewer::CmdHost final : public cmd::Host {
       v_.services_.pick_open();
     }
   }
+  [[nodiscard]] bool can_pick_pictures() const override { return static_cast<bool>(v_.services_.pick_pictures); }
+  void pick_pictures(bool multiple) override { v_.services_.pick_pictures(multiple); }
   std::vector<doc::Id> pick_window(const cmd::Rect& r, bool crossing) override {
     std::vector<doc::Id> out;
     if (!v_.cad_) {
@@ -486,7 +489,7 @@ void Viewer::present() {
   const std::uint64_t t0 = SDL_GetTicksNS();
   scene_ = font_ ? render::build_scene(drawing_, *font_) : render::Scene{};
   const std::uint64_t t1 = SDL_GetTicksNS();
-  renderer_.upload(scene_);
+  upload_scene();
   if (font_) {
     renderer_.upload_atlas(font_->atlas());
   }
@@ -572,9 +575,38 @@ void Viewer::open_item(Inbox::Item item) {
   show(std::move(*d));
 }
 
+void Viewer::give_pictures(std::vector<Inbox::Item> files) {
+  if (!engine_ || !engine_->waiting_for_files()) {
+    return;  // the command that asked was cancelled meanwhile
+  }
+  // a picture file is at most 64 MB (pictures.js MAX_BYTES): a bigger one is passed on cut short, and refused there
+  constexpr std::uint64_t kMax = std::uint64_t{64} * 1024 * 1024 + 1;
+  std::vector<cmd::PickedFile> picked;
+  for (Inbox::Item& f : files) {
+    cmd::PickedFile pf{.name = f.name, .bytes = {}};
+    if (!f.path.empty()) {
+      if (auto b = base::read_file(f.path, kMax)) {
+        f.bytes = std::move(*b);
+      } else {
+        message_ = f.name + ": " + b.error().message;
+        continue;
+      }
+    }
+    pf.bytes.reserve(f.bytes.size());
+    for (const std::byte b : f.bytes) {
+      pf.bytes.push_back(std::to_integer<std::uint8_t>(b));
+    }
+    picked.push_back(std::move(pf));
+  }
+  engine_->give_files(std::move(picked));
+  after_input();
+}
+
 void Viewer::take_inbox() {
   for (Inbox::Item& it : inbox_.take()) {
-    if (it.save_target) {
+    if (it.pictures) {
+      give_pictures(std::move(it.files));
+    } else if (it.save_target) {
       save_to(it.path);
     } else {
       open_item(std::move(it));
@@ -859,13 +891,25 @@ std::array<double, 2> Viewer::world_at(double x, double y) const {
   return render::to_world(views_[space_], x - cx_, y - cy_);
 }
 
+void Viewer::upload_scene() {
+  if (cad_ && cad_->picture_version != drawn_pictures_) {
+    renderer_.forget_pictures();
+    drawn_pictures_ = cad_->picture_version;
+  }
+  const doc::Doc* d = cad_.get();
+  renderer_.upload(scene_, [d](const std::string& file) -> std::optional<image::Rgba> {
+    const doc::PictureFile* rec = d != nullptr ? doc::find_picture(*d, file) : nullptr;
+    return rec != nullptr ? image::decode_picture(rec->bytes) : std::nullopt;
+  });
+}
+
 void Viewer::rebuild() {
   if (!cad_) {
     return;
   }
   drawing_ = docview::to_drawing(*cad_);
   scene_ = font_ ? render::build_scene(drawing_, *font_) : render::Scene{};
-  renderer_.upload(scene_);
+  upload_scene();
   if (font_) {
     renderer_.upload_atlas(font_->atlas());
   }
@@ -907,7 +951,8 @@ std::size_t Viewer::doc_space_index() const {
 }
 
 void Viewer::after_input() {
-  if (cad_ && cad_->version() != drawn_version_) {
+  // IMAGE gives files without editing the drawing: its pictures change all the same
+  if (cad_ && (cad_->version() != drawn_version_ || cad_->picture_version != drawn_pictures_)) {
     rebuild();
   }
   // the document opened another space (LAYOUT opens its new sheet, VPVIEW picks on the model): its tab follows

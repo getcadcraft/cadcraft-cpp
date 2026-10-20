@@ -75,6 +75,15 @@ struct Picture {
   std::string layer;
 };
 
+/// A picture's pixels (0.5 drawPictures, from walk.js out.picture): its file, one pixel along its width (u) and up (v)
+/// from its lower-left corner, its size in pixels, its frame (the clip: x, y pairs) and its alpha.
+struct Bitmap {
+  std::string file;
+  double x = 0, y = 0, ux = 0, uy = 0, vx = 0, vy = 0, w = 0, h = 0;
+  std::vector<double> clip;
+  double alpha = 1;
+};
+
 struct Space {
   std::string key;
   std::string name;
@@ -85,6 +94,7 @@ struct Space {
   std::string paper_unit;       // paper spaces only: "mm" | "in"
   std::vector<Viewport> viewports;
   std::vector<Picture> images;
+  std::vector<Bitmap> bitmaps;  // documents only (their files are with the document)
 };
 
 struct Layer {

@@ -176,6 +176,19 @@ void walk_space(const doc::Doc& d, const doc::EntityMap& map, drawing::Space& sp
   };
   out.text = [&](const std::string& c, const Value& e, const Opts&) { b.text(c, e); };
   out.point = [&](const std::string& c, double x, double y) { b.point(c, x, y); };
+  out.picture = [&](const PictureOut& p) {
+    sp.bitmaps.push_back({.file = p.file,
+                          .x = p.x,
+                          .y = p.y,
+                          .ux = p.ux,
+                          .uy = p.uy,
+                          .vx = p.vx,
+                          .vy = p.vy,
+                          .w = p.w,
+                          .h = p.h,
+                          .clip = p.clip,
+                          .alpha = p.alpha});
+  };
   out.viewport = [&](const Value& e) {
     drawing::Viewport vp;
     vp.cx = num(e.get("x"));

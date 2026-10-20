@@ -45,7 +45,8 @@ struct FillGeometry {
 
 enum class BatchKind : std::uint8_t {
   drawing,     // Space::batches[batch]
-  picture,     // a raster image's frame (the pictures themselves are not loaded yet: docs/gaps.md)
+  picture,     // a DWG viewer's raster image frame (its file is not loaded: docs/gaps.md)
+  bitmap,      // a document's picture: its frame into the stencil (`fills`), then `quad` textured with `bitmap`
   sheet_fill,  // a layout's paper
   sheet_edge,  // its outline
 };
@@ -59,6 +60,9 @@ struct SceneBatch {
   std::vector<float> fan;        // fill triangles, x, y per vertex
   std::vector<FillGeometry> fills;
   std::vector<GlyphInstance> glyphs;
+  std::string bitmap;       // bitmap: the picture's file
+  std::vector<float> quad;  // bitmap: 6 vertices × (x, y origin-relative, u, v)
+  float alpha = 1;          // bitmap
 };
 
 struct SceneSpace {

@@ -45,7 +45,8 @@ void SDLCALL save_picked(void* userdata, const char* const* files, int /*filter*
   }
   // a cancelled dialog still answers: the save waiting on it then says "Not saved."
   const std::string path = files != nullptr && *files != nullptr ? std::string(*files) : std::string();
-  static_cast<cc::ui::Inbox*>(userdata)->post({.name = {}, .path = path, .bytes = {}, .save_target = true});
+  static_cast<cc::ui::Inbox*>(userdata)->post(
+      {.name = {}, .path = path, .bytes = {}, .save_target = true, .pictures = false, .files = {}});
 }
 
 void SDLCALL picked(void* userdata, const char* const* files, int /*filter*/) {
@@ -53,8 +54,33 @@ void SDLCALL picked(void* userdata, const char* const* files, int /*filter*/) {
     return;  // cancelled, or the dialog failed
   }
   const std::string path = *files;
-  static_cast<cc::ui::Inbox*>(userdata)->post(
-      {.name = std::filesystem::path(path).filename().string(), .path = path, .bytes = {}, .save_target = false});
+  static_cast<cc::ui::Inbox*>(userdata)->post({.name = std::filesystem::path(path).filename().string(),
+                                               .path = path,
+                                               .bytes = {},
+                                               .save_target = false,
+                                               .pictures = false,
+                                               .files = {}});
+}
+
+void SDLCALL pictures_picked(void* userdata, const char* const* files, int /*filter*/) {
+  if (userdata == nullptr) {
+    return;
+  }
+  // a cancelled (or failed) dialog still answers: the command waiting on it then goes on with nothing
+  cc::ui::Inbox::Item item{.name = {}, .path = {}, .bytes = {}, .save_target = false, .pictures = true, .files = {}};
+  for (const std::span<const char* const> list(files, files != nullptr ? 1024 : 0); const char* f : list) {
+    if (f == nullptr) {
+      break;
+    }
+    const std::string path = f;
+    item.files.push_back({.name = std::filesystem::path(path).filename().string(),
+                          .path = path,
+                          .bytes = {},
+                          .save_target = false,
+                          .pictures = false,
+                          .files = {}});
+  }
+  static_cast<cc::ui::Inbox*>(userdata)->post(std::move(item));
 }
 
 int run(std::span<char*> argv) {
@@ -95,6 +121,10 @@ int run(std::span<char*> argv) {
     static constexpr std::array<SDL_DialogFileFilter, 1> kDwg{{{"DWG", "dwg"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kDxf{{{"DXF", "dxf"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kPdf{{{"PDF", "pdf"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kPictures{{{"PNG, JPEG", "png;jpg;jpeg"}}};
+    services.pick_pictures = [&](bool multiple) {
+      SDL_ShowOpenFileDialog(pictures_picked, inbox, window, kPictures.data(), 1, nullptr, multiple);
+    };
     services.pick_save = [&](const std::string& name, const std::string& ext) {
       const SDL_DialogFileFilter* f = kDxf.data();
       if (ext == "dwg") {
@@ -107,8 +137,12 @@ int run(std::span<char*> argv) {
     cc::ui::Host host(window, *gpu, services, assets_dir(argv[0]), locale);
     inbox = &host.viewer().inbox();
     if (!open.empty()) {
-      inbox->post(
-          {.name = std::filesystem::path(open).filename().string(), .path = open, .bytes = {}, .save_target = false});
+      inbox->post({.name = std::filesystem::path(open).filename().string(),
+                   .path = open,
+                   .bytes = {},
+                   .save_target = false,
+                   .pictures = false,
+                   .files = {}});
     }
     bool running = true;
     while (running) {

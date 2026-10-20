@@ -59,6 +59,7 @@ endif()
 find_package(ZLIB REQUIRED)  # libs/image: PNG, the PDF streams
 if(CC_BUILD_RENDER)
   find_package(Freetype REQUIRED)
+  include(Wuffs)  # PNG / JPEG decoding for pictures on screen, pinned by commit: cmake/Wuffs.cmake
 endif()
 if(CC_BUILD_GUI)
   find_package(SDL3 CONFIG REQUIRED)

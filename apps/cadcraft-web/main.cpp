@@ -44,11 +44,31 @@ EM_JS(void, cc_web_install, (), {
   input.type = "file"; input.accept = ".dwg,.dxf"; input.hidden = true; input.id = "cc-file";
   input.addEventListener("change", () => { if (input.files[0]) send(input.files[0]); input.value = ""; });
   document.body.appendChild(input);
+  const pics = document.createElement("input");
+  pics.type = "file"; pics.accept = ".png,.jpg,.jpeg,image/png,image/jpeg"; pics.hidden = true; pics.id = "cc-pics";
+  pics.addEventListener("change", async () => {
+    _cc_web_pictures_begin();
+    for (const file of pics.files) {
+      const b = new Uint8Array(await file.arrayBuffer());
+      const p = _malloc(b.length), n = stringToNewUTF8(file.name);
+      HEAPU8.set(b, p);
+      _cc_web_picture(p, b.length, n);
+      _free(p); _free(n);
+    }
+    _cc_web_pictures_end();
+    pics.value = "";
+  });
+  document.body.appendChild(pics);
   const c = document.getElementById("canvas");
   c.addEventListener("dragover", (e) => e.preventDefault());
   c.addEventListener("drop", (e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) send(f); });
 });
 EM_JS(void, cc_web_pick, (), { document.getElementById("cc-file").click(); });
+EM_JS(void, cc_web_pick_pictures, (int multiple), {
+  const p = document.getElementById("cc-pics");
+  p.multiple = multiple !== 0;
+  p.click();
+});
 EM_JS(void, cc_web_download, (const char* name, const void* data, int size), {
   const bytes = HEAPU8.slice(data, data + size);
   const url = URL.createObjectURL(new Blob([bytes], {type : "application/octet-stream"}));
@@ -206,7 +226,37 @@ extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_open(const std::uint8_t* data, int s
   std::vector<std::byte> bytes(in.size());
   std::ranges::transform(in, bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
   const std::string file = name != nullptr ? name : "drawing";
-  take(*g_app, {.name = file, .path = {}, .bytes = std::move(bytes), .save_target = false});
+  take(*g_app,
+       {.name = file, .path = {}, .bytes = std::move(bytes), .save_target = false, .pictures = false, .files = {}});
+}
+
+// the pictures the file input gave, one batch at a time
+cc::ui::Inbox::Item g_pictures{
+    .name = {}, .path = {}, .bytes = {}, .save_target = false, .pictures = true, .files = {}};
+
+extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_pictures_begin() {
+  g_pictures.files.clear();
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_picture(const std::uint8_t* data, int size, const char* name) {
+  if (data == nullptr || size <= 0 || g_pictures.files.size() >= 256) {
+    return;
+  }
+  const std::span<const std::uint8_t> in(data, static_cast<std::size_t>(size));
+  std::vector<std::byte> bytes(in.size());
+  std::ranges::transform(in, bytes.begin(), [](std::uint8_t b) { return static_cast<std::byte>(b); });
+  g_pictures.files.push_back({.name = name != nullptr ? name : "picture",
+                              .path = {},
+                              .bytes = std::move(bytes),
+                              .save_target = false,
+                              .pictures = false,
+                              .files = {}});
+}
+extern "C" EMSCRIPTEN_KEEPALIVE void cc_web_pictures_end() {
+  if (g_app != nullptr && g_app->host) {
+    g_app->host->viewer().inbox().post(std::exchange(
+        g_pictures,
+        cc::ui::Inbox::Item{.name = {}, .path = {}, .bytes = {}, .save_target = false, .pictures = true, .files = {}}));
+  }
 }
 
 int main(int /*argc*/, char** /*argv*/) {
@@ -238,6 +288,7 @@ int main(int /*argc*/, char** /*argv*/) {
         g_app->gpu = std::make_unique<cc::ui::Gpu>(std::move(*gpu));
         cc::ui::Services services;
         services.pick_open = [] { cc_web_pick(); };
+        services.pick_pictures = [](bool multiple) { cc_web_pick_pictures(multiple ? 1 : 0); };
         services.download = [](const std::string& name, std::span<const std::byte> bytes) {
           cc_web_download(name.c_str(), bytes.data(), static_cast<int>(bytes.size()));
         };

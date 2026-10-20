@@ -76,6 +76,19 @@ struct CoverOut { @builtin(position) pos: vec4f, @location(0) alpha: f32 };
   return vec4f(u.color.rgb, u.color.a * i.alpha);
 }
 
+// ---- pictures: the frame's fans into the stencil (as a fill), then the picture's quad where the stencil is odd
+struct PicOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f };
+@vertex fn pic_vs(@location(0) p: vec4f) -> PicOut {
+  var o: PicOut;
+  o.pos = to_clip(to_device(p.xy));
+  o.uv = p.zw;
+  return o;
+}
+@fragment fn pic_fs(i: PicOut) -> @location(0) vec4f {
+  let c = textureSample(atlas, samp, i.uv);
+  return vec4f(c.rgb, c.a * u.color.a);
+}
+
 // ---- text: a glyph per instance, placed and turned as dwg-view.js places text (screen-space size, skipped < 2 px)
 struct GlyphIn {
   @location(0) a: vec4f,   // anchor x, y (origin-relative), height (world), rotation
@@ -275,12 +288,22 @@ SceneRenderer::SceneRenderer(wgpu::Device device, wgpu::TextureFormat color) : d
                                          .attributeCount = 4,
                                          .attributes = glyph_attr.data()};
 
+  const std::array<wgpu::VertexAttribute, 1> pic_attr{
+      {{.format = wgpu::VertexFormat::Float32x4, .offset = 0, .shaderLocation = 0}}};
+  const wgpu::VertexBufferLayout pic_l{
+      .stepMode = wgpu::VertexStepMode::Vertex, .arrayStride = 16, .attributeCount = 1, .attributes = pic_attr.data()};
+
   using C = wgpu::CompareFunction;
   using S = wgpu::StencilOperation;
   pipeline(&Pipelines::segments, "seg_vs", "seg_fs", seg_l, depth_stencil(C::Always, S::Keep), true);
   pipeline(&Pipelines::stencil, "fan_vs", "fan_fs", fan_l, depth_stencil(C::Always, S::Invert), false);
   pipeline(&Pipelines::cover, "cover_vs", "cover_fs", cover_l, depth_stencil(C::NotEqual, S::Zero), true);
   pipeline(&Pipelines::text, "text_vs", "text_fs", glyph_l, depth_stencil(C::Always, S::Keep), true);
+  pipeline(&Pipelines::picture, "pic_vs", "pic_fs", pic_l, depth_stencil(C::NotEqual, S::Zero), true);
+  wgpu::Limits limits;
+  if (device_.GetLimits(&limits) == wgpu::Status::Success && limits.maxTextureDimension2D > 0) {
+    max_texture_ = limits.maxTextureDimension2D;
+  }
 
   wgpu::SamplerDescriptor sd;
   sd.magFilter = wgpu::FilterMode::Linear;
@@ -318,6 +341,61 @@ void SceneRenderer::rebuild_bind_group() {
   bgd.entryCount = e.size();
   bgd.entries = e.data();
   bind_ = device_.CreateBindGroup(&bgd);
+  for (PicTex& p : pics_) {  // the pictures' bind groups name the uniform buffer too
+    if (p.tex) {
+      p.bind = bind_for(p.tex);
+    }
+  }
+}
+
+wgpu::BindGroup SceneRenderer::bind_for(const wgpu::Texture& tex) const {
+  std::array<wgpu::BindGroupEntry, 3> e{};
+  e[0].binding = 0;
+  e[0].buffer = uniforms_;
+  e[0].size = sizeof(Uniform);
+  e[1].binding = 1;
+  e[1].textureView = tex.CreateView();
+  e[2].binding = 2;
+  e[2].sampler = sampler_;
+  wgpu::BindGroupDescriptor bgd;
+  bgd.layout = layout_;
+  bgd.entryCount = e.size();
+  bgd.entries = e.data();
+  return device_.CreateBindGroup(&bgd);
+}
+
+void SceneRenderer::forget_pictures() {
+  pics_.clear();
+}
+
+std::size_t SceneRenderer::picture_index(const std::string& file, const PictureSource& pictures) {
+  for (std::size_t i = 0; i < pics_.size(); ++i) {
+    if (pics_[i].file == file) {
+      return i;
+    }
+  }
+  PicTex p{.file = file, .tex = {}, .bind = {}};
+  std::optional<image::Rgba> img = pictures ? pictures(file) : std::nullopt;
+  if (img && img->w > 0 && img->h > 0) {
+    if (std::max(img->w, img->h) > max_texture_) {
+      img = image::fit_rgba(*img, max_texture_);  // a GPU's largest texture: sampled down, not refused
+    }
+    wgpu::TextureDescriptor td;
+    td.size = {img->w, img->h, 1};
+    td.format = wgpu::TextureFormat::RGBA8Unorm;
+    td.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
+    p.tex = device_.CreateTexture(&td);
+    wgpu::TexelCopyTextureInfo dst;
+    dst.texture = p.tex;
+    wgpu::TexelCopyBufferLayout layout;
+    layout.bytesPerRow = img->w * 4;
+    layout.rowsPerImage = img->h;
+    const wgpu::Extent3D size{img->w, img->h, 1};
+    queue_.WriteTexture(&dst, img->px.data(), img->px.size(), &layout, &size);
+    p.bind = bind_for(p.tex);
+  }
+  pics_.push_back(std::move(p));
+  return pics_.size() - 1;
 }
 
 void SceneRenderer::upload_atlas(const text::Atlas& atlas) {
@@ -345,7 +423,8 @@ void SceneRenderer::upload_atlas(const text::Atlas& atlas) {
   spread_em_ = atlas.spread_em;
 }
 
-void SceneRenderer::upload(const render::Scene& scene) {
+void SceneRenderer::upload(const render::Scene& scene, const PictureSource& pictures) {
+  std::vector<float> pics;
   std::vector<float> segs;
   std::vector<float> fan;
   std::vector<float> covers;
@@ -377,6 +456,11 @@ void SceneRenderer::upload(const render::Scene& scene) {
         fills_.push_back(fr);
       }
       r.fill_count = static_cast<std::uint32_t>(fills_.size()) - r.fill_first;
+      if (sb.kind == render::BatchKind::bitmap) {
+        r.pic_first = static_cast<std::uint32_t>(pics.size() / 4);
+        pics.insert(pics.end(), sb.quad.begin(), sb.quad.end());
+        r.pic = picture_index(sb.bitmap, pictures);
+      }
       ranges_.emplace(&sb, r);
     }
   }
@@ -384,6 +468,7 @@ void SceneRenderer::upload(const render::Scene& scene) {
   fan_buf_ = upload_vector(device_, queue_, fan, wgpu::BufferUsage::Vertex);
   cover_buf_ = upload_vector(device_, queue_, covers, wgpu::BufferUsage::Vertex);
   glyph_buf_ = upload_vector(device_, queue_, glyphs, wgpu::BufferUsage::Vertex);
+  pic_buf_ = upload_vector(device_, queue_, pics, wgpu::BufferUsage::Vertex);
 }
 
 void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const render::DrawBatch> draws,
@@ -452,6 +537,22 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
         pass.SetVertexBuffer(0, glyph_buf_);
         pass.Draw(6, r.glyph_count, 0, r.glyph_first);
         ++draw_calls_;
+      }
+      continue;
+    }
+    if (db.geometry->kind == render::BatchKind::bitmap) {
+      // only a picture whose file the drawing has (0.5 draws nothing until its bitmap is there)
+      if (r.pic != kNoPicture && r.pic < pics_.size() && pics_[r.pic].bind && r.fill_count > 0) {
+        const FillRange& fr = fills_[r.fill_first];
+        pass.SetPipeline(pipes_->stencil);
+        pass.SetBindGroup(0, bind_, offset.size(), offset.data());
+        pass.SetVertexBuffer(0, fan_buf_);
+        pass.Draw(fr.fan_count, 1, fr.fan_first, 0);
+        pass.SetPipeline(pipes_->picture);
+        pass.SetBindGroup(0, pics_[r.pic].bind, offset.size(), offset.data());
+        pass.SetVertexBuffer(0, pic_buf_);
+        pass.Draw(6, 1, r.pic_first, 0);
+        draw_calls_ += 2;
       }
       continue;
     }

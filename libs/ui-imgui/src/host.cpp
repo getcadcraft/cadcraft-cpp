@@ -115,8 +115,12 @@ bool Host::event(const SDL_Event& e) {
   }
   if (e.type == SDL_EVENT_DROP_FILE && e.drop.data != nullptr) {
     const std::string path = e.drop.data;
-    viewer_->inbox().post(
-        {.name = path.substr(path.find_last_of("/\\") + 1), .path = path, .bytes = {}, .save_target = false});
+    viewer_->inbox().post({.name = path.substr(path.find_last_of("/\\") + 1),
+                           .path = path,
+                           .bytes = {},
+                           .save_target = false,
+                           .pictures = false,
+                           .files = {}});
   }
   viewer_->event(e, ImGui::GetIO().WantCaptureMouse);
   return true;

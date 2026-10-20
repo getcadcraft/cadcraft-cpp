@@ -37,6 +37,7 @@ if(NOT DEFINED ENV{CC_TIDY_ALL} AND GIT_FOUND AND EXISTS "${SRC}/.git")
     endif()
   endif()
 endif()
+list(FILTER files EXCLUDE REGEX "^(build|third_party|vendor)/")  # vendored code: not ours to tidy
 if(NOT files)
   cc_list_sources(${SRC} files)
   list(FILTER files INCLUDE REGEX "\\.cpp$")

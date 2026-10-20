@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8f (constraints in saved files, through MIRROR, TRIM and the clipboard).
+Last updated 2026-10-20 · Change: M5.8d (pictures on screen).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -407,4 +407,13 @@ Last updated 2026-10-20 · Change: M5.8f (constraints in saved files, through MI
   command script may ask for its drawing saved (`{"save": ["dxf", "dwg2018"]}`, libs/engine script_save): the files
   compare byte for byte and are opened again, their constraints compared too. tests/commands/constraints-save.json and
   constraints-keep.json (5 scripts); commands 164/164; corpus DXF and DWG saving unchanged.
+- M5.8d (2026-10-20): pictures on screen (0.5 drawPictures). PNG and JPEG are decoded by wuffs (memory-safe by
+  construction, as section 3 asks: v0.4.0-alpha.10, its single-file release pinned by commit and hash,
+  cmake/Wuffs.cmake; libs/image picture-decode, render builds only) to straight RGBA, box-filtered down to the GPU's
+  largest texture when bigger. The walk's pictures become drawing::Bitmap (docview to_drawing) and a scene batch that
+  draws first in each group as view.js does: the frame's fans into the stencil, then the picture's quad textured with
+  its file, faded by its alpha. The renderer keeps one texture per file until the drawing's files change
+  (picture_version); IMAGE giving files redraws without an edit. The viewer picks pictures through the inbox (desktop:
+  SDL's dialog, PNG / JPEG; web: a file input), so IMAGEATTACH and IMAGE work in the app. Test: a picture and a clipped
+  copy rendered offscreen through the whole pipeline, their pixels checked.
 

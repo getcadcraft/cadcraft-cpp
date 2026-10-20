@@ -179,6 +179,33 @@ Scene build_scene(const drawing::Drawing& d, text::Font& font) {
       ss.batches.push_back(std::move(fill));
       ss.batches.push_back(std::move(edge));
     }
+    for (const drawing::Bitmap& bm : s.bitmaps) {  // a document's picture (view.js draws them first)
+      if (bm.clip.size() < 6 || !(bm.w > 0) || !(bm.h > 0)) {
+        continue;
+      }
+      SceneBatch pb;
+      pb.kind = BatchKind::bitmap;
+      pb.ox = bm.x;
+      pb.oy = bm.y;
+      pb.bitmap = bm.file;
+      pb.alpha = static_cast<float>(std::isfinite(bm.alpha) ? std::clamp(bm.alpha, 0.0, 1.0) : 1.0);
+      add_fill(pb, drawing::Fill{{bm.clip}, false});
+      if (pb.fills.empty()) {
+        continue;
+      }
+      // the bitmap's unit square, x along the width and y down from the top row, onto the picture's corners
+      const double wx = bm.ux * bm.w;
+      const double wy = bm.uy * bm.w;
+      const double hx = bm.vx * bm.h;
+      const double hy = bm.vy * bm.h;
+      const std::array<std::array<double, 4>, 4> c{
+          {{hx, hy, 0, 0}, {hx + wx, hy + wy, 1, 0}, {0, 0, 0, 1}, {wx, wy, 1, 1}}};
+      for (const std::size_t k : {0U, 1U, 2U, 2U, 1U, 3U}) {
+        pb.quad.insert(pb.quad.end(), {static_cast<float>(c[k][0]), static_cast<float>(c[k][1]),
+                                       static_cast<float>(c[k][2]), static_cast<float>(c[k][3])});
+      }
+      ss.batches.push_back(std::move(pb));
+    }
     for (const drawing::Picture& im : s.images) {  // a picture's frame (pixel space → world)
       SceneBatch pb;
       pb.kind = BatchKind::picture;
@@ -255,7 +282,10 @@ std::vector<DrawBatch> frame_batches(const Scene& scene, const drawing::Drawing&
       db.dpr = v.dpr;
       db.clip = clip;
       db.scissor = scissor;
-      if (sb.kind == BatchKind::picture) {
+      if (sb.kind == BatchKind::bitmap) {
+        db.color = Rgba{.r = 1, .g = 1, .b = 1, .a = sb.alpha};
+        db.line_px = v.dpr;
+      } else if (sb.kind == BatchKind::picture) {
         db.color = o.theme.line;
         db.line_px = v.dpr;
       } else {

@@ -44,6 +44,9 @@ struct Services {
   /// Desktop: the save dialog for a file `name` of kind `ext` ("dwg" / "dxf"); the path chosen arrives through the
   /// inbox as a save target. Unset on the web (the file downloads).
   std::function<void(const std::string& name, const std::string& ext)> pick_save;
+  /// The platform's picker for pictures (PNG, JPEG; several at once when `multiple`): the choice arrives through the
+  /// inbox as one `pictures` item (no files: cancelled). Unset: IMAGEATTACH and IMAGE say there is no picker.
+  std::function<void(bool multiple)> pick_pictures;
   /// Web: the bytes handed to the browser as a download named `name`.
   std::function<void(const std::string& name, std::span<const std::byte> bytes)> download;
 };
@@ -56,6 +59,8 @@ class Inbox {
     std::string path;              // desktop: a path to open
     std::vector<std::byte> bytes;  // web: the file's bytes
     bool save_target = false;      // a path chosen in the save dialog, for the save waiting on it
+    bool pictures = false;         // what the picture picker gave (`files`), for the command waiting on it
+    std::vector<Item> files;       // pictures: each by its path (desktop) or bytes (web)
   };
   void post(Item item);
   [[nodiscard]] std::vector<Item> take();
@@ -197,6 +202,9 @@ class Viewer {
   std::unique_ptr<CmdHost> cmd_host_;
   std::unique_ptr<cmd::Engine> engine_;
   std::uint64_t drawn_version_ = 0;
+  std::uint64_t drawn_pictures_ = 0;
+  void upload_scene();
+  void give_pictures(std::vector<Inbox::Item> files);  // the document's picture_version the renderer's textures are of
   std::array<char, 512> line_{};
   std::vector<std::string> printed_;  // the command line's history (last 200)
   std::string prompt_;
