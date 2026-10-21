@@ -69,6 +69,10 @@ std::uint32_t code_point_at(std::string_view s, std::size_t i, std::size_t& len)
 
 }  // namespace
 
+std::size_t js_space_at(std::string_view s, std::size_t i) noexcept {
+  return space_at(s, i);
+}
+
 std::string_view js_trim_start(std::string_view s) noexcept {
   for (std::size_t n = space_at(s, 0); n != 0; n = space_at(s, 0)) {
     s.remove_prefix(n);

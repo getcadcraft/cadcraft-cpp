@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8g2 (SWBOUT, SolidWorks sketch exports).
+Last updated 2026-10-20 · Change: M5.8h1 (point clouds: the reader).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -440,4 +440,14 @@ Last updated 2026-10-20 · Change: M5.8g2 (SWBOUT, SolidWorks sketch exports).
   swsketch.json, 13 scripts (macro text, notes, opened document, constraints, parameters, seven malformed exports), the
   same as the JS; commands 177/177. Fuzz target swsketch (reader, opener, macro writer). Known difference: an export
   whose globals list holds a null opens here; 0.5 throws on it (g.name of null).
+- M5.8h1 (2026-10-20): point clouds, the reader (pointcloud.js, las.js) in a new L2 library, libs/cloud. The LAS
+  1.0–1.4 header with its variable-length and extended records (every size, count and offset checked; a file cut short
+  says how many points it holds), text clouds (x y z, x y z r g b, x y z i, x y z i r g b; a PTS count line; spaces,
+  tabs, commas or semicolons; the first 64 KB tell the columns), every point read once and at most a budget kept,
+  evenly (the keeper halves when full), positions as float32 relative to a whole-unit origin, colours (the file's,
+  16-bit or 8-bit), intensity and class; the colour modes (height ramp from the 1st–99th percentile, intensity 2nd–98th,
+  ASPRS class colours), slices, the plan grid for snapping and the summary. `cadcraft-cli cloud <file> [--budget N]`;
+  tools/parity/cloud.mjs runs pointcloud.js on the same files: 14/14 the same (LAS formats 0/2/3/7/8, XYZ, PTS of the
+  0.5 tests' room, generated once into testfiles/generated/pointcloud-room; at the default budget and at 1000). Unit
+  test and fuzz target cloud. Not yet: coordinate systems (M5.8h2), LAZ (M5.8h3), the commands and the underlay (M5.8h4).
 

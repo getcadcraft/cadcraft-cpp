@@ -54,11 +54,13 @@
 #include <vector>
 
 #include "cc/base/file.hpp"
+#include "cc/base/js.hpp"
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/base/value.hpp"
 #include "cc/cad/import.hpp"
 #include "cc/cad/read_dxf.hpp"
+#include "cc/cloud/cloud.hpp"
 #include "cc/cmd/script.hpp"
 #include "cc/doc/doc.hpp"
 #include "cc/docview/walk.hpp"
@@ -103,6 +105,7 @@ void usage(std::FILE* out) {
       "                                        a PDF of a sheet, of the model at its extents, or of every sheet\n"
       "  plot-parity <in.dwg>                  each sheet and the model as uncompressed PDFs (the parity kit)\n"
       "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
+      "  cloud <file> [--budget N]           a point cloud (LAS, XYZ, PTS) as CadCraft reads it (JSON)\n"
       "  version                             print the version\n");
 }
 
@@ -867,6 +870,153 @@ int cmd_compile(const std::filesystem::path& file, int bench_runs) {
   return 0;
 }
 
+/// `cloud <file> [--budget N]`: a point cloud as pointcloud.js reads it (tools/parity/cloud.mjs compares)
+cc::base::Value v3_value(const cc::cloud::V3& v) {
+  return cc::base::Value(cc::base::Array{v[0], v[1], v[2]});
+}
+template <class T>
+cc::base::Value array_of(const std::vector<T>& v) {
+  cc::base::Array a;
+  a.reserve(v.size());
+  for (const T x : v) {
+    a.emplace_back(static_cast<double>(x));
+  }
+  return {std::move(a)};
+}
+
+// NOLINTNEXTLINE(readability-function-cognitive-complexity) — one object, field by field
+int cmd_cloud(const std::filesystem::path& file, double budget, std::string_view argv0) {
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const auto bytes = cc::base::read_file(file, cc::cloud::kMaxFileBytes + 1);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  const std::string name = file.filename().string();
+  cc::base::Value r = cc::base::make_object({{"name", name}, {"budget", budget}});
+  const auto write = [&r] {
+    std::string js;
+    cc::base::write_json(r, js);
+    js += '\n';
+    (void)std::fwrite(js.data(), 1, js.size(), stdout);
+    return 0;
+  };
+  const auto info = cc::cloud::read_info(name, *bytes, *words);
+  if (!info) {
+    r.set("error", info.error().message);
+    return write();
+  }
+  cc::base::Array notes;
+  for (const std::string& s : info->notes) {
+    notes.emplace_back(s);
+  }
+  cc::base::Value iv = cc::base::make_object({{"kind", info->kind},
+                                              {"name", info->name},
+                                              {"size", static_cast<double>(info->size)},
+                                              {"count", info->count},
+                                              {"estimate", info->estimate},
+                                              {"min", info->min ? v3_value(*info->min) : cc::base::Value(nullptr)},
+                                              {"max", info->max ? v3_value(*info->max) : cc::base::Value(nullptr)},
+                                              {"color", info->color},
+                                              {"intensity", info->intensity},
+                                              {"classes", info->classes},
+                                              {"notes", cc::base::Value(std::move(notes))}});
+  iv.set("columns", info->columns ? cc::base::make_object(
+                                        {{"n", info->columns->n}, {"i", info->columns->i}, {"rgb", info->columns->rgb}})
+                                  : cc::base::Value(nullptr));
+  if (info->version) {
+    iv.set("version", *info->version);
+  }
+  if (info->format) {
+    iv.set("format", *info->format);
+  }
+  r.set("info", std::move(iv));
+  const auto c = cc::cloud::load_cloud(name, *bytes, *info, budget, *words);
+  if (!c) {
+    r.set("error", c.error().message);
+    return write();
+  }
+  cc::base::Array counts;
+  for (const auto& [k, v] : c->class_counts) {
+    counts.emplace_back(cc::base::Array{k, static_cast<double>(v)});
+  }
+  cc::base::Array cnotes;
+  for (const std::string& s : c->notes) {
+    cnotes.emplace_back(s);
+  }
+  r.set("cloud", cc::base::make_object({{"name", c->name},
+                                        {"kind", c->kind},
+                                        {"read", static_cast<double>(c->read)},
+                                        {"n", static_cast<double>(c->n)},
+                                        {"origin", v3_value(c->origin)},
+                                        {"pos", array_of(c->pos)},
+                                        {"rgb", c->rgb ? array_of(*c->rgb) : cc::base::Value(nullptr)},
+                                        {"inten", c->inten ? array_of(*c->inten) : cc::base::Value(nullptr)},
+                                        {"cls", c->cls ? array_of(*c->cls) : cc::base::Value(nullptr)},
+                                        {"min", v3_value(c->min)},
+                                        {"max", v3_value(c->max)},
+                                        {"classCounts", cc::base::Value(std::move(counts))},
+                                        {"notes", cc::base::Value(std::move(cnotes))}}));
+  cc::base::Value colors = cc::base::Value::object();
+  for (const char* m : {"rgb", "height", "intensity", "class", "single"}) {
+    colors.set(m, array_of(cc::cloud::colorize(*c, m)));
+  }
+  r.set("colors", std::move(colors));
+  r.set("single120", array_of(cc::cloud::colorize(*c, "single", {120, 120, 120})));
+  cc::base::Array modes;
+  for (const std::string& m : cc::cloud::color_modes(*c)) {
+    modes.emplace_back(m);
+  }
+  r.set("modes", cc::base::Value(std::move(modes)));
+  const auto mid = [&c](std::size_t a) { return (c->min.at(a) + c->max.at(a)) / 2; };
+  struct Slice {
+    char axis;
+    double at, thick;
+  };
+  const std::array<Slice, 4> slices{
+      {{'z', c->min[2] + 1.2, 0.1}, {'z', c->min[2] + 0.5, 0.3}, {'x', mid(0), 0.2}, {'y', mid(1), -0.4}}};
+  cc::base::Array sl;
+  for (const Slice& s : slices) {
+    sl.emplace_back(array_of(cc::cloud::slice_of(*c, s.axis, s.at, s.thick)));
+  }
+  r.set("slices", cc::base::Value(std::move(sl)));
+  const std::array<std::array<double, 3>, 5> queries{{{mid(0), mid(1), 0.05},
+                                                      {mid(0), mid(1), 0.5},
+                                                      {c->min[0], c->min[1], 0.2},
+                                                      {c->max[0] + 5, c->max[1], 1},
+                                                      {mid(0), mid(1), 1e9}}};
+  const auto near = [&queries](const cc::cloud::PlanGrid& g) {
+    cc::base::Array a;
+    for (const auto& q : queries) {
+      a.emplace_back(static_cast<double>(g.nearest(q[0], q[1], q[2])));
+    }
+    return cc::base::Value(std::move(a));
+  };
+  r.set("grid", near(cc::cloud::PlanGrid(*c, nullptr)));
+  const std::vector<std::uint32_t> cut = cc::cloud::slice_of(*c, 'z', c->min[2] + 1.2, 0.1);
+  r.set("gridSlice", near(cc::cloud::PlanGrid(*c, &cut)));
+  r.set("gridCell", near(cc::cloud::PlanGrid(*c, nullptr, 0.25)));
+  const cc::cloud::Summary s = cc::cloud::summary(*c, *words);
+  cc::base::Array classes;
+  for (const cc::cloud::ClassRow& row : s.classes) {
+    classes.emplace_back(cc::base::make_object({{"c", row.c}, {"name", row.name}, {"n", static_cast<double>(row.n)}}));
+  }
+  r.set("summary", cc::base::make_object({{"read", static_cast<double>(s.read)},
+                                          {"kept", static_cast<double>(s.kept)},
+                                          {"size", v3_value(s.size)},
+                                          {"classes", cc::base::Value(std::move(classes))}}));
+  return write();
+}
+
 int run(const std::vector<std::string_view>& args) {
   if (args.size() < 2 || args[1] == "help" || args[1] == "--help") {
     usage(stdout);
@@ -988,6 +1138,10 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "walk" && args.size() == 3) {
     return cmd_walk(std::filesystem::path(args[2]), args[0]);
+  }
+  if (cmd == "cloud" && (args.size() == 3 || (args.size() == 5 && args[3] == "--budget"))) {
+    const double budget = args.size() == 5 ? cc::base::js_number(args[4]) : 2e6;
+    return cmd_cloud(std::filesystem::path(args[2]), budget, args[0]);
   }
   if (cmd == "script" && args.size() == 3) {
     return cmd_script(std::filesystem::path(args[2]), args[0]);

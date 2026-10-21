@@ -74,6 +74,7 @@ add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/cad)        # L2
 add_subdirectory(libs/m3d)        # L2
 add_subdirectory(libs/image)      # L2
+add_subdirectory(libs/cloud)      # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()

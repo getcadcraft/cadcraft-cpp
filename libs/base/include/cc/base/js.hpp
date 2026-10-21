@@ -14,6 +14,8 @@
 namespace cc::base {
 
 /// String#trimStart / String#trim / String#trimEnd (Unicode white space and line terminators).
+/// The length of the JS white space (WhiteSpace or LineTerminator, `\\s`) that starts at byte i of UTF-8, or 0.
+[[nodiscard]] std::size_t js_space_at(std::string_view s, std::size_t i) noexcept;
 [[nodiscard]] std::string_view js_trim_start(std::string_view s) noexcept;
 [[nodiscard]] std::string_view js_trim(std::string_view s) noexcept;
 [[nodiscard]] std::string_view js_trim_end(std::string_view s) noexcept;
