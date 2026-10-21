@@ -6,14 +6,15 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <fstream>
-#include <iterator>
+#include <filesystem>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "cc/base/file.hpp"
 #include "cc/i18n/i18n.hpp"
 
 namespace {
@@ -36,7 +37,7 @@ void put_f64(std::vector<std::byte>& b, std::size_t at, double d) {
 
 }  // namespace
 
-TEST_CASE("cloud: text clouds — a PTS count line, mixed separators, skipped lines, colours and intensity") {
+TEST_CASE("cloud: text clouds: a PTS count line, mixed separators, skipped lines, colours and intensity") {
   const cc::i18n::Catalog words;
   const auto b = bytes_of("3\n1,2,3,10,255,0,0\n4;5;6;20;0;255;0\nnot a point\n7 8 9 30 0 0 255\n");
   const auto info = cc::cloud::read_info("a.pts", b, words);
@@ -101,9 +102,8 @@ TEST_CASE("cloud: a LAS 1.2 format 0 file read back, thinned evenly at a small b
 namespace {
 
 std::vector<std::byte> read_seed(const char* name) {
-  std::ifstream in(std::string(CC_CLOUD_SEEDS) + "/" + name, std::ios::binary);
-  const std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-  return bytes_of(s);
+  auto b = cc::base::read_file(std::filesystem::path(CC_CLOUD_SEEDS) / name, std::uint64_t{1} << 20U);
+  return b ? std::move(*b) : std::vector<std::byte>{};
 }
 
 /// A LAZ opened by laz-perf: a cloud or a reason, never a trap (the hardened library) or a sanitizer report
@@ -117,7 +117,7 @@ void open_laz(const std::vector<std::byte>& f, const cc::i18n::Catalog& words) {
 
 }  // namespace
 
-TEST_CASE("cloud: LAZ through laz-perf, and damaged LAZ files refused or read — never a crash") {
+TEST_CASE("cloud: LAZ through laz-perf, and damaged LAZ files refused or read, never a crash") {
   const cc::i18n::Catalog words;
   for (const char* name : {"tiny-f3.laz", "tiny-f7.laz"}) {
     const std::vector<std::byte> f = read_seed(name);
