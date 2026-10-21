@@ -124,8 +124,13 @@ int run(std::span<char*> argv) {
     static constexpr std::array<SDL_DialogFileFilter, 1> kPdf{{{"PDF", "pdf"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kSwb{{{"SolidWorks macro", "swb"}}};
     static constexpr std::array<SDL_DialogFileFilter, 1> kPictures{{{"PNG, JPEG", "png;jpg;jpeg"}}};
+    static constexpr std::array<SDL_DialogFileFilter, 1> kClouds{
+        {{"Point clouds (LAS, LAZ, XYZ, PTS)", "las;laz;xyz;pts"}}};
     services.pick_pictures = [&](bool multiple) {
       SDL_ShowOpenFileDialog(pictures_picked, inbox, window, kPictures.data(), 1, nullptr, multiple);
+    };
+    services.pick_cloud = [&] {  // the waiting command takes it as it takes pictures
+      SDL_ShowOpenFileDialog(pictures_picked, inbox, window, kClouds.data(), 1, nullptr, false);
     };
     services.pick_save = [&](const std::string& name, const std::string& ext) {
       const SDL_DialogFileFilter* f = kDxf.data();

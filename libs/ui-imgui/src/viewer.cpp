@@ -274,6 +274,14 @@ class Viewer::CmdHost final : public cmd::Host {
   }
   [[nodiscard]] bool can_pick_pictures() const override { return static_cast<bool>(v_.services_.pick_pictures); }
   void pick_pictures(bool multiple) override { v_.services_.pick_pictures(multiple); }
+  cloud::Attached* cloud() override { return &v_.cloud_; }
+  [[nodiscard]] bool can_pick_cloud() const override { return static_cast<bool>(v_.services_.pick_cloud); }
+  void pick_cloud() override { v_.services_.pick_cloud(); }
+  void zoom_cloud() override { v_.zoom_to_cloud(); }
+  void cloud_changed() override {
+    v_.cloud_key_.clear();
+    v_.redraw_ = std::max(v_.redraw_, 2);
+  }
   std::vector<doc::Id> pick_window(const cmd::Rect& r, bool crossing) override {
     std::vector<doc::Id> out;
     if (!v_.cad_) {
@@ -532,6 +540,7 @@ void Viewer::adopt_engine() {
   cmd_host_ = std::make_unique<CmdHost>(*this);
   engine_ = std::make_unique<cmd::Engine>(*cad_, *cmd_host_, *words_);
   cad_->on_note = [this](const std::string& m) { printed_.push_back("  " + m); };  // constraints said something
+  cloud_key_.clear();
   c_selected_.clear();
   drawing_ = docview::to_drawing(*cad_);
   drawn_version_ = cad_->version();
@@ -603,8 +612,10 @@ void Viewer::give_pictures(std::vector<Inbox::Item> files) {
   if (!engine_ || !engine_->waiting_for_files()) {
     return;  // the command that asked was cancelled meanwhile
   }
-  // a picture file is at most 64 MB (pictures.js MAX_BYTES): a bigger one is passed on cut short, and refused there
-  constexpr std::uint64_t kMax = std::uint64_t{64} * 1024 * 1024 + 1;
+  // a picture file is at most 64 MB (pictures.js MAX_BYTES), a point cloud 2000 MB (pointcloud.js LIMITS): a bigger
+  // one is passed on cut short, and refused there
+  const std::uint64_t kMax =
+      engine_->waiting_for_cloud() ? cloud::kMaxFileBytes + 1 : std::uint64_t{64} * 1024 * 1024 + 1;
   std::vector<cmd::PickedFile> picked;
   for (Inbox::Item& f : files) {
     cmd::PickedFile pf{.name = f.name, .bytes = {}};
@@ -1192,7 +1203,8 @@ std::array<double, 2> Viewer::point_for(std::array<double, 2> raw) {
   if (osnap_) {
     const double r = 10 / std::max(views_[space_].zoom, 1e-300);
     const cad::BlockLookup blocks = [this](const std::string& n) { return cad_->blocks().get(n); };
-    snap_ = cad::best_snap(near_cursor(raw, r), {raw[0], raw[1]}, r, kinds_, blocks, base);
+    snap_ = cad::best_snap(near_cursor(raw, r), {raw[0], raw[1]}, r, kinds_, blocks, base,
+                           [this](cad::P2 p, double rr) { return cloud_snap(p, rr); });
     if (snap_) {
       return {snap_->x, snap_->y};
     }
@@ -1934,6 +1946,7 @@ void Viewer::render(const wgpu::RenderPassEncoder& pass, std::uint32_t width, st
     d.scissor[0] += static_cast<float>(ox);
     d.scissor[1] += static_cast<float>(oy);
   }
+  cloud_underlay(views_[space_], ox, oy);
   renderer_.draw(
       pass, draws, width, height,
       {static_cast<float>(ox), static_cast<float>(oy), static_cast<float>(cw_ * dpr_), static_cast<float>(ch_ * dpr_)});

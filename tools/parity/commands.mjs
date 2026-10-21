@@ -12,18 +12,34 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname, basename } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { registerHooks } from 'node:module';
 
 const site = process.env.CADCRAFT_SITE || '/var/www/CADCRAFT/getcadcraft.com';
 const { canon, diff } = await import(join(site, 'tools/fork-parity/lib/canon.mjs'));
 const testfiles = process.env.CADCRAFT_TESTFILES || '/var/www/CADCRAFT/testfiles';
 const js05 = process.env.FORK_PARITY_JS || join(testfiles, 'fork-parity/js-0.5');
 const app = join(js05, 'site/public_html/assets/apps/cadcraft/dev');
+// the app's import map (proj4, laz-perf: the point cloud readers) onto the site's vendored files, as the page loads them
+const manifest = JSON.parse(readFileSync(join(app, 'manifest.json'), 'utf8'));
+registerHooks({
+  resolve(spec, ctx, next) {
+    const m = manifest.imports?.[spec];
+    if (m && !m.startsWith('.')) return { url: pathToFileURL(join(site, 'public_html', m)).href, shortCircuit: true };
+    return next(spec, ctx);
+  },
+});
 const imp = (p) => import(pathToFileURL(join(app, p)).href);
 const { init } = await imp('i18n.js');
 init({ locale: 'en', strings: JSON.parse(readFileSync(join(app, 'lang/en.json'), 'utf8')) });
 const { Doc } = await imp('doc.js');
 const { Engine } = await imp('commands.js');
-await imp('pictures-cmd.js');   // what cadcraft.js registers when it loads (IMAGEATTACH…, TEXTMASK, XCLIP)
+await imp('pictures-cmd.js');   // what cadcraft.js registers when it loads (IMAGEATTACH…, POINTCLOUDATTACH…, TEXTMASK, XCLIP)
+const { CloudAttach } = await imp('cloud-cad.js');
+await imp('pointcloud.js');
+// LAZ: laz-perf (WebAssembly) loaded once with its binary handed over; las.js keeps it for every later read
+globalThis.window = globalThis;
+await (await imp('las.js')).lazPerf({ wasmBinary: readFileSync(join(site, 'public_html/assets/vendor/laz-perf/current/laz-perf.wasm')) });
+delete globalThis.window;
 await imp('textmask-cmd.js');
 await imp('xclip-cmd.js');
 const { VARIES, groupsOf, defsFor, valueOf, applyValue } = await imp('propdefs.js');
@@ -117,7 +133,13 @@ async function runJs(script) {
     preview() {}, onCommand() {},
     pictures: [],
     async pickPictures() { const f = this.pictures; this.pictures = []; return f; },
+    doc: () => doc,
+    cloudFile: null,
+    async pickCloud() { const f = this.cloudFile; this.cloudFile = null; return f; },
   };
+  host.cloud = new CloudAttach(host);
+  // a point cloud reads its file and yields between parts of it: wait a little longer after each step
+  const usesCloud = script.steps.some((s) => s && typeof s === 'object' && s.cloudFile);
   const eng = new Engine(doc, host);
   // a SolidWorks sketch export opened first (cadcraft.js openSketchExport)
   let sketch;
@@ -127,6 +149,7 @@ async function runJs(script) {
   }
   for (const s of script.steps) {
     if (typeof s === 'string') eng.text(s);
+    else if (s.cloudFile) host.cloudFile = new File([Buffer.from(s.cloudFile.bytes?.$base64 || '', 'base64')], s.cloudFile.name);
     else if (s.pictures) host.pictures = s.pictures.map((f) => ({ name: f.name, bytes: new Uint8Array(Buffer.from(f.bytes?.$base64 || '', 'base64')) }));
     else if (s.click) { host.nextPick = typeof s.pick === 'number' ? s.pick : null; eng.click({ x: s.click[0], y: s.click[1] }); }
     else if (s.cursor) host.cursor = { x: s.cursor[0], y: s.cursor[1] };
@@ -138,6 +161,7 @@ async function runJs(script) {
     else if (s.props || typeof s.prop === 'string') propsStep(doc, host, s, log);
     else if ('space' in s) doc.setSpace(typeof s.space === 'string' ? doc.layouts.find((l) => l.name === s.space) || null : null);   // the space tabs
     await settle();
+    if (usesCloud) for (let i = 0; i < 40; i++) await new Promise((r) => setTimeout(r, 1));
   }
   eng.escape();
   await settle();
@@ -173,6 +197,14 @@ async function runJs(script) {
     }
     pdf.saved = saved;
   }
+  const pc = host.cloud;
+  const du = doc.meta.units || '';
+  if (pc.has()) {
+    pdf.cloud = { name: pc.cloud.name, n: pc.cloud.n, color: pc.color, size: pc.size, visible: pc.visible,
+      slice: { on: pc.slice.on, h: pc.slice.h, thick: pc.slice.thick }, insert: pc.insert ? [pc.insert.x, pc.insert.y] : null,
+      colors: Array.from(pc.colors), bbox: pc.bbox() };
+  }
+  void du;
   return { ...pdf, name: script.name, log, model: [...doc.model.entries()], blocks: [...doc.blocks.entries()], layers: [...doc.layers.entries()], meta: doc.meta, ucs: doc.ucs, ucsNamed: doc.ucsNamed, views: doc.views, current: doc.current, nextId: doc.nextId,
     layouts: doc.layouts.map((l) => [l.name, l.paper, [...l.entities.entries()]]), space: doc.layout ? doc.layout.name : null,
     undo: doc.undoStack.map((u) => u.label), redo: doc.redoStack.map((u) => u.label), constraints: doc.constraints, params: doc.params,

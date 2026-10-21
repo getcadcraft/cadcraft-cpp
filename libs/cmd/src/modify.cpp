@@ -296,6 +296,7 @@ const std::vector<CommandDef>& command_table() {
     add_layers(t);
     add_props(t);
     add_pictures(t);  // cadcraft.js imports pictures-cmd.js before textmask-cmd.js and xclip-cmd.js
+    add_cloud(t);     // … and cloud-cad.js between them
     add_registered(t);
     return t;
   }();

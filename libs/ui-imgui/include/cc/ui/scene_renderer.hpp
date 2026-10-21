@@ -37,6 +37,9 @@ class SceneRenderer {
   void upload(const render::Scene& scene, const PictureSource& pictures = {});
   /// Drops the pictures' textures (the drawing's files changed).
   void forget_pictures();
+  /// A picture under the drawing (a point cloud's plan: cloud-cad.js draw), in device px with its top left at `at`;
+  /// nullptr: none. Drawn first in each frame, unclipped by the drawing's fills.
+  void set_underlay(const image::Rgba* img, std::array<float, 2> at);
   /// Uploads the glyph atlas when its generation changed.
   void upload_atlas(const text::Atlas& atlas);
   /// Records the draws into `pass` (a pass on a `kSamples`-sampled target of `width` × `height` device px, with a
@@ -74,7 +77,7 @@ class SceneRenderer {
   wgpu::Device device_;
   wgpu::Queue queue_;
   struct Pipelines {
-    wgpu::RenderPipeline segments, stencil, cover, text, picture;
+    wgpu::RenderPipeline segments, stencil, cover, text, picture, underlay;
   };
   // filled when the device has compiled them (on the web asynchronously: a callback may outlive this renderer, so it
   // holds its own reference)
@@ -84,6 +87,11 @@ class SceneRenderer {
   std::size_t uniform_slots_ = 0;
   wgpu::Buffer seg_buf_, fan_buf_, cover_buf_, glyph_buf_, pic_buf_;
   std::vector<PicTex> pics_;
+  wgpu::Texture under_tex_;
+  wgpu::BindGroup under_bind_;
+  wgpu::Buffer under_buf_;
+  std::uint32_t under_w_ = 0, under_h_ = 0;
+  bool under_on_ = false;
   std::uint32_t max_texture_ = 8192;
   wgpu::Texture atlas_tex_;
   wgpu::Sampler sampler_;

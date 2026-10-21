@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M5.8h3 (LAZ point clouds, laz-perf).
+Last updated 2026-10-21 · Change: M5.8h4 (POINTCLOUDATTACH, POINTCLOUD, the cloud in the viewer).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -457,4 +457,14 @@ Last updated 2026-10-21 · Change: M5.8h3 (LAZ point clouds, laz-perf).
   and extra-bytes sizes capped. Parity 34/34 (the room fixtures with their two LAZ files, 18, and the fuzz seeds, 16); a 7-minute local fuzz of the patched decoder, 24 049 inputs, found nothing after the seventh patch; damaged LAZ files differ from 0.5 by design
   (its WebAssembly reads leftover heap) and are not compared. Fuzz target cloud with tiny synthetic seeds
   (tools/fuzz/cloud_seeds.py): LAS, LAZ, XYZ, PTS.
+- M5.8h4 (2026-10-21): point clouds attached (cloud-cad.js). libs/cloud Attached (CloudAttach: where the cloud sits,
+  its units against the drawing's, the building-scan slice at 1.2 m, the points shown, Node snap through the plan grid);
+  POINTCLOUDATTACH (PCATTACH) through the host's picker (desktop: SDL's dialog; web: the file input) and POINTCLOUD (PC:
+  Slice, Height, Thickness, Color, Size, Visible, Zoom, Detach) in libs/cmd; parity tests/commands/clouds.json 7/7
+  (LAS, LAZ, XYZ, PTS, a building-height cloud at a point, a replaced cloud, two refusals, cancels; the harness gained a
+  cloudFile step and the cloud's state in its results, and imports cloud-cad.js as cadcraft.js does). In the viewer the
+  cloud is drawn under the linework of the Model tab as 0.5 draws it (one picture of the canvas, the highest point
+  winning each pixel, squares of the point size), redrawn only when the view or the cloud changes; Node snaps to its
+  points after the drawing's own (view.js snapExtra, cad::best_snap's new `extra`); attaching zooms to it (fitPoints,
+  0.9). Viewer test: the picker's file attached, drawn, sliced, detached.
 

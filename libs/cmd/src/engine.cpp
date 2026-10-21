@@ -363,6 +363,9 @@ AskAwait Ctx::angle(std::string prompt, Ask o) {
 AskAwait Ctx::files(bool multiple) {
   return {engine, multiple ? "files+" : "files", std::string(), Ask{}};
 }
+AskAwait Ctx::cloud_file() {
+  return {engine, "cloudfile", std::string(), Ask{}};
+}
 AskAwait Ctx::number(std::string prompt, Ask o) {
   return {engine, "number", std::move(prompt), std::move(o)};
 }
@@ -499,16 +502,25 @@ void Engine::wait(std::string kind, std::string prompt, Ask opts, std::coroutine
   rubber_base = w.opts.base;
   const bool files = w.kind == "files" || w.kind == "files+";
   const bool multiple = w.kind == "files+";
+  const bool cloud = w.kind == "cloudfile";
   waiting_ = std::move(w);
   if (files) {  // the picker, not the command line, has the user's attention
     host_.pick_pictures(multiple);
+    return;
+  }
+  if (cloud) {
+    host_.pick_cloud();
     return;
   }
   host_.prompt(prompt_text());
 }
 
 bool Engine::waiting_for_files() const noexcept {
-  return waiting_ && (waiting_->kind == "files" || waiting_->kind == "files+");
+  return waiting_ && (waiting_->kind == "files" || waiting_->kind == "files+" || waiting_->kind == "cloudfile");
+}
+
+bool Engine::waiting_for_cloud() const noexcept {
+  return waiting_ && waiting_->kind == "cloudfile";
 }
 
 void Engine::give_files(std::vector<PickedFile> files) {

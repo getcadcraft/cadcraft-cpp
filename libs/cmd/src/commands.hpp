@@ -55,6 +55,7 @@ void add_help(std::vector<CommandDef>& t);
 /// What cadcraft.js registers after commands.js loads: TEXTMASK, XCLIP (textmask-cmd.js, xclip-cmd.js)
 void add_parametric(std::vector<CommandDef>& t);
 void add_pictures(std::vector<CommandDef>& t);
+void add_cloud(std::vector<CommandDef>& t);
 void add_registered(
     std::vector<CommandDef>& t);  // HELP (after COMPARESETTINGS' group)    // COPYCLIP … PASTEORIG (after MOVE / COPY)
 void add_layouts(std::vector<CommandDef>& t);      // LAYOUT, MVIEW, VPORTS, SPLIT, VPVIEW (after PURGE)

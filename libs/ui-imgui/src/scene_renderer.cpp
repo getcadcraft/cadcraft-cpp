@@ -300,6 +300,7 @@ SceneRenderer::SceneRenderer(wgpu::Device device, wgpu::TextureFormat color) : d
   pipeline(&Pipelines::cover, "cover_vs", "cover_fs", cover_l, depth_stencil(C::NotEqual, S::Zero), true);
   pipeline(&Pipelines::text, "text_vs", "text_fs", glyph_l, depth_stencil(C::Always, S::Keep), true);
   pipeline(&Pipelines::picture, "pic_vs", "pic_fs", pic_l, depth_stencil(C::NotEqual, S::Zero), true);
+  pipeline(&Pipelines::underlay, "pic_vs", "pic_fs", pic_l, depth_stencil(C::Always, S::Keep), true);
   wgpu::Limits limits;
   if (device_.GetLimits(&limits) == wgpu::Status::Success && limits.maxTextureDimension2D > 0) {
     max_texture_ = limits.maxTextureDimension2D;
@@ -346,6 +347,9 @@ void SceneRenderer::rebuild_bind_group() {
       p.bind = bind_for(p.tex);
     }
   }
+  if (under_tex_) {
+    under_bind_ = bind_for(under_tex_);
+  }
 }
 
 wgpu::BindGroup SceneRenderer::bind_for(const wgpu::Texture& tex) const {
@@ -362,6 +366,41 @@ wgpu::BindGroup SceneRenderer::bind_for(const wgpu::Texture& tex) const {
   bgd.entryCount = e.size();
   bgd.entries = e.data();
   return device_.CreateBindGroup(&bgd);
+}
+
+void SceneRenderer::set_underlay(const image::Rgba* img, std::array<float, 2> at) {
+  under_on_ = img != nullptr && img->w > 0 && img->h > 0 && img->w <= max_texture_ && img->h <= max_texture_ &&
+              img->px.size() == std::size_t{img->w} * img->h * 4;
+  if (!under_on_) {
+    return;
+  }
+  if (!under_tex_ || under_w_ != img->w || under_h_ != img->h) {
+    wgpu::TextureDescriptor td;
+    td.size = {img->w, img->h, 1};
+    td.format = wgpu::TextureFormat::RGBA8Unorm;
+    td.usage = wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::CopyDst;
+    under_tex_ = device_.CreateTexture(&td);
+    under_w_ = img->w;
+    under_h_ = img->h;
+    under_bind_ = bind_for(under_tex_);
+  }
+  wgpu::TexelCopyTextureInfo dst;
+  dst.texture = under_tex_;
+  wgpu::TexelCopyBufferLayout layout;
+  layout.bytesPerRow = img->w * 4;
+  layout.rowsPerImage = img->h;
+  const wgpu::Extent3D size{img->w, img->h, 1};
+  queue_.WriteTexture(&dst, img->px.data(), img->px.size(), &layout, &size);
+  // two triangles over its pixels: x, y (device px), u, v
+  const float x0 = at[0];
+  const float y0 = at[1];
+  const float x1 = x0 + static_cast<float>(img->w);
+  const float y1 = y0 + static_cast<float>(img->h);
+  const std::array<float, 24> quad{x0, y0, 0, 0, x1, y0, 1, 0, x0, y1, 0, 1, x0, y1, 0, 1, x1, y0, 1, 0, x1, y1, 1, 1};
+  if (!under_buf_) {
+    under_buf_ = make_buffer(device_, sizeof(quad), wgpu::BufferUsage::Vertex);
+  }
+  queue_.WriteBuffer(under_buf_, 0, quad.data(), sizeof(quad));
 }
 
 void SceneRenderer::forget_pictures() {
@@ -477,8 +516,8 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
   if (draws.empty() || width == 0 || height == 0 || !ready()) {
     return;
   }
-  ensure_uniforms(draws.size());
-  std::vector<std::byte> data(draws.size() * kSlot);
+  ensure_uniforms(draws.size() + 1);  // + the underlay's slot (device px as they are)
+  std::vector<std::byte> data((draws.size() + 1) * kSlot);
   for (std::size_t i = 0; i < draws.size(); ++i) {
     const render::DrawBatch& db = draws[i];
     const auto& m = db.to_device;
@@ -490,6 +529,15 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
            spread_em_};
     const auto bytes = std::bit_cast<std::array<std::byte, sizeof(Uniform)>>(u);
     std::ranges::copy(bytes, data.begin() + static_cast<std::ptrdiff_t>(i * kSlot));
+  }
+  {
+    Uniform u{};
+    u.m = {1, 0, 0, 1};
+    u.t = {0, 0, static_cast<float>(width), static_cast<float>(height)};
+    u.color = {1, 1, 1, 1};
+    u.p = {0, 0, 1, spread_em_};
+    const auto bytes = std::bit_cast<std::array<std::byte, sizeof(Uniform)>>(u);
+    std::ranges::copy(bytes, data.begin() + static_cast<std::ptrdiff_t>(draws.size() * kSlot));
   }
   queue_.WriteBuffer(uniforms_, 0, data.data(), data.size());
   pass.SetStencilReference(0);
@@ -513,7 +561,16 @@ void SceneRenderer::draw(const wgpu::RenderPassEncoder& pass, std::span<const re
   if (!scissor(canvas, full)) {
     return;
   }
-  std::array<std::uint32_t, 4> current{};
+  std::array<std::uint32_t, 4> current = full;
+  pass.SetScissorRect(full[0], full[1], full[2], full[3]);
+  if (under_on_ && under_bind_ && under_buf_ && pipes_->underlay) {
+    const std::array<std::uint32_t, 1> offset{static_cast<std::uint32_t>(draws.size() * kSlot)};
+    pass.SetPipeline(pipes_->underlay);
+    pass.SetBindGroup(0, under_bind_, offset.size(), offset.data());
+    pass.SetVertexBuffer(0, under_buf_);
+    pass.Draw(6, 1, 0, 0);
+    ++draw_calls_;
+  }
   for (std::size_t i = 0; i < draws.size(); ++i) {
     const render::DrawBatch& db = draws[i];
     const auto it = ranges_.find(db.geometry);

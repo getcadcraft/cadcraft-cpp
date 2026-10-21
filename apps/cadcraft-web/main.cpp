@@ -66,7 +66,15 @@ EM_JS(void, cc_web_install, (), {
 EM_JS(void, cc_web_pick, (), { document.getElementById("cc-file").click(); });
 EM_JS(void, cc_web_pick_pictures, (int multiple), {
   const p = document.getElementById("cc-pics");
+  p.accept = ".png,.jpg,.jpeg,image/png,image/jpeg";
   p.multiple = multiple !== 0;
+  p.click();
+});
+// a point cloud through the same input (the waiting command takes the file it gives)
+EM_JS(void, cc_web_pick_cloud, (), {
+  const p = document.getElementById("cc-pics");
+  p.accept = ".las,.laz,.xyz,.pts";
+  p.multiple = false;
   p.click();
 });
 EM_JS(void, cc_web_download, (const char* name, const void* data, int size), {
@@ -289,6 +297,7 @@ int main(int /*argc*/, char** /*argv*/) {
         cc::ui::Services services;
         services.pick_open = [] { cc_web_pick(); };
         services.pick_pictures = [](bool multiple) { cc_web_pick_pictures(multiple ? 1 : 0); };
+        services.pick_cloud = [] { cc_web_pick_cloud(); };
         services.download = [](const std::string& name, std::span<const std::byte> bytes) {
           cc_web_download(name.c_str(), bytes.data(), static_cast<int>(bytes.size()));
         };

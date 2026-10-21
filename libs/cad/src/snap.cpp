@@ -85,7 +85,7 @@ std::vector<Snap> snap_points(const Value& e, P2 q, double r, const SnapKinds& k
   std::vector<Snap> out;
   const auto add = [&](std::string_view kind, P2 p) {
     if (kinds.contains(std::string(kind)) && std::abs(p.x - q.x) <= r && std::abs(p.y - q.y) <= r) {
-      out.push_back({.kind = std::string(kind), .x = p.x, .y = p.y, .defer = std::nullopt});
+      out.push_back({.kind = std::string(kind), .x = p.x, .y = p.y, .defer = std::nullopt, .pr = std::nullopt});
     }
   };
   const std::string t = type_of(e);
@@ -115,7 +115,7 @@ std::vector<Snap> snap_points(const Value& e, P2 q, double r, const SnapKinds& k
     if (kinds.contains("near")) {
       const P2 n = detail::prim_point(p, prim_param(p, q, true));
       if (dist(n, q) <= r) {
-        out.push_back({.kind = "near", .x = n.x, .y = n.y, .defer = std::nullopt});
+        out.push_back({.kind = "near", .x = n.x, .y = n.y, .defer = std::nullopt, .pr = std::nullopt});
       }
     }
     return out;
@@ -166,14 +166,15 @@ std::vector<Snap> snap_points(const Value& e, P2 q, double r, const SnapKinds& k
         const double a = base::js_atan2(q.y - p.cy, q.x - p.cx);
         const P2 n{p.cx + p.r * base::js_cos(a), p.cy + p.r * base::js_sin(a)};
         if (detail::on_sweep(a, p.a0, p.a1) && std::abs(base::js_hypot(q.x - p.cx, q.y - p.cy) - p.r) <= r) {
-          out.push_back({.kind = "tan", .x = n.x, .y = n.y, .defer = std::array<double, 3>{p.cx, p.cy, p.r}});
+          out.push_back(
+              {.kind = "tan", .x = n.x, .y = n.y, .defer = std::array<double, 3>{p.cx, p.cy, p.r}, .pr = std::nullopt});
         }
       }
     }
     if (kinds.contains("near")) {
       const P2 n = detail::prim_point(p, prim_param(p, q, true));
       if (dist(n, q) <= r) {
-        out.push_back({.kind = "near", .x = n.x, .y = n.y, .defer = std::nullopt});
+        out.push_back({.kind = "near", .x = n.x, .y = n.y, .defer = std::nullopt, .pr = std::nullopt});
       }
     }
   }
@@ -181,7 +182,8 @@ std::vector<Snap> snap_points(const Value& e, P2 q, double r, const SnapKinds& k
 }
 
 std::optional<Snap> best_snap(const std::vector<const Value*>& nearby, P2 p, double r, const SnapKinds& kinds,
-                              const BlockLookup& blocks, std::optional<P2> base) {
+                              const BlockLookup& blocks, std::optional<P2> base,
+                              const std::function<std::optional<Snap>(P2, double)>& extra) {
   if (kinds.empty()) {
     return std::nullopt;
   }
@@ -193,7 +195,7 @@ std::optional<Snap> best_snap(const std::vector<const Value*>& nearby, P2 p, dou
     if (d > r) {
       return;
     }
-    const int pr = priority(c.kind);
+    const int pr = c.pr.value_or(priority(c.kind));
     if (!best || pr < best_pr || (pr == best_pr && d < best_d)) {
       best = c;
       best_d = d;
@@ -221,11 +223,16 @@ std::optional<Snap> best_snap(const std::vector<const Value*>& nearby, P2 p, dou
         for (const Prim& a : ps[i]) {
           for (const Prim& b : ps[j]) {
             for (const P2 x : intersect(a, b, false, false)) {
-              consider({.kind = "int", .x = x.x, .y = x.y, .defer = std::nullopt});
+              consider({.kind = "int", .x = x.x, .y = x.y, .defer = std::nullopt, .pr = std::nullopt});
             }
           }
         }
       }
+    }
+  }
+  if (kinds.contains("node") && extra) {  // a point cloud's points (SG.1)
+    if (const auto c = extra(p, r)) {
+      consider(*c);
     }
   }
   return best;

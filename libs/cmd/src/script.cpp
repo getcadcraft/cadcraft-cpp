@@ -14,9 +14,11 @@
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
+#include "cc/cloud/attach.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/props.hpp"
 #include "cc/doc/swsketch.hpp"
+#include "cc/m3d/drawing3d.hpp"
 
 namespace cc::cmd {
 
@@ -32,7 +34,11 @@ class ScriptHost final : public Host {
   std::optional<Id> next_pick;
   std::vector<Id> window_ids;
   bool shift_down = false;
-  std::vector<PickedFile> pictures;  // what the next picker gives ({pictures} steps)
+  std::vector<PickedFile> pictures;     // what the next picker gives ({pictures} steps)
+  std::vector<PickedFile> cloud_files;  // what the point cloud picker gives ({cloudFile} steps)
+  cloud::Attached cloud_state;
+  cloud::Attached* cloud() override { return &cloud_state; }
+  [[nodiscard]] bool can_pick_cloud() const override { return true; }
 
   void print(const std::string& text) override { log.emplace_back(base::Array{"print", text}); }
   void prompt(const std::string& text) override { log.emplace_back(base::Array{"prompt", text}); }
@@ -206,6 +212,14 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
             host.pictures.push_back(std::move(file));
           }
         }
+      } else if (const Value* cf = s.is_object() && !s.is_point() ? s.find("cloudFile") : nullptr) {
+        const Value b = cf->get("bytes");
+        const Value b64 = b.is_object() && !b.is_point() ? b.get("$base64") : Value();
+        PickedFile file{.name = base::js_string(cf->get("name")), .bytes = {}};
+        if (b64.is_string()) {
+          file.bytes = base::unbase64(b64.as_string());
+        }
+        host.cloud_files = {std::move(file)};
       } else if (s.is_object() && !s.is_point()) {
         if (const Value* c = s.find("click")) {
           const Value pk = s.get("pick");
@@ -246,7 +260,9 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
           d.set_space(known ? sp->as_string() : std::string());
         }
       }
-      if (eng.waiting_for_files()) {
+      if (eng.waiting_for_cloud()) {
+        eng.give_files(std::exchange(host.cloud_files, {}));
+      } else if (eng.waiting_for_files()) {
         eng.give_files(std::exchange(host.pictures, {}));
       }
     }
@@ -292,6 +308,34 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
                                     {"redo", std::move(redo)},
                                     {"constraints", d.constraints},
                                     {"params", d.params}});
+  // the window's point cloud (cloud-cad.js CloudAttach): what is attached and how it shows
+  if (const cloud::Attached& pc = host.cloud_state; pc.cloud) {
+    const Value u = d.meta.get("units");
+    const std::string units = u.truthy() ? base::js_string(u) : std::string();
+    const cloud::DrawingUnits du{.units = units, .m_per_unit = m3d::m_per_unit(units)};
+    base::Array colors;
+    for (const std::uint8_t c : pc.colors) {
+      colors.emplace_back(static_cast<double>(c));
+    }
+    const auto box = pc.bbox(du);
+    const auto opt_num = [](const std::optional<double>& v) { return v ? Value(*v) : Value(nullptr); };
+    result.set(
+        "cloud",
+        base::make_object(
+            {{"name", pc.cloud->name},
+             {"n", static_cast<double>(pc.cloud->n)},
+             {"color", pc.color},
+             {"size", pc.size},
+             {"visible", pc.visible},
+             {"slice",
+              base::make_object({{"on", pc.slice.on}, {"h", opt_num(pc.slice.h)}, {"thick", opt_num(pc.slice.thick)}})},
+             {"insert", pc.insert ? Value(base::Array{(*pc.insert)[0], (*pc.insert)[1]}) : Value(nullptr)},
+             {"colors", Value(std::move(colors))},
+             {"bbox",
+              box ? base::make_object(
+                        {{"minX", box->min_x}, {"minY", box->min_y}, {"maxX", box->max_x}, {"maxY", box->max_y}})
+                  : Value(nullptr)}}));
+  }
   if (eng.last_swb) {
     result.set("swb", *eng.last_swb);
   }

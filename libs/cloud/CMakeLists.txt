@@ -1,5 +1,5 @@
 cc_library(cloud LAYER 2
-  SOURCES src/cloud.cpp
+  SOURCES src/cloud.cpp src/attach.cpp
   DEPS cc::base cc::i18n
   PRIVATE_EXTERNAL lazperf)
 

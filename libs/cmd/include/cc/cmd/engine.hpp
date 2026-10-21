@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "cc/base/value.hpp"
+#include "cc/cloud/attach.hpp"
 #include "cc/cmd/clipboard.hpp"
 #include "cc/cmd/task.hpp"
 #include "cc/doc/doc.hpp"
@@ -164,6 +165,15 @@ class Host {
   // through Engine::give_files (an empty list = cancelled). No picker: IMAGEATTACH and IMAGE say so.
   [[nodiscard]] virtual bool can_pick_pictures() const { return false; }
   virtual void pick_pictures(bool multiple) { (void)multiple; }
+  // point clouds (cloud-cad.js: host.cloud, host.pickCloud, host.zoomCloud, host.cloudBudget): the window's cloud
+  // (nullptr: none can be attached here), the picker for a LAS / LAZ / XYZ / PTS file (its choice comes back through
+  // Engine::give_files), a redraw when the cloud or its settings changed
+  virtual cloud::Attached* cloud() { return nullptr; }
+  [[nodiscard]] virtual bool can_pick_cloud() const { return false; }
+  virtual void pick_cloud() {}
+  virtual void zoom_cloud() {}
+  virtual void cloud_changed() {}
+  [[nodiscard]] virtual double cloud_budget() const { return 2e6; }
   /// host.download(name, data, mime): a file the command made, handed to the user (saved or downloaded); false when
   /// the host has none (SWBOUT then keeps it as Engine::last_swb)
   virtual bool download(const std::string& name, const std::vector<std::byte>& bytes, const std::string& mime) {
@@ -295,6 +305,8 @@ class Ctx {
   AskAwait angle(std::string prompt, Ask o = {});
   /// The host's picture picker (Host::pick_pictures); answers Kind::files. No prompt is shown while it is open.
   AskAwait files(bool multiple);
+  /// The host's point cloud picker (Host::pick_cloud); answers Kind::files.
+  AskAwait cloud_file();
   AskAwait number(std::string prompt, Ask o = {});
   AskAwait string(std::string prompt, Ask o = {});
   AskAwait keyword(std::string prompt, Ask o = {});
@@ -348,6 +360,8 @@ class Engine {
   /// The files the host's picker gave (none: cancelled), when a command waits for them.
   void give_files(std::vector<PickedFile> files);
   [[nodiscard]] bool waiting_for_files() const noexcept;
+  /// waiting for the point cloud picker's file (else pictures)
+  [[nodiscard]] bool waiting_for_cloud() const noexcept;
   void wait(std::string kind, std::string prompt, Ask opts, std::coroutine_handle<> h, Answer* out);
   void set_preview(std::function<base::Array(Pt)> fn);
   Task<bool> select_option(const std::string& key, IdSet& set, bool remove);

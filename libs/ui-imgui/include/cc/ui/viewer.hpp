@@ -25,6 +25,7 @@
 #include "cc/base/value.hpp"
 #include "cc/cad/geom.hpp"
 #include "cc/cad/snap.hpp"
+#include "cc/cloud/attach.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/props.hpp"
 #include "cc/doc/doc.hpp"
@@ -32,6 +33,7 @@
 #include "cc/drawing/compile.hpp"
 #include "cc/engine/open.hpp"
 #include "cc/i18n/i18n.hpp"
+#include "cc/image/decode.hpp"
 #include "cc/render/scene.hpp"
 #include "cc/render/view.hpp"
 #include "cc/text/font.hpp"
@@ -52,6 +54,9 @@ struct Services {
   /// The platform's picker for pictures (PNG, JPEG; several at once when `multiple`): the choice arrives through the
   /// inbox as one `pictures` item (no files: cancelled). Unset: IMAGEATTACH and IMAGE say there is no picker.
   std::function<void(bool multiple)> pick_pictures;
+  /// The platform's picker for a point cloud (LAS, LAZ, XYZ, PTS): the choice arrives through the inbox as a `pictures`
+  /// item (the files the waiting command asked for). Unset: POINTCLOUDATTACH says clouds open in the app.
+  std::function<void()> pick_cloud;
   /// Web: the bytes handed to the browser as a download named `name`.
   std::function<void(const std::string& name, std::span<const std::byte> bytes)> download;
 };
@@ -59,6 +64,7 @@ struct Services {
 /// Files handed to the viewer from another thread (a picker callback, a drop): taken on the UI thread.
 class Inbox {
  public:
+  // NOLINTNEXTLINE(misc-no-recursion) — its implicit members copy the files it holds, items without files
   struct Item {
     std::string name;
     std::string path;              // desktop: a path to open
@@ -125,6 +131,8 @@ class Viewer {
   [[nodiscard]] bool properties_open() const noexcept { return props_open_; }
   /// True while the Parameters panel is open (PARAMETERS, its close button).
   [[nodiscard]] bool parameters_open() const noexcept { return params_open_; }
+  /// The point cloud under the drawing (POINTCLOUDATTACH).
+  [[nodiscard]] const cloud::Attached& point_cloud() const noexcept { return cloud_; }
   /// The constraint selected on the drawing ("" none).
   [[nodiscard]] const std::string& constraint_selected() const noexcept { return c_selected_; }
   /// True while Quick Properties is on (QPMODE).
@@ -235,6 +243,14 @@ class Viewer {
   std::optional<Drive> params_drive_;
   std::array<char, 64> new_name_{};
   std::array<char, 1024> new_expr_{};
+  // the point cloud under the drawing (cloud-cad.js CloudAttach; cloud_view.cpp)
+  cloud::Attached cloud_;
+  std::string cloud_key_;  // what the underlay picture was drawn for
+  image::Rgba cloud_img_;
+  [[nodiscard]] cloud::DrawingUnits cloud_units() const;
+  void zoom_to_cloud();
+  void cloud_underlay(const render::View& v, double ox, double oy);
+  [[nodiscard]] std::optional<cad::Snap> cloud_snap(cad::P2 p, double r);
 
   Services services_;
   Inbox inbox_;

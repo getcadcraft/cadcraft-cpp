@@ -381,3 +381,58 @@ TEST_CASE("sketch export: a .json from the SolidWorks macro opens as the drawing
   frame(viewer);
   CHECK(viewer.document() == before);
 }
+
+TEST_CASE("point cloud: POINTCLOUDATTACH through the picker, drawn under the drawing; POINTCLOUD detaches it") {
+  const Rig rig;
+  auto gpu = cc::ui::create_gpu({.backend = "null", .make_surface = {}});
+  if (!gpu) {
+    SKIP("no null WebGPU adapter: " << gpu.error().message);
+  }
+  std::string xyz;
+  for (int x = 0; x < 10; ++x) {
+    for (int y = 0; y < 10; ++y) {
+      xyz += std::to_string(x) + " " + std::to_string(y) + " " + std::to_string((x + y) % 3) + "\n";
+    }
+  }
+  cc::ui::Viewer* vp = nullptr;
+  cc::ui::Services services;
+  services.pick_cloud = [&vp, &xyz] {
+    cc::ui::Inbox::Item cloud{
+        .name = "t.xyz", .path = {}, .bytes = bytes_of(xyz), .save_target = false, .pictures = false, .files = {}};
+    vp->inbox().post(
+        {.name = {}, .path = {}, .bytes = {}, .save_target = false, .pictures = true, .files = {std::move(cloud)}});
+  };
+  cc::doc::Doc src;
+  src.change("LINE", [&] {
+    (void)src.add(cc::base::make_object({{"type", "line"}, {"x1", 0}, {"y1", 0}, {"x2", 9}, {"y2", 9}}));
+  });
+  const cc::i18n::Catalog words;
+  cc::save::DwgSaveOptions opts;
+  opts.version = "2018";
+  opts.created_ms = 0;
+  const auto saved = cc::save::save_dwg(src, opts, words);
+  std::vector<std::byte> dwg(saved.bytes.size());
+  for (std::size_t i = 0; i < dwg.size(); ++i) {
+    dwg[i] = static_cast<std::byte>(saved.bytes[i]);
+  }
+  cc::ui::Viewer viewer(*gpu, wgpu::TextureFormat::BGRA8Unorm, services, CC_ASSETS_DIR, "en");
+  vp = &viewer;
+  auto d = cc::engine::open_bytes("c.dwg", dwg);
+  REQUIRE(d);
+  viewer.show(std::move(*d));
+  frame(viewer);
+  CHECK_FALSE(viewer.point_cloud().has());
+  viewer.command("POINTCLOUDATTACH");
+  frame(viewer);       // the picker's file reaches the command: it is read, then asks where
+  viewer.command("");  // its own coordinates
+  frame(viewer);
+  REQUIRE(viewer.point_cloud().has());
+  CHECK((viewer.point_cloud().cloud && viewer.point_cloud().cloud->n == 100));
+  frame(viewer);  // drawn under the line
+  viewer.command("POINTCLOUD");
+  viewer.command("S");
+  frame(viewer);
+  viewer.command("D");
+  frame(viewer);
+  CHECK_FALSE(viewer.point_cloud().has());
+}
