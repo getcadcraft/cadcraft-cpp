@@ -175,3 +175,20 @@ TEST_CASE("cloud: a damaged LAZ whose symbol is outside laz-perf's model table s
     CHECK(std::ranges::any_of(c->notes, [&](const std::string& n) { return n.starts_with(lead); }));
   }
 }
+
+TEST_CASE("cloud: a damaged LAZ whose GPS time switches sequences without end stops with a note") {
+  // fuzz, 2026-10-21: each switch was a recursive call in laz-perf's GPS time decoder, a stack overflow on a damaged
+  // stream (point format 1 or 3). cmake/LazPerf.cmake patch 9 bounds the depth.
+  const cc::i18n::Catalog words;
+  const std::string stopped = words.t("las.laz.stopped", {{"read", "{read}"}, {"n", "{n}"}});
+  const std::string lead = stopped.substr(0, stopped.find('{'));
+  REQUIRE(!lead.empty());
+  const std::vector<std::byte> f = read_seed("regress-69fab02b59eb");
+  REQUIRE(f.size() > 400);
+  const auto info = cc::cloud::read_info("f.las", f, words);
+  REQUIRE(info);
+  CHECK(info->kind == "laz");
+  const auto c = cc::cloud::load_cloud("f.las", f, *info, 1000, words);
+  REQUIRE(c);
+  CHECK(std::ranges::any_of(c->notes, [&](const std::string& n) { return n.starts_with(lead); }));
+}

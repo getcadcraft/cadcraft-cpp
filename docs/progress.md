@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: FZ.3 (laz-perf patch 8), the move to a WSL2 machine.
+Last updated 2026-10-21 · Change: FZ.4 (laz-perf patch 9).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -491,3 +491,8 @@ Last updated 2026-10-21 · Change: FZ.3 (laz-perf patch 8), the move to a WSL2 m
   patch set's number: a build directory patched by an older set extracts the source again, so a new patch reaches the
   CI caches and old ones are never applied twice. Two inputs (point14, RGB) in fuzz/corpus/cloud and a regression test
   that trips ASan without the patch. Fuzzing the patched target found two more problems within 5 minutes (FZ.4, FZ.5).
+- FZ.4 (2026-10-21): fuzzing the patched target found a stack overflow in laz-perf's GPS time decoder (point formats
+  1 and 3): every switch to another of its four sequences is a recursive call, and a damaged stream can switch without
+  end. A sound stream recurses once at most (the encoder switches to the sequence that fits), so patch 9 throws
+  `lazperf::error` past depth 8 and the reader stops with the note. Input in fuzz/corpus/cloud and a regression test
+  that fails without the patch.

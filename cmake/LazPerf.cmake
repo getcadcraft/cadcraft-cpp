@@ -22,7 +22,7 @@ if(NOT EXISTS ${_lp_tar} OR NOT _have STREQUAL _lp_sha)
 endif()
 # The marker holds the patch set's number: a source tree patched by an older set is extracted again, so a new patch is
 # never missing from an existing build directory and an old one is never applied twice.
-set(_lp_patchset 8)
+set(_lp_patchset 9)
 if(EXISTS ${_lp_src}/.cc-patched)
   file(READ ${_lp_src}/.cc-patched _lp_have)
   if(NOT _lp_have STREQUAL "${_lp_patchset}")
@@ -211,6 +211,31 @@ if(NOT EXISTS ${_lp_src}/.cc-patched)
 #include <string>]=])
   _lp_patch(decoder.hpp [=[#include "coderbase.hpp"]=] [=[#include "coderbase.hpp"
 #include "excepts.hpp"]=])
+  # 9. a damaged stream can switch GPS time sequences without end, and each switch is a recursive call: a stack overflow
+  #    (fuzz, 2026-10-21). A sound stream recurses once at most (the encoder switches to the sequence that fits).
+  _lp_patch(detail/field_gpstime10.cpp [=[char *Gpstime10Decompressor::decompress(char *buf)
+{
+]=]
+                                       [=[char *Gpstime10Decompressor::decompress(char *buf)
+{
+    // CadCraft: sequence switches recurse; a damaged stream must not recurse without end
+    static thread_local int depth = 0;
+    struct Depth
+    {
+        int& d;
+        explicit Depth(int& at) : d(at)
+        {
+            if (d >= 8)
+                throw error("LAZ GPS time switches sequences without end");
+            ++d;
+        }
+        ~Depth() { --d; }
+    } guard(depth);
+]=])
+  _lp_patch(detail/field_gpstime10.cpp [=[#include "../las.hpp"]=] [=[#include <string>
+
+#include "../excepts.hpp"
+#include "../las.hpp"]=])
   file(WRITE ${_lp_src}/.cc-patched "${_lp_patchset}")
 endif()
 file(GLOB _lp_srcs ${_lp_src}/cpp/lazperf/*.cpp ${_lp_src}/cpp/lazperf/detail/*.cpp)
