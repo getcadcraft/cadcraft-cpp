@@ -2,9 +2,11 @@
 // dims.js, dimstyle.js and units.js formatLength from CadCraft 0.5, with the JS's order of operations.
 #include "cc/cad/dims.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -92,6 +94,34 @@ std::string replace_all(std::string s, std::string_view from, std::string_view t
 }
 double pow10(double n) {
   return std::pow(10.0, n);
+}
+
+bool is_digit(char c) {
+  return c >= '0' && c <= '9';
+}
+/// units.js mixed(t): "6", "6.5", "6-1/2", "6 1/2", "1/2" → a number
+std::optional<double> mixed(std::string_view t) {
+  // NUM = /^(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?$/i (no sign)
+  if (!t.empty() && t[0] != '-' && t[0] != '+' && plain_number(t, true)) {
+    return base::js_number(t);
+  }
+  const auto digits = [](std::string_view s) { return !s.empty() && std::ranges::all_of(s, is_digit); };
+  if (const std::size_t slash = t.find('/'); slash != std::string_view::npos) {
+    const std::string_view den = t.substr(slash + 1);
+    const std::string_view head = t.substr(0, slash);
+    if (const std::size_t sep = head.find_first_of("- "); sep != std::string_view::npos) {
+      const std::string_view w = head.substr(0, sep);
+      const std::string_view n = head.substr(sep + 1);
+      if (digits(w) && digits(n) && digits(den) && base::js_number(den) > 0) {
+        return base::js_number(w) + base::js_number(n) / base::js_number(den);
+      }
+      return std::nullopt;
+    }
+    if (digits(head) && digits(den) && base::js_number(den) > 0) {
+      return base::js_number(head) / base::js_number(den);
+    }
+  }
+  return std::nullopt;
 }
 
 // ---------------------------------------------------------------- units.js
@@ -800,6 +830,108 @@ Array build(const Value& e) {
 }
 
 }  // namespace
+
+/// /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i (exponent optional by `exp`)
+bool plain_number(std::string_view s, bool exp) {
+  std::size_t i = 0;
+  if (i < s.size() && (s[i] == '-' || s[i] == '+')) {
+    ++i;
+  }
+  const std::size_t d0 = i;
+  while (i < s.size() && is_digit(s[i])) {
+    ++i;
+  }
+  if (i > d0) {
+    if (i < s.size() && s[i] == '.') {
+      ++i;
+      while (i < s.size() && is_digit(s[i])) {
+        ++i;
+      }
+    }
+  } else {
+    if (i >= s.size() || s[i] != '.') {
+      return false;
+    }
+    ++i;
+    const std::size_t f0 = i;
+    while (i < s.size() && is_digit(s[i])) {
+      ++i;
+    }
+    if (i == f0) {
+      return false;
+    }
+  }
+  if (exp && i < s.size() && (s[i] == 'e' || s[i] == 'E')) {
+    ++i;
+    if (i < s.size() && (s[i] == '-' || s[i] == '+')) {
+      ++i;
+    }
+    const std::size_t e0 = i;
+    while (i < s.size() && is_digit(s[i])) {
+      ++i;
+    }
+    if (i == e0) {
+      return false;
+    }
+  }
+  return i == s.size();
+}
+std::optional<double> parse_length(std::string_view raw, const Value& lunits) {
+  std::string_view s = base::js_trim(raw);
+  if (s.empty()) {
+    return std::nullopt;
+  }
+  double sign = 1;
+  if (s[0] == '-' || s[0] == '+') {
+    if (s[0] == '-') {
+      sign = -1;
+    }
+    s = base::js_trim(s.substr(1));
+  }
+  if (s.empty()) {
+    return std::nullopt;
+  }
+  if (s.find_first_of("'\"") != std::string_view::npos) {
+    const int code = lunit_code(lunits);
+    if (code != 3 && code != 4) {
+      return std::nullopt;
+    }
+    double ft = 0;
+    std::string_view rest = s;
+    if (const std::size_t q = s.find('\''); q != std::string_view::npos) {
+      const auto f = mixed(base::js_trim(s.substr(0, q)));
+      if (!f) {
+        return std::nullopt;
+      }
+      ft = *f;
+      rest = base::js_trim(s.substr(q + 1));
+      if (rest.starts_with('-')) {
+        rest.remove_prefix(1);
+      }
+    }
+    if (rest.ends_with('"')) {
+      rest.remove_suffix(1);
+    }
+    rest = base::js_trim(rest);
+    if (rest.find_first_of("'\"") != std::string_view::npos) {
+      return std::nullopt;
+    }
+    double inch = 0;
+    if (!rest.empty()) {
+      const auto i = mixed(rest);
+      if (!i) {
+        return std::nullopt;
+      }
+      inch = *i;
+    }
+    return sign * (ft * 12 + inch);
+  }
+  const auto v = mixed(s);
+  if (!v) {
+    return std::nullopt;
+  }
+  return sign * *v;
+}
 
 Value dim_style(const Value& e) {
   return style(e);

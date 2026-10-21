@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: FZ.5 (a LAZ layer read past its end stops).
+Last updated 2026-10-21 · Change: M5.8i0 (Task in libs/base, parseLength in libs/cad).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -503,3 +503,9 @@ Last updated 2026-10-21 · Change: FZ.5 (a LAZ layer read past its end stops).
   refused as an empty cloud (pc.empty). Input in fuzz/corpus/cloud and a regression test. With patches 8–10: cloud parity
   34/34 (the room fixtures and the seeds; damaged LAZ files differ from 0.5 by design, as before), and fuzz target
   cloud for 15 minutes × 16 workers (1.01 M inputs) with no crash, timeout or out-of-memory.
+- M5.8i0 (2026-10-21): groundwork for LISP (M5.8i). The evaluator awaits the drawing as commands do, but a library may
+  link only lower layers, so `Task<T>` moved from libs/cmd to libs/base (cc::cmd::Task names it still), and units.js
+  parseLength (with mixed numbers and the plain-number test) moved from the command engine to libs/cad beside
+  formatLength, for rtos / distof. Measured on the frozen 0.5: its evaluator awaits at every step, so recursion is bounded
+  only by memory (`(r 100000)` runs); its reader recurses on the native stack and stops near 5 300 nested lists with
+  "Maximum call stack size exceeded".

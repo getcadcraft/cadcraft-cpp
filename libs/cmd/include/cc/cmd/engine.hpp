@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "cc/base/value.hpp"
+#include "cc/cad/dims.hpp"
 #include "cc/cloud/attach.hpp"
 #include "cc/cmd/clipboard.hpp"
 #include "cc/cmd/task.hpp"
@@ -394,8 +395,7 @@ class Engine {
   [[nodiscard]] std::optional<Pt> parse_point(std::string_view typed) const;
 };
 
-/// units.js parseLength(raw, lunits): a typed length → drawing units, or nothing (feet and inches in an engineering
-/// or architectural drawing).
-[[nodiscard]] std::optional<double> parse_length(std::string_view raw, const base::Value& lunits);
+/// units.js parseLength (libs/cad), where the commands have always found it.
+using cad::parse_length;
 
 }  // namespace cc::cmd

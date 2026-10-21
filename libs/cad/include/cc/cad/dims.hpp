@@ -9,6 +9,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include "cc/base/value.hpp"
 
@@ -31,6 +32,11 @@ namespace cc::cad {
 /// units.js formatLength(v, { lunits, prec }): a length as text in a format (1 scientific, 2 decimal, 3 engineering,
 /// 4 architectural, 5 fractional); prec null = the format's default (4).
 [[nodiscard]] std::string format_length(double v, const base::Value& lunits, const base::Value& prec = base::Value());
+/// units.js parseLength(raw, lunits): a typed length → drawing units, or nothing (feet and inches in an engineering
+/// or architectural drawing).
+[[nodiscard]] std::optional<double> parse_length(std::string_view raw, const base::Value& lunits);
+/// /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i (the exponent optional by `exp`)
+[[nodiscard]] bool plain_number(std::string_view s, bool exp);
 
 /// dims.js angularFromLines(l1, l2, loc): the vertex and the two legs whose sector (under 180°) holds loc, or nothing
 /// for parallel lines. l1 / l2: { x1, y1, x2, y2 }.
