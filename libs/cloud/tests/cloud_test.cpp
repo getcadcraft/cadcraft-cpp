@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -94,4 +96,61 @@ TEST_CASE("cloud: a LAS 1.2 format 0 file read back, thinned evenly at a small b
   CHECK(c->n <= 1000);
   CHECK(c->class_counts.at(2) == n / 3);
   CHECK(cc::cloud::summary(*c, words).classes.size() == 3);
+}
+
+namespace {
+
+std::vector<std::byte> read_seed(const char* name) {
+  std::ifstream in(std::string(CC_CLOUD_SEEDS) + "/" + name, std::ios::binary);
+  const std::string s((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+  return bytes_of(s);
+}
+
+/// A LAZ opened by laz-perf: a cloud or a reason, never a trap (the hardened library) or a sanitizer report
+void open_laz(const std::vector<std::byte>& f, const cc::i18n::Catalog& words) {
+  const auto info = cc::cloud::read_info("t.laz", f, words);
+  if (info) {
+    const auto c = cc::cloud::load_cloud("t.laz", f, *info, 1000, words);
+    CHECK((c || !c.error().message.empty()));  // a cloud, or a reason
+  }
+}
+
+}  // namespace
+
+TEST_CASE("cloud: LAZ through laz-perf, and damaged LAZ files refused or read — never a crash") {
+  const cc::i18n::Catalog words;
+  for (const char* name : {"tiny-f3.laz", "tiny-f7.laz"}) {
+    const std::vector<std::byte> f = read_seed(name);
+    REQUIRE(f.size() > 400);
+    const auto info = cc::cloud::read_info(name, f, words);
+    REQUIRE(info);
+    CHECK(info->kind == "laz");
+    const auto c = cc::cloud::load_cloud(name, f, *info, 2e6, words);
+    REQUIRE(c);
+    CHECK(c->n == 300);
+    // the chunk table offset (the first 8 bytes of the points): before the file, past its end (fuzz, 2026-10-21)
+    const auto point_offset = static_cast<std::size_t>(std::to_integer<unsigned>(f[96])) |
+                              (static_cast<std::size_t>(std::to_integer<unsigned>(f[97])) << 8U);
+    for (const std::uint64_t at : {~std::uint64_t{4}, std::uint64_t{1} << 40U, std::uint64_t{0}}) {
+      std::vector<std::byte> g = f;
+      put(g, point_offset, at, 8);
+      open_laz(g, words);
+    }
+    // cut short anywhere, and bits flipped past the header (a fixed sequence)
+    for (std::size_t cut = 300; cut < f.size(); cut += 97) {
+      open_laz(std::vector<std::byte>(f.begin(), f.begin() + static_cast<std::ptrdiff_t>(cut)), words);
+    }
+    std::uint32_t seed = 7;
+    const auto next = [&seed] {
+      seed = seed * 1103515245U + 12345U;
+      return seed >> 8U;
+    };
+    for (int k = 0; k < 300; ++k) {
+      std::vector<std::byte> g = f;
+      for (int i = 0; i < 1 + k % 20; ++i) {
+        g[point_offset + next() % (g.size() - point_offset)] = static_cast<std::byte>(next() & 0xFFU);
+      }
+      open_laz(g, words);
+    }
+  }
 }

@@ -5,7 +5,10 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <memory>
 #include <utility>
+
+#include <lazperf/readers.hpp>
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
@@ -313,6 +316,85 @@ std::uint16_t clamp16(double v) {
   return static_cast<std::uint16_t>(std::clamp(base::js_round(v), 0.0, 65535.0));
 }
 
+/// recordDecoder(fmt, L, scale, offset): one point record at `o` into the bounds, the class counts and the keeper
+struct RecordDecoder {
+  V3 scale, offset;
+  bool ext;
+  int ca;
+  bool color_ok;
+  explicit RecordDecoder(const LasHeader& head)
+      : scale(head.scale),
+        offset(head.offset),
+        ext(head.format >= 6),
+        ca(color_at(head.format)),
+        color_ok(ca >= 0 && static_cast<std::uint32_t>(ca) + 6 <= head.record_length) {}
+  void operator()(Bytes dv, std::uint64_t o, Keeper& keep, Bounds& box,
+                  std::map<int, std::uint64_t>& class_counts) const {
+    const double x = le<std::int32_t>(dv, o) * scale[0] + offset[0];
+    const double y = le<std::int32_t>(dv, o + 4) * scale[1] + offset[1];
+    const double z = le<std::int32_t>(dv, o + 8) * scale[2] + offset[2];
+    const std::uint8_t c = ext ? le<std::uint8_t>(dv, o + 16) : (le<std::uint8_t>(dv, o + 15) & 31U);
+    box.add(x, y, z);
+    ++class_counts[c];
+    if (!keep.want()) {
+      return;
+    }
+    const auto inten = le<std::uint16_t>(dv, o + 12);
+    if (color_ok) {
+      const auto cu = static_cast<std::uint64_t>(ca);
+      keep.put(x, y, z, le<std::uint16_t>(dv, o + cu), le<std::uint16_t>(dv, o + cu + 2),
+               le<std::uint16_t>(dv, o + cu + 4), inten, c);
+    } else {
+      keep.put(x, y, z, 0, 0, 0, inten, c);
+    }
+  }
+};
+
+/// LAZ: the file handed to laz-perf (a copy: its reader takes a writable buffer), decoded point by point; a point that
+/// will not decode ends the read with a note, as 0.5's does
+base::Result<std::uint64_t> scan_laz(Bytes file, const LasHeader& h, Keeper& keep, Bounds& box,
+                                     std::map<int, std::uint64_t>& class_counts, std::vector<std::string>& notes,
+                                     const i18n::Catalog& words) {
+  std::vector<char> buf(file.size());
+  std::ranges::transform(file, buf.begin(), [](std::byte b) { return static_cast<char>(b); });
+  std::unique_ptr<lazperf::reader::mem_file> laz;
+  try {
+    laz = std::make_unique<lazperf::reader::mem_file>(buf.data(), buf.size());
+  } catch (...) {  // NOLINT(bugprone-empty-catch) — laz-perf throws for a file it cannot open: said below
+    laz.reset();
+  }
+  if (!laz) {
+    return fail(Errc::invalid, words.t("las.bad.laz_open"));
+  }
+  // getCount() is laz-perf's 32-bit count
+  const auto n = std::min<std::uint64_t>(static_cast<std::uint32_t>(laz->pointCount()), h.count);
+  const std::uint32_t L = laz->header().point_record_length;
+  if (L < 20) {
+    return fail(Errc::invalid, words.t("las.bad.laz_len"));
+  }
+  std::vector<char> pt(L);
+  std::vector<std::byte> rec(L);
+  const RecordDecoder dec(h);
+  std::uint64_t read = 0;
+  for (std::uint64_t i = 0; i < n; ++i) {
+    bool ok = true;
+    try {
+      laz->readPoint(pt.data());
+    } catch (...) {  // NOLINT(bugprone-empty-catch) — a damaged point: said as a note
+      ok = false;
+    }
+    if (!ok) {
+      notes.push_back(words.t("las.laz.stopped",
+                              {{"read", grouped(static_cast<double>(i))}, {"n", grouped(static_cast<double>(n))}}));
+      break;
+    }
+    std::ranges::transform(pt, rec.begin(), [](char ch) { return static_cast<std::byte>(ch); });
+    dec(rec, 0, keep, box, class_counts);
+    ++read;
+  }
+  return read;
+}
+
 std::uint64_t scan_las(Bytes file, const Info& info, Keeper& keep, Bounds& box,
                        std::map<int, std::uint64_t>& class_counts) {
   if (!info.las) {
@@ -320,9 +402,7 @@ std::uint64_t scan_las(Bytes file, const Info& info, Keeper& keep, Bounds& box,
   }
   const LasHeader& h = *info.las;
   const std::uint32_t L = h.record_length;
-  const bool ext = h.format >= 6;
-  const int ca = color_at(h.format);
-  const bool color_ok = ca >= 0 && static_cast<std::uint32_t>(ca) + 6 <= L;
+  const RecordDecoder dec(h);
   const std::uint64_t per = std::max<std::uint64_t>(1, std::uint64_t{4} * 1048576 / L);
   const auto total = static_cast<std::uint64_t>(info.count);
   std::uint64_t read = 0;
@@ -332,24 +412,7 @@ std::uint64_t scan_las(Bytes file, const Info& info, Keeper& keep, Bounds& box,
     const Bytes dv = slice(file, start, start + n * L);
     const std::uint64_t m = dv.size() / L;
     for (std::uint64_t k = 0; k < m; ++k) {
-      const std::uint64_t o = k * L;
-      const double x = le<std::int32_t>(dv, o) * h.scale[0] + h.offset[0];
-      const double y = le<std::int32_t>(dv, o + 4) * h.scale[1] + h.offset[1];
-      const double z = le<std::int32_t>(dv, o + 8) * h.scale[2] + h.offset[2];
-      const std::uint8_t c = ext ? le<std::uint8_t>(dv, o + 16) : (le<std::uint8_t>(dv, o + 15) & 31U);
-      box.add(x, y, z);
-      ++class_counts[c];
-      if (!keep.want()) {
-        continue;
-      }
-      const auto inten = le<std::uint16_t>(dv, o + 12);
-      if (color_ok) {
-        const auto cu = static_cast<std::uint64_t>(ca);
-        keep.put(x, y, z, le<std::uint16_t>(dv, o + cu), le<std::uint16_t>(dv, o + cu + 2),
-                 le<std::uint16_t>(dv, o + cu + 4), inten, c);
-      } else {
-        keep.put(x, y, z, 0, 0, 0, inten, c);
-      }
+      dec(dv, k * L, keep, box, class_counts);
     }
     read += m;
     if (m < n) {
@@ -721,8 +784,14 @@ base::Result<Cloud> load_cloud(std::string_view name, Bytes file, const Info& in
   std::uint64_t read = 0;
   if (info.kind == "xyz") {
     read = scan_text(file, info, keep, box, notes, words);
-  } else if (info.kind == "laz" || !info.las) {
-    return fail(Errc::unsupported, "This build does not read LAZ yet.");  // M5.8h3 (laz-perf)
+  } else if (!info.las) {
+    return fail(Errc::invalid, words.t("las.bad.laz_open"));
+  } else if (info.las->compressed) {
+    auto r = scan_laz(file, *info.las, keep, box, class_counts, notes, words);
+    if (!r) {
+      return std::unexpected(r.error());
+    }
+    read = *r;
   } else {
     read = scan_las(file, info, keep, box, class_counts);
   }

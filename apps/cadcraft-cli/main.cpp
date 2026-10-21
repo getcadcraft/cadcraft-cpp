@@ -105,7 +105,7 @@ void usage(std::FILE* out) {
       "                                        a PDF of a sheet, of the model at its extents, or of every sheet\n"
       "  plot-parity <in.dwg>                  each sheet and the model as uncompressed PDFs (the parity kit)\n"
       "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
-      "  cloud <file> [--budget N]           a point cloud (LAS, XYZ, PTS) as CadCraft reads it (JSON)\n"
+      "  cloud <file> [--budget N]           a point cloud (LAS, LAZ, XYZ, PTS) as CadCraft reads it\n"
       "  version                             print the version\n");
 }
 

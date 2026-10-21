@@ -4,7 +4,7 @@
 // header or its first 64 KB), the cloud read (every kept position, colour, intensity and class; the bounds; the class
 // counts; the notes), every colour mode, slices, the nearest points of the snapping grid and the summary, at the
 // default budget and at the smallest (1000: the keeper's thinning). The file's coordinate system (unit, crsNote) is
-// left out until M5.8h2; LAZ until M5.8h3.
+// left out until M5.8h2.
 //   node tools/parity/cloud.mjs <file|dir>… [--golden-out <dir>]
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { join, resolve, basename, dirname } from 'node:path';
@@ -30,6 +30,12 @@ registerHooks({
 const imp = (p) => import(pathToFileURL(join(app, p)).href);
 (await imp('i18n.js')).init({ locale: 'en', strings: JSON.parse(readFileSync(join(app, 'lang/en.json'), 'utf8')) });
 const P = await imp('pointcloud.js');
+// LAZ: 0.5's laz-perf (WebAssembly) with its binary handed over, as the site's own pointcloud test does
+const L = await imp('las.js');
+globalThis.window = globalThis;   // laz-perf's web build checks it is in a page
+const LP = L.lazPerf({ wasmBinary: readFileSync(join(site, 'public_html/assets/vendor/laz-perf/current/laz-perf.wasm')) });
+await LP;
+delete globalThis.window;
 
 const args = process.argv.slice(2);
 const gi = args.indexOf('--golden-out');
@@ -38,7 +44,7 @@ const cli = process.env.CC_CLI || resolve(here, '../../build/release/apps/cadcra
 const files = [];
 for (const a of args) {
   const st = statSync(a);
-  if (st.isDirectory()) for (const f of readdirSync(a).sort()) { if (/\.(las|xyz|pts)$/i.test(f)) files.push(join(a, f)); }
+  if (st.isDirectory()) for (const f of readdirSync(a).sort()) { if (/\.(las|laz|xyz|pts)$/i.test(f)) files.push(join(a, f)); }
   else files.push(a);
 }
 
@@ -53,7 +59,7 @@ async function runJs(path, budget) {
     max: info.max, color: info.color, intensity: info.intensity, classes: info.classes, notes: info.notes, columns: info.columns,
     version: info.version, format: info.format };
   let c;
-  try { c = await P.loadCloud(file, info, { budget }); } catch (e) { r.error = e.message; return r; }
+  try { c = await P.loadCloud(file, info, { budget, lazPerf: LP }); } catch (e) { r.error = e.message; return r; }
   r.cloud = { name: c.name, kind: c.kind, read: c.read, n: c.n, origin: c.origin, pos: Array.from(c.pos),
     rgb: c.rgb ? Array.from(c.rgb) : null, inten: c.inten ? Array.from(c.inten) : null, cls: c.cls ? Array.from(c.cls) : null,
     min: c.min, max: c.max, classCounts: [...c.classCounts.entries()].sort((a, b) => a[0] - b[0]), notes: c.notes };

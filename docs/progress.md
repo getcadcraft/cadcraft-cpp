@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-20 · Change: M5.8h1 (point clouds: the reader).
+Last updated 2026-10-21 · Change: M5.8h3 (LAZ point clouds, laz-perf).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -450,4 +450,11 @@ Last updated 2026-10-20 · Change: M5.8h1 (point clouds: the reader).
   tools/parity/cloud.mjs runs pointcloud.js on the same files: 14/14 the same (LAS formats 0/2/3/7/8, XYZ, PTS of the
   0.5 tests' room, generated once into testfiles/generated/pointcloud-room; at the default budget and at 1000). Unit
   test and fuzz target cloud. Not yet: coordinate systems (M5.8h2), LAZ (M5.8h3), the commands and the underlay (M5.8h4).
+- M5.8h3 (2026-10-21): LAZ point clouds through laz-perf 3.4.0 (Apache-2.0; what 0.5 runs as WebAssembly), fetched by
+  commit and hash (cmake/LazPerf.cmake), built with our hardened standard library. Bit-flipped and cut LAZ files
+  trapped the hardened library inside it (a chunk read past its end), the fuzzer found an assert and a seek before the
+  buffer, and reading showed a raw walk past the chunk table, so seven patches there (and NDEBUG, as 0.5's build) make it refuse or read zeros instead: no read past a buffer, no byte left undefined, layer, chunk-table
+  and extra-bytes sizes capped. Parity 34/34 (the room fixtures with their two LAZ files, 18, and the fuzz seeds, 16); a 7-minute local fuzz of the patched decoder, 24 049 inputs, found nothing after the seventh patch; damaged LAZ files differ from 0.5 by design
+  (its WebAssembly reads leftover heap) and are not compared. Fuzz target cloud with tiny synthetic seeds
+  (tools/fuzz/cloud_seeds.py): LAS, LAZ, XYZ, PTS.
 

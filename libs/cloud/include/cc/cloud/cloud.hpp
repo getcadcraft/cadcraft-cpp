@@ -10,8 +10,8 @@
 //   summary(cloud)
 //
 // Text clouds: "x y z", "x y z r g b", "x y z i", "x y z i r g b" (PTS: a first line with the count), separated by
-// spaces, tabs, commas or semicolons; lines that are not numbers are skipped and counted. Not yet (docs/gaps.md):
-// the file's coordinate system (M5.8h2), LAZ (M5.8h3).
+// spaces, tabs, commas or semicolons; lines that are not numbers are skipped and counted. LAZ through laz-perf
+// (Apache-2.0, cmake/LazPerf.cmake), as 0.5 does. Not yet (docs/gaps.md): the file's coordinate system (M5.8h2).
 #pragma once
 
 #include <array>

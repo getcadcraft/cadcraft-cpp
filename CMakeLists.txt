@@ -57,6 +57,7 @@ if(CC_BUILD_TESTS)
 endif()
 
 find_package(ZLIB REQUIRED)  # libs/image: PNG, the PDF streams
+include(LazPerf)  # libs/cloud: LAZ points, pinned by commit: cmake/LazPerf.cmake
 if(CC_BUILD_RENDER)
   find_package(Freetype REQUIRED)
   include(Wuffs)  # PNG / JPEG decoding for pictures on screen, pinned by commit: cmake/Wuffs.cmake
