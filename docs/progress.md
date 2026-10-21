@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: FZ.4 (laz-perf patch 9).
+Last updated 2026-10-21 · Change: FZ.5 (a LAZ layer read past its end stops).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -496,3 +496,10 @@ Last updated 2026-10-21 · Change: FZ.4 (laz-perf patch 9).
   end. A sound stream recurses once at most (the encoder switches to the sequence that fits), so patch 9 throws
   `lazperf::error` past depth 8 and the reader stops with the note. Input in fuzz/corpus/cloud and a regression test
   that fails without the patch.
+- FZ.5 (2026-10-21): the same run found 10-second timeouts in our point loop: a 2.7 KB LAS 1.4 file claiming 7e16
+  points in one chunk, whose layers patch 1 kept serving as zeros, so laz-perf decoded garbage for as many points as
+  its 32-bit count allows (hours). A sound layer is never read past its end (the encoder pads it), so patch 1 now stops
+  a layer read more than 64 bytes past its end with `lazperf::error`. Here that is the first point, so the file is
+  refused as an empty cloud (pc.empty). Input in fuzz/corpus/cloud and a regression test. With patches 8–10: cloud parity
+  34/34 (the room fixtures and the seeds; damaged LAZ files differ from 0.5 by design, as before), and fuzz target
+  cloud for 15 minutes × 16 workers (1.01 M inputs) with no crash, timeout or out-of-memory.

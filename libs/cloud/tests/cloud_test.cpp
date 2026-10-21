@@ -192,3 +192,18 @@ TEST_CASE("cloud: a damaged LAZ whose GPS time switches sequences without end st
   REQUIRE(c);
   CHECK(std::ranges::any_of(c->notes, [&](const std::string& n) { return n.starts_with(lead); }));
 }
+
+TEST_CASE("cloud: a damaged LAZ that claims billions of points stops when its data runs out") {
+  // fuzz, 2026-10-21: a 2.7 KB LAS 1.4 file claiming 7e16 points in one chunk; laz-perf read zeros past the chunk's
+  // layers (patch 1) for as many points as laz-perf's 32-bit count allows, hours of decoding. Patch 1 now stops a layer
+  // read more than 64 bytes past its end: here at the first point, so the cloud is empty.
+  const cc::i18n::Catalog words;
+  const std::vector<std::byte> f = read_seed("regress-63b7f831f9ba");
+  REQUIRE(f.size() > 400);
+  const auto info = cc::cloud::read_info("f.las", f, words);
+  REQUIRE(info);
+  CHECK(info->kind == "laz");
+  const auto c = cc::cloud::load_cloud("f.las", f, *info, 1000, words);
+  REQUIRE_FALSE(c);
+  CHECK(c.error().message == words.t("pc.empty"));
+}

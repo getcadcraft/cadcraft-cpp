@@ -22,7 +22,7 @@ if(NOT EXISTS ${_lp_tar} OR NOT _have STREQUAL _lp_sha)
 endif()
 # The marker holds the patch set's number: a source tree patched by an older set is extracted again, so a new patch is
 # never missing from an existing build directory and an old one is never applied twice.
-set(_lp_patchset 9)
+set(_lp_patchset 10)
 if(EXISTS ${_lp_src}/.cc-patched)
   file(READ ${_lp_src}/.cc-patched _lp_have)
   if(NOT _lp_have STREQUAL "${_lp_patchset}")
@@ -48,9 +48,16 @@ function(_lp_patch file old new)
   file(WRITE ${_lp_src}/cpp/lazperf/${file} "${_c}")
 endfunction()
 if(NOT EXISTS ${_lp_src}/.cc-patched)
-  # 1. a chunk's bytes read past their end: zeros, not the next allocation
+  # 1. a chunk's bytes read past their end: zeros, not the next allocation; and a stream that reads on far past its end
+  #    is damaged (a sound one never does: the encoder pads its end), or a file that claims billions of points decodes
+  #    zeros for hours (fuzz, 2026-10-21)
   _lp_patch(streams.hpp [=[        return buf[idx++];]=]
-                        [=[        if (idx >= buf.size()) { ++idx; return 0; }  // CadCraft: past the end reads 0
+                        [=[        if (idx >= buf.size())  // CadCraft: past the end reads 0, for 64 bytes at most
+        {
+            if (++idx > buf.size() + 64)
+                throw error("LAZ layer read past its end");
+            return 0;
+        }
         return buf[idx++];]=])
   # 2. a short read of the file leaves no byte undefined
   _lp_patch(streams.hpp [=[        unsigned char c;
