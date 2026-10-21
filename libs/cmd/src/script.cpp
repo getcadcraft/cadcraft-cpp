@@ -14,10 +14,12 @@
 
 #include "cc/base/checked.hpp"
 #include "cc/base/js.hpp"
+#include "cc/cad/read_dxf.hpp"
 #include "cc/cloud/attach.hpp"
 #include "cc/cmd/engine.hpp"
 #include "cc/cmd/props.hpp"
 #include "cc/doc/swsketch.hpp"
+#include "cc/dxf/read.hpp"
 #include "cc/m3d/drawing3d.hpp"
 
 namespace cc::cmd {
@@ -211,6 +213,13 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
             }
             host.pictures.push_back(std::move(file));
           }
+        }
+      } else if (const Value* dx = s.is_object() && !s.is_point() ? s.find("dxf") : nullptr;
+                 dx != nullptr && dx->is_string()) {
+        // a drawing to start from (DXF text, read as the app reads it)
+        auto r = cad::read_dxf(dx->as_string(), words, [](std::string_view t) { return dxf::read_dxf_model(t); });
+        if (r) {
+          d.load(std::move(*r), words);
         }
       } else if (const Value* cf = s.is_object() && !s.is_point() ? s.find("cloudFile") : nullptr) {
         const Value b = cf->get("bytes");

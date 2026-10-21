@@ -1,5 +1,5 @@
 cc_library(m3d LAYER 2
-  SOURCES src/model.cpp src/earcut.cpp src/drawing3d.cpp
+  SOURCES src/model.cpp src/earcut.cpp src/drawing3d.cpp src/flatview.cpp
   DEPS cc::base)
 
 cc_test(m3d

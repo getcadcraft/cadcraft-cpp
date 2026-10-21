@@ -149,6 +149,7 @@ async function runJs(script) {
   }
   for (const s of script.steps) {
     if (typeof s === 'string') eng.text(s);
+    else if (typeof s.dxf === 'string') doc.load(readDxf(s.dxf));   // a drawing to start from
     else if (s.cloudFile) host.cloudFile = new File([Buffer.from(s.cloudFile.bytes?.$base64 || '', 'base64')], s.cloudFile.name);
     else if (s.pictures) host.pictures = s.pictures.map((f) => ({ name: f.name, bytes: new Uint8Array(Buffer.from(f.bytes?.$base64 || '', 'base64')) }));
     else if (s.click) { host.nextPick = typeof s.pick === 'number' ? s.pick : null; eng.click({ x: s.click[0], y: s.click[1] }); }

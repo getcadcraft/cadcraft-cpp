@@ -1,0 +1,95 @@
+[
+ {
+  "name": "VIEWBASE with no solids",
+  "steps": [
+   "VIEWBASE"
+  ]
+ },
+ {
+  "name": "VIEWBASE front, hidden lines shown, scale 1, in the model",
+  "steps": [
+   {
+    "dxf": "0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n0\n12\n2000\n22\n1000\n32\n0\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n1500\n11\n0\n21\n1000\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n0\n33\n1500\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n0\n21\n0\n31\n1500\n12\n2000\n22\n0\n32\n1500\n13\n2000\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n1000\n30\n0\n11\n2000\n21\n1000\n31\n1500\n12\n0\n22\n1000\n32\n1500\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n1000\n30\n0\n11\n0\n21\n1000\n31\n1500\n12\n0\n22\n0\n32\n1500\n13\n0\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n2500\n22\n3500\n32\n0\n13\n500\n23\n3500\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n2000\n30\n0\n11\n2500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n3500\n30\n0\n11\n500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n500\n20\n3500\n30\n0\n11\n500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\nENDSEC\n0\nEOF\n"
+   },
+   "VIEWBASE",
+   "F",
+   "S",
+   "",
+   "5000,0"
+  ]
+ },
+ {
+  "name": "FLATSHOT top without hidden lines at 1:50, twice (names count up)",
+  "steps": [
+   {
+    "dxf": "0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n0\n12\n2000\n22\n1000\n32\n0\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n1500\n11\n0\n21\n1000\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n0\n33\n1500\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n0\n21\n0\n31\n1500\n12\n2000\n22\n0\n32\n1500\n13\n2000\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n1000\n30\n0\n11\n2000\n21\n1000\n31\n1500\n12\n0\n22\n1000\n32\n1500\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n1000\n30\n0\n11\n0\n21\n1000\n31\n1500\n12\n0\n22\n0\n32\n1500\n13\n0\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n2500\n22\n3500\n32\n0\n13\n500\n23\n3500\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n2000\n30\n0\n11\n2500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n3500\n30\n0\n11\n500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n500\n20\n3500\n30\n0\n11\n500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\nENDSEC\n0\nEOF\n"
+   },
+   "FLATSHOT",
+   "T",
+   "H",
+   "1:50",
+   "0,0",
+   "VIEWBASE",
+   "T",
+   "H",
+   "1/20",
+   "100,100"
+  ]
+ },
+ {
+  "name": "VIEWBASE iso: a bad scale, then 2:1",
+  "steps": [
+   {
+    "dxf": "0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n0\n12\n2000\n22\n1000\n32\n0\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n1500\n11\n0\n21\n1000\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n0\n33\n1500\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n0\n21\n0\n31\n1500\n12\n2000\n22\n0\n32\n1500\n13\n2000\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n1000\n30\n0\n11\n2000\n21\n1000\n31\n1500\n12\n0\n22\n1000\n32\n1500\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n1000\n30\n0\n11\n0\n21\n1000\n31\n1500\n12\n0\n22\n0\n32\n1500\n13\n0\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n2500\n22\n3500\n32\n0\n13\n500\n23\n3500\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n2000\n30\n0\n11\n2500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n3500\n30\n0\n11\n500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n500\n20\n3500\n30\n0\n11\n500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\nENDSEC\n0\nEOF\n"
+   },
+   "VIEWBASE",
+   "I",
+   "",
+   "bad",
+   "2:1",
+   "0,0"
+  ]
+ },
+ {
+  "name": "VIEWBASE on a sheet: the largest standard scale that fits",
+  "steps": [
+   {
+    "dxf": "0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n0\n12\n2000\n22\n1000\n32\n0\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n1500\n11\n0\n21\n1000\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n0\n33\n1500\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n0\n21\n0\n31\n1500\n12\n2000\n22\n0\n32\n1500\n13\n2000\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n1000\n30\n0\n11\n2000\n21\n1000\n31\n1500\n12\n0\n22\n1000\n32\n1500\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n1000\n30\n0\n11\n0\n21\n1000\n31\n1500\n12\n0\n22\n0\n32\n1500\n13\n0\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n2500\n22\n3500\n32\n0\n13\n500\n23\n3500\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n2000\n30\n0\n11\n2500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n3500\n30\n0\n11\n500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n500\n20\n3500\n30\n0\n11\n500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\nENDSEC\n0\nEOF\n"
+   },
+   "LAYOUT",
+   {
+    "space": "Layout1"
+   },
+   "VIEWBASE",
+   "R",
+   "S",
+   "",
+   "200,150",
+   "VIEWBASE",
+   "BA",
+   "",
+   "0.02",
+   "100,100"
+  ]
+ },
+ {
+  "name": "VIEWBASE bottom and left; Esc at the point",
+  "steps": [
+   {
+    "dxf": "0\nSECTION\n2\nHEADER\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n0\n12\n2000\n22\n1000\n32\n0\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n1500\n11\n0\n21\n1000\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n0\n33\n1500\n0\n3DFACE\n8\n0\n10\n0\n20\n0\n30\n0\n11\n0\n21\n0\n31\n1500\n12\n2000\n22\n0\n32\n1500\n13\n2000\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n0\n30\n0\n11\n2000\n21\n0\n31\n1500\n12\n2000\n22\n1000\n32\n1500\n13\n2000\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n2000\n20\n1000\n30\n0\n11\n2000\n21\n1000\n31\n1500\n12\n0\n22\n1000\n32\n1500\n13\n0\n23\n1000\n33\n0\n0\n3DFACE\n8\n0\n10\n0\n20\n1000\n30\n0\n11\n0\n21\n1000\n31\n1500\n12\n0\n22\n0\n32\n1500\n13\n0\n23\n0\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n2500\n22\n3500\n32\n0\n13\n500\n23\n3500\n33\n0\n0\n3DFACE\n8\n0\n10\n500\n20\n2000\n30\n0\n11\n2500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n2000\n30\n0\n11\n2500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n2500\n20\n3500\n30\n0\n11\n500\n21\n3500\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\n3DFACE\n8\n0\n10\n500\n20\n3500\n30\n0\n11\n500\n21\n2000\n31\n0\n12\n1500\n22\n2750\n32\n2500\n13\n1500\n23\n2750\n33\n2500\n0\nENDSEC\n0\nEOF\n"
+   },
+   "VIEWBASE",
+   "BO",
+   "S",
+   "",
+   "0,0",
+   "VIEWBASE",
+   "L",
+   "H",
+   "",
+   {
+    "esc": true
+   }
+  ]
+ }
+]

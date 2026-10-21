@@ -869,6 +869,7 @@ void add_layers(std::vector<CommandDef>& t) {
     d.keep_selection = true;
     t.push_back(std::move(d));
   };
+  add_viewbase(t);  // layertools.js installs VIEWBASE (flatview.js) before its own commands
   t.push_back(def("LAYISO", {}, layiso_cmd, "cmd.layiso.help"));
   keep(def("LAYUNISO", {}, layuniso_cmd, "cmd.layuniso.help", true));
   t.push_back(def("LAYOFF", {}, layoff_cmd, "cmd.layoff.help"));

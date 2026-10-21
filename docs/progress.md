@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M5.8h4 (POINTCLOUDATTACH, POINTCLOUD, the cloud in the viewer).
+Last updated 2026-10-21 · Change: M5.8h5 (VIEWBASE).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -467,4 +467,12 @@ Last updated 2026-10-21 · Change: M5.8h4 (POINTCLOUDATTACH, POINTCLOUD, the clo
   winning each pixel, squares of the point size), redrawn only when the view or the cloud changes; Node snaps to its
   points after the drawing's own (view.js snapExtra, cad::best_snap's new `extra`); attaching zooms to it (fitPoints,
   0.9). Viewer test: the picker's file attached, drawn, sliced, detached.
+- M5.8h5 (2026-10-21): VIEWBASE (FLATSHOT), flatview.js: libs/m3d flatview projects the 3D model into a view (top,
+  bottom, front, back, left, right, iso): every hard edge, a soft edge only where it is the outline, each edge sampled
+  against the model's triangles seen from the view through a 96 × 96 grid and its in-front / behind changes found by
+  halving; pieces on one line merged, hidden pieces under visible ones dropped. The command asks the view, hidden lines,
+  the scale (on a sheet the largest standard scale that fits) and where, and places one block VIEW-<View>-<n> with
+  VIEW-VISIBLE and VIEW-HIDDEN layers in one undo step. Parity tests/commands/viewbase.json 6/6 (3DFACE drawings: a box
+  in front of a pyramid, every view, scales typed and bad, a sheet); the harness gained a {dxf} step that starts a script
+  from a drawing.
 
