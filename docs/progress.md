@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M5.8i0 (Task in libs/base, parseLength in libs/cad).
+Last updated 2026-10-21 · Change: REL.1 (release plan: two versions behind).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -509,3 +509,7 @@ Last updated 2026-10-21 · Change: M5.8i0 (Task in libs/base, parseLength in lib
   formatLength, for rtos / distof. Measured on the frozen 0.5: its evaluator awaits at every step, so recursion is bounded
   only by memory (`(r 100000)` runs); its reader recurses on the native stack and stops near 5 300 nested lists with
   "Maximum call stack size exceeded".
+- REL.1 (2026-10-21): the owner set the release plan — the forks release two versions behind CadCraft (CadCraft 0.7 →
+  fork 0.5, 0.9 → 0.7), fork 0.5 is everything in 0.5 (eight apps and Studio) at parity with js-0.5, CadCraft 0.7 is
+  expected within about a month, and the work runs as parallel workstreams. docs/roadmap.md has the plan, the size
+  measured (about 190 k unique JS lines left) and workstreams W1–W6.

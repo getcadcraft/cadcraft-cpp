@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-21 · Change: M5.8h5 (VIEWBASE).
+Last updated 2026-10-21 · Change: release plan, two versions behind; fork 0.5 workstreams (REL.1).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -15,7 +15,46 @@ benchmark table format below so the numbers compare.
 | M3.5 | Speed (added at the re-plan) | native reader ≥ 3× the JS on every corpus file (was 1.1–3.3×; Rust 2.1–4.4×); browser open → first frame ≥ 1.5× the JS (was on par) | done (a–h): 1.66–3.95×, browser cold ~1.4×; targets not met yet, levers in docs/perf-postmortem.md |
 | M4 | CadCraft drafting commands | coroutine commands that ask questions (LINE … TRIM), undo, save DWG/DXF at parity with `dwg-save.js` | done 2026-10-18: import, document, DWG writer, DWG and DXF save, the command line (20 commands), drafting in the viewer (snaps, grips, windows, save) |
 | M5 | CadCraft complete | the rest of commands.js (about 150 commands) in batches by area, CadCraft's own DXF reader, the panels (layers, properties), sheets and plotting — each batch at parity through tools/parity/commands.mjs scripts | planned (M5 plan below) |
-| M6+ | The other apps | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned with measured numbers after M5.** | planned |
+| M6+ | The other apps | m3d kernel + ModelCraft (Manifold behind `SolidOps`), then cc-ifc + BimCraft, the cc-skp port (OpenSKP C++ is the oracle and the time to beat), the other apps. **Re-planned 2026-10-21: fork 0.5, workstreams W1–W6 below.** | planned |
+
+## Release plan (owner, 2026-10-21): two versions behind
+
+The forks (this one and the Rust fork) release two minor versions behind CadCraft: **when CadCraft 0.7 is released,
+fork 0.5 is released; when 0.9 is released, fork 0.7.** A fork release `0.N` means parity with the frozen JS `0.N`
+(`testfiles/fork-parity/js-0.N`, read-only), checked by the parity scripts and goldens as today.
+
+| CadCraft (JS) released | Fork released | Parity target | Frozen copy |
+|---|---|---|---|
+| 0.7 (owner, 2026-10-21: within about a month) | **0.5** | js-0.5 | `fork-parity/js-0.5` (site 594ab3e, exists) |
+| 0.9 | 0.7 | js-0.7 | `fork-parity/js-0.7`, frozen from the 0.7 release commit when 0.7 ships |
+
+- **Fork 0.5 scope (owner): everything in 0.5** — the eight apps (CadCraft, BimCraft, CivilCraft, DetailCraft,
+  MarkupCraft, ModelCraft, PartCraft, TakeoffCraft) and Studio, at parity with js-0.5. A feature not at parity is a row
+  in docs/gaps.md and blocks the release unless the owner waives it.
+- The release itself (tag, packages, signing, links, announcements) still waits for the owner (AGENTS.md section 15):
+  the fork reports "0.5 ready" with the parity numbers.
+- After fork 0.5, the work target moves to js-0.7: the 0.5 → 0.7 JS diff is ported as its own milestones.
+- Size (2026-10-21, unique JS lines once files the apps share are counted once): about 226 k in the eight apps,
+  22.5 k in the engines (lib/dwg, ifc, skp, shapes), 10 k in the shell (assets/js). Ported: lib/dwg and most of
+  CadCraft. Left: about 190 k lines in about a month, against about 8–10 k lines a day for one stream so far — so
+  fork 0.5 runs as **parallel workstreams** (owner, 2026-10-21), each in its own git worktree and build directory,
+  owning its own libraries (AGENTS.md section 11, Parallel agents); one integrator rebases, gates and pushes each
+  commit. A burn-down (lines ported, parity counts per app) is reported weekly; a slip is reported as soon as it shows.
+
+### Fork 0.5 workstreams
+
+| W | Stream | JS (unique lines) | Libraries (new unless noted) | Parity gate |
+|---|---|---|---|---|
+| W1 | CadCraft complete: LISP (M5.8i), the rest of gaps, the 3D tab once W2's kernel lands | lisp/ 4.4 k + rest | libs/lisp, libs/cmd (existing) | command scripts, LISP scripts, 0.5 test-cadcraft-lisp cases |
+| W2 | m3d kernel + ModelCraft (Manifold behind `SolidOps`) | 14 k + shared 22 k | libs/m3d (existing), libs/modelcraft | model JSON, mesh / export bytes |
+| W3 | cc-ifc + BimCraft | 54 k + lib/ifc 6 k | libs/io-ifc, libs/bimcraft | IFC model JSON on the corpus, BimCraft documents |
+| W4 | PartCraft | 52 k | libs/partcraft | documents, exports |
+| W5 | CivilCraft, DetailCraft, MarkupCraft, TakeoffCraft | 46 k | one library each | each app's documents and exports |
+| W6 | Studio (the shell: assets/js, app switching, control channel and MCP per control.rs) + cc-skp | 10 k + lib/skp 2.5 k | libs/shell, libs/io-skp | MCP tool shapes (host.js / AGENTS-SPEC.md), SKP models (beat OpenSKP's time) |
+
+Order inside each stream: the JS tests and goldens first, then the engine, then the UI. Code that several apps share
+in 0.5 (the same file in several app folders) is ported once, by the first stream that needs it, into a shared library
+the others link. M5.8h2 (a cloud's coordinate system) still waits for the owner's decision on the EPSG catalog.
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
 

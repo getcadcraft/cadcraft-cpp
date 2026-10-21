@@ -1,6 +1,6 @@
 # CadCraft in C++: one page
 
-Stage: M2 (cc-dwg reader in C++). Milestones: [docs/roadmap.md](docs/roadmap.md). Session log:
+Stage: fork 0.5 (parity with CadCraft 0.5 in every app; released when CadCraft 0.7 is — docs/roadmap.md, Release plan). Milestones: [docs/roadmap.md](docs/roadmap.md). Session log:
 [docs/progress.md](docs/progress.md). Architecture and toolchain: [docs/architecture.md](docs/architecture.md).
 
 ## Headline numbers
