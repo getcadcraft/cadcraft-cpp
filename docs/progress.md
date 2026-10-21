@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M5.8h5 (VIEWBASE).
+Last updated 2026-10-21 · Change: FZ.3 (laz-perf patch 8), the move to a WSL2 machine.
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -476,3 +476,18 @@ Last updated 2026-10-21 · Change: M5.8h5 (VIEWBASE).
   in front of a pyramid, every view, scales typed and bad, a sheet); the harness gained a {dxf} step that starts a script
   from a drawing.
 
+## 2026-10-21 (session fork-cpp, new machine)
+
+- The fork moved from the VPS to a WSL2 machine (Ubuntu 24.04, 32 threads): the same pinned toolchain under
+  `/opt/cadcraft-cpp` (LLVM 22.1.8 from apt.llvm.org, CMake 4.4.4, Ninja 1.13.2, vcpkg 2026.07.29, emsdk 6.0.10,
+  osv-scanner 2.7.0) plus GCC 14 for GCC-only warnings, so `tools/env.sh` works unchanged; the clone and builds live on
+  the Linux filesystem, the parity inputs outside the repo as before.
+- FZ.3 (2026-10-21): the nightly fuzz of `cloud` (run 39571113094) found a heap read out of bounds in laz-perf's
+  arithmetic decoder: a damaged stream's value passes its interval, and `decodeSymbol` indexes the model's decoder table
+  past its end (point format 7+; reached from the RGB field, the point14 field and the integer corrector). The input was
+  not kept, so it was found again locally in 2.5 minutes, nine inputs in 10 minutes, all this one read. cmake/LazPerf.cmake
+  patch 8 throws `lazperf::error` when the table index passes `table_size` (a sound stream reaches `table_size` at most:
+  the table has two spare entries), so the reader stops with 0.5's las.laz.stopped note. The patch marker now holds the
+  patch set's number: a build directory patched by an older set extracts the source again, so a new patch reaches the
+  CI caches and old ones are never applied twice. Two inputs (point14, RGB) in fuzz/corpus/cloud and a regression test
+  that trips ASan without the patch. Fuzzing the patched target found two more problems within 5 minutes (FZ.4, FZ.5).

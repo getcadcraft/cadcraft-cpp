@@ -57,5 +57,5 @@ cp $G/js-0.5-commands.tar.gz tests/golden/
   the command), and check a script's output says what its name says: two sides refusing the same way also match.
 - Every crash found becomes a regression test and a corpus entry (fuzz/corpus/).
 - Third-party code that reads files from strangers is built with the hardened standard library and the sanitizers, and
-  patched at configure time where it trusts its input (cmake/LazPerf.cmake: seven patches, each anchor checked).
+  patched at configure time where it trusts its input (cmake/LazPerf.cmake: eight patches, each anchor checked).
 - Commits and tags as `CadCraft <ddgconsultant@getcadcraft.com>`, no assistant names anywhere.

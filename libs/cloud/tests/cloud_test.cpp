@@ -4,6 +4,7 @@
 // tools/parity/cloud.mjs (the public room fixtures).
 #include "cc/cloud/cloud.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -152,5 +153,25 @@ TEST_CASE("cloud: LAZ through laz-perf, and damaged LAZ files refused or read, n
       }
       open_laz(g, words);
     }
+  }
+}
+
+TEST_CASE("cloud: a damaged LAZ whose symbol is outside laz-perf's model table stops with a note") {
+  // fuzz, 2026-10-21: decodeSymbol indexed the model's decoder table with a value past its interval, a heap read out of
+  // bounds under ASan (point format 7+: the point14 field, the RGB field). cmake/LazPerf.cmake patch 8 throws there.
+  const cc::i18n::Catalog words;
+  const std::string stopped = words.t("las.laz.stopped", {{"read", "{read}"}, {"n", "{n}"}});
+  const std::string lead = stopped.substr(0, stopped.find('{'));
+  REQUIRE(!lead.empty());
+  for (const char* name : {"regress-cb45fe695372", "regress-1f5fe2ccd8a4"}) {
+    INFO(name);
+    const std::vector<std::byte> f = read_seed(name);
+    REQUIRE(f.size() > 400);
+    const auto info = cc::cloud::read_info("f.las", f, words);
+    REQUIRE(info);
+    CHECK(info->kind == "laz");
+    const auto c = cc::cloud::load_cloud("f.las", f, *info, 1000, words);
+    REQUIRE(c);
+    CHECK(std::ranges::any_of(c->notes, [&](const std::string& n) { return n.starts_with(lead); }));
   }
 }

@@ -20,6 +20,15 @@ if(NOT EXISTS ${_lp_tar} OR NOT _have STREQUAL _lp_sha)
   endif()
   file(REMOVE_RECURSE ${_lp_src})
 endif()
+# The marker holds the patch set's number: a source tree patched by an older set is extracted again, so a new patch is
+# never missing from an existing build directory and an old one is never applied twice.
+set(_lp_patchset 8)
+if(EXISTS ${_lp_src}/.cc-patched)
+  file(READ ${_lp_src}/.cc-patched _lp_have)
+  if(NOT _lp_have STREQUAL "${_lp_patchset}")
+    file(REMOVE_RECURSE ${_lp_src})
+  endif()
+endif()
 if(NOT EXISTS ${_lp_src}/cpp/lazperf/readers.hpp)
   file(ARCHIVE_EXTRACT INPUT ${_lp_tar} DESTINATION ${_lp_dir} PATTERNS "*/cpp/lazperf/*" "*/COPYING")
   file(REMOVE ${_lp_src}/.cc-patched)
@@ -189,7 +198,20 @@ if(NOT EXISTS ${_lp_src}/.cc-patched)
         pos = at;
     }
     return pos;]=])
-  file(TOUCH ${_lp_src}/.cc-patched)
+  # 8. a damaged stream's value can pass its interval, so the table index runs past the model's decoder table (an RGB
+  #    channel of point format 7+, fuzz nightly 2026-10-21); in a sound stream it is at most table_size (the table has
+  #    table_size + 2 entries)
+  _lp_patch(decoder.hpp [=[            unsigned t = dv >> m.table_shift;
+]=]
+                        [=[            unsigned t = dv >> m.table_shift;
+            if (t > m.table_size)  // CadCraft: a symbol outside the model's table
+                throw error("LAZ symbol outside the model");
+]=])
+  _lp_patch(decoder.hpp [=[#include <memory>]=] [=[#include <memory>
+#include <string>]=])
+  _lp_patch(decoder.hpp [=[#include "coderbase.hpp"]=] [=[#include "coderbase.hpp"
+#include "excepts.hpp"]=])
+  file(WRITE ${_lp_src}/.cc-patched "${_lp_patchset}")
 endif()
 file(GLOB _lp_srcs ${_lp_src}/cpp/lazperf/*.cpp ${_lp_src}/cpp/lazperf/detail/*.cpp)
 add_library(lazperf STATIC ${_lp_srcs})
