@@ -18,6 +18,7 @@ First timings (bench.mjs, best of 5, 2026-10-16, machine busy with three compile
 
 ## Progress log
 
+- 2026-10-21 M9.1: CivilCraft's TIN, alignments and profiles (libs/civil) exact against the 0.5 JS on 76 000 seeded calls; 3–5× faster.
 - 2026-10-16 M3.3: the 2D viewer on desktop and web (SDL3 + Dawn / emdawnwebgpu, ImGui); open → first frame in the browser on par with 0.5 JS, not faster yet.
 - 2026-10-16 M3.2: draw lists (dwg-compile.js) at parity on 202/202; differential fuzzing JS vs C++ (2728 inputs match).
 - 2026-10-16 M3.1: io-dxf (BimCraft dxf-model.js) at parity on 104/104 corpus DXFs; fuzz_dxf; base JS-semantics helpers.

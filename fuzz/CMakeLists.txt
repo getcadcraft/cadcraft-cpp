@@ -19,3 +19,5 @@ cc_fuzz(solid SOURCES fuzz_solid.cpp DEPS cc::solid cc::base CORPUS ${CMAKE_CURR
 cc_fuzz(live_msgpack SOURCES fuzz_live_msgpack.cpp DEPS cc::live CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/live_msgpack)
 cc_fuzz(ifc_step SOURCES fuzz_ifc_step.cpp DEPS cc::io-ifc CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/ifc_step)
 cc_fuzz(part_script SOURCES fuzz_part_script.cpp DEPS cc::partcraft cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/part_script)
+cc_fuzz(civil_points SOURCES fuzz_civil_points.cpp DEPS cc::civil cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/civil_points)
+cc_fuzz(civil_script SOURCES fuzz_civil_script.cpp DEPS cc::civil cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/civil_script)

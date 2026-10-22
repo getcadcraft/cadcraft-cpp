@@ -88,3 +88,9 @@ far), `part/<generator>.json` = [{script, js}] with js canonical. Made with `nod
 --seed 1 --exact --golden-out <dir>/part` (then drop `shapes-all.json`, the whole table, which the parity run checks),
 then the same `tar` line with `part`. The test `partcraft.golden: …` replays every script through run_script and
 compares; the full check is `node tools/parity/part.mjs --seeds 1-30 --exact`.
+`js-0.5-civil.tar.gz` — CivilCraft 0.5's DOM-free modules (units.js, points.js, tin.js, … as they are ported) run on
+the call scripts of `tools/parity/civil.mjs` at seed 1 (every generator in `tools/parity/civil/gen-*.mjs` whose ops the
+C++ side has): each script `civil/<gen>-1-<k>.json` and the JS results `civil/<gen>-1-<k>.out.json` ({ok} / {err} per
+call, canonical). Made with `node tools/parity/civil.mjs --seed 1 --golden-out <dir>/civil`, then the same `tar` line
+with `civil`. The test `civil.golden: …` replays the scripts and compares; the full check (any seeds) is
+`tools/parity/civil.mjs --seeds 1-60`.

@@ -2,10 +2,13 @@
 #include "cc/base/js.hpp"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <numbers>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -165,4 +168,38 @@ TEST_CASE("JSON.stringify: NaN and Infinity as null, keys in property order") {
   o.set("a", std::move(a));
   o.set("c", cc::base::Value());
   CHECK(cc::base::js_stringify(o) == R"({"2":null,"b":1,"a":[null,null,0]})");
+}
+
+TEST_CASE("toLocaleString('en-US') with fixed fraction digits, as Node's ICU gives it") {
+  using cc::base::js_locale_en;
+  CHECK(js_locale_en(1.005, 2, 2) == "1.01");  // the shortest decimal rounds, not the binary value
+  CHECK(js_locale_en(2.5, 0, 0) == "3");
+  CHECK(js_locale_en(0.125, 2, 2) == "0.13");
+  CHECK(js_locale_en(1e21, 0, 0) == "1,000,000,000,000,000,000,000");
+  CHECK(js_locale_en(123456789.125, 2, 2) == "123,456,789.13");
+  CHECK(js_locale_en(-0.4, 0, 0) == "-0");
+  CHECK(js_locale_en(-0.0, 1, 1) == "-0.0");
+  CHECK(js_locale_en(5e-324, 2, 2) == "0.00");
+  CHECK(js_locale_en(0.000001234, 0, 0) == "0");
+  CHECK(js_locale_en(-1234.5, 0, 0) == "-1,235");
+  CHECK(js_locale_en(999.995, 2, 2) == "1,000.00");
+  CHECK(js_locale_en(12.5, 0, 3) == "12.5");
+}
+
+TEST_CASE("localeCompare without numeric: digits one by one") {
+  CHECK(cc::base::js_locale_compare("a10", "a9") < 0);
+  CHECK(cc::base::js_locale_compare_numeric("a10", "a9") > 0);
+  CHECK(cc::base::js_locale_compare("EP", "ep") > 0);
+  CHECK(cc::base::js_locale_compare("(no description)", "A") < 0);
+}
+
+TEST_CASE("Math.tan to the last bit, as V8 computes it (values from Node; 3,000,000 inputs checked when ported)") {
+  const std::vector<std::pair<double, std::uint64_t>> cases{
+      {0.5, 0x3fe17b4f5bf3474aULL},  {1, 0x3ff8eb245cbee3a6ULL},    {1.5707963267948966, 0x434d02967c31cdb5ULL},
+      {3, 0xbfc23ef71254b86fULL},    {-2.2, 0x3ff5fb2de2b500ecULL}, {1e10, 0xbfe1de000f443f50ULL},
+      {1e-9, 0x3e112e0be826d695ULL}, {0.7, 0x3feaf406c2fc78aeULL},  {100.25, 0xbfd278694556d18fULL}};
+  for (const auto& [x, bits] : cases) {
+    CHECK(std::bit_cast<std::uint64_t>(cc::base::js_tan(x)) == bits);
+  }
+  CHECK(std::isnan(cc::base::js_tan(std::numeric_limits<double>::infinity())));
 }

@@ -37,6 +37,10 @@ namespace cc::base {
 /// Number#toExponential(digits) (0–100): "d.ddde+x" with an exact half rounded away from zero.
 [[nodiscard]] std::string js_to_exponential(double x, int digits);
 
+/// Number#toLocaleString('en-US', { minimumFractionDigits, maximumFractionDigits }) as Node's ICU gives it: the
+/// shortest decimal of x rounded half away from zero, thousands grouped with ','; -0 keeps its sign ("-0").
+[[nodiscard]] std::string js_locale_en(double x, int min_frac, int max_frac);
+
 /// UTF-8 → UTF-16 code units (what JS indexes), and the count of them (`s.length`).
 [[nodiscard]] std::vector<std::uint16_t> to_utf16(std::string_view s);
 [[nodiscard]] std::size_t utf16_length(std::string_view s) noexcept;
@@ -48,5 +52,7 @@ namespace cc::base {
 
 /// `a.localeCompare(b, undefined, { numeric: true })` for the root locale: < 0, 0 or > 0.
 [[nodiscard]] int js_locale_compare_numeric(std::string_view a, std::string_view b);
+/// `a.localeCompare(b)` for the root locale (digits one by one): < 0, 0 or > 0.
+[[nodiscard]] int js_locale_compare(std::string_view a, std::string_view b);
 
 }  // namespace cc::base

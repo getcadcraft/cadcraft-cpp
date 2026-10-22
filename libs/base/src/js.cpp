@@ -7,10 +7,13 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <iterator>
 #include <limits>
+#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "cc/base/value.hpp"
@@ -355,7 +358,7 @@ bool ignorable(std::uint32_t cp) noexcept {
          (cp >= 0xE0000 && cp <= 0xE0FFF);
 }
 
-std::vector<Element> elements(std::string_view s) {
+std::vector<Element> elements(std::string_view s, bool numeric) {
   std::vector<Element> out;
   out.reserve(s.size());
   for (std::size_t i = 0; i < s.size();) {
@@ -363,8 +366,12 @@ std::vector<Element> elements(std::string_view s) {
     const std::uint32_t cp = code_point_at(s, i, n);
     if (cp >= '0' && cp <= '9') {
       std::size_t j = i;
-      while (j < s.size() && s[j] >= '0' && s[j] <= '9') {
-        ++j;
+      if (numeric) {
+        while (j < s.size() && s[j] >= '0' && s[j] <= '9') {
+          ++j;
+        }
+      } else {
+        ++j;  // without numeric: each digit is its own element, 0 < 1 < … < 9
       }
       std::string_view run = s.substr(i, j - i);
       while (run.size() > 1 && run[0] == '0') {
@@ -417,9 +424,11 @@ int numeric_compare(std::string_view a, std::string_view b) noexcept {
 
 }  // namespace
 
-int js_locale_compare_numeric(std::string_view a, std::string_view b) {
-  const std::vector<Element> x = elements(a);
-  const std::vector<Element> y = elements(b);
+namespace {
+
+int locale_compare(std::string_view a, std::string_view b, bool numeric) {
+  const std::vector<Element> x = elements(a, numeric);
+  const std::vector<Element> y = elements(b, numeric);
   const std::size_t n = std::min(x.size(), y.size());
   for (std::size_t k = 0; k < n; ++k) {  // primary level
     if (x[k].primary != y[k].primary) {
@@ -445,6 +454,15 @@ int js_locale_compare_numeric(std::string_view a, std::string_view b) {
     }
   }
   return 0;
+}
+
+}  // namespace
+
+int js_locale_compare_numeric(std::string_view a, std::string_view b) {
+  return locale_compare(a, b, true);
+}
+int js_locale_compare(std::string_view a, std::string_view b) {
+  return locale_compare(a, b, false);
 }
 
 // ---------------------------------------------------------------- toFixed / toExponential
@@ -566,6 +584,100 @@ std::string js_to_exponential(double x, int digits) {
     s = s.substr(0, e + 2) + s.substr(k);
   }
   return neg ? "-" + s : s;
+}
+
+// ---------------------------------------------------------------- toLocaleString('en-US')
+
+std::string js_locale_en(double x, int min_frac, int max_frac) {
+  if (std::isnan(x)) {
+    return "NaN";
+  }
+  if (std::isinf(x)) {
+    return x > 0 ? "∞" : "-∞";
+  }
+  min_frac = std::clamp(min_frac, 0, 100);
+  max_frac = std::clamp(max_frac, min_frac, 100);
+  const bool neg = std::signbit(x);
+  // ICU rounds the shortest decimal that reads back as x (not its exact binary value), half away from zero
+  std::array<char, 64> buf{};
+  const auto r = std::to_chars(buf.data(), std::to_address(buf.end()), std::abs(x), std::chars_format::scientific);
+  const std::string_view sci(buf.data(), static_cast<std::size_t>(std::distance(buf.data(), r.ptr)));
+  const std::size_t epos = sci.find('e');
+  std::string digits;
+  for (const char c : sci.substr(0, epos)) {
+    if (c != '.') {
+      digits.push_back(c);
+    }
+  }
+  int exp10 = 0;
+  std::string exp_text(sci.substr(epos + 1));
+  if (exp_text.starts_with('+')) {
+    exp_text.erase(0, 1);
+  }
+  (void)std::from_chars(exp_text.data(), std::to_address(exp_text.end()), exp10);
+  // value = 0.d1d2d3… × 10^(exp10 + 1): the integer part has exp10 + 1 digits
+  const int int_digits = exp10 + 1;
+  // digits kept: int_digits + max_frac
+  const long keep = static_cast<long>(int_digits) + max_frac;
+  std::string intpart;
+  std::string frac;
+  if (keep < 0) {
+    intpart = "0";
+  } else {
+    std::string d = digits;
+    bool carry = false;
+    if (std::cmp_greater(d.size(), keep)) {
+      carry = d[static_cast<std::size_t>(keep)] >= '5';
+      d.resize(static_cast<std::size_t>(keep));
+    }
+    long ints = int_digits;
+    if (carry) {
+      std::size_t i = d.size();
+      bool done = false;
+      while (i > 0) {
+        --i;
+        if (d[i] != '9') {
+          ++d[i];
+          done = true;
+          break;
+        }
+        d[i] = '0';
+      }
+      if (!done) {
+        d.insert(d.begin(), '1');
+        ++ints;
+      }
+    }
+    // pad to ints + max_frac digits
+    if (ints <= 0) {
+      d.insert(0, static_cast<std::size_t>(-ints), '0');
+      ints = 0;
+    }
+    while (static_cast<long>(d.size()) < (ints + max_frac)) {
+      d.push_back('0');
+    }
+    intpart = ints > 0 ? d.substr(0, static_cast<std::size_t>(ints)) : std::string("0");
+    frac = d.substr(static_cast<std::size_t>(ints));
+  }
+  while (std::cmp_greater(frac.size(), min_frac) && frac.back() == '0') {
+    frac.pop_back();
+  }
+  while (std::cmp_less(frac.size(), min_frac)) {
+    frac.push_back('0');
+  }
+  std::string out = neg ? "-" : "";
+  const std::size_t n = intpart.size();
+  for (std::size_t i = 0; i < n; ++i) {
+    out.push_back(intpart[i]);
+    if (i + 1 < n && (n - 1 - i) % 3 == 0) {
+      out.push_back(',');
+    }
+  }
+  if (!frac.empty()) {
+    out.push_back('.');
+    out += frac;
+  }
+  return out;
 }
 
 }  // namespace cc::base

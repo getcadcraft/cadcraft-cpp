@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness).
+Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -637,3 +637,28 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   tools/partcraft-test/ from forks/work/ref): test-partcraft.mjs needs OpenCascade (replicad-opencascadejs, LGPL) for its
   exact-kernel sections and stops in its simulation section; test-partcraft-params.mjs needs tools/partcraft-cli/partcraft.mjs
   and test-partcraft-sw.mjs tools/partcraft-sw/fixtures/, neither copied; bin/test-shapes.mjs was not copied either.
+## 2026-10-21 (session fork-cpp W5: CivilCraft, DetailCraft, MarkupCraft, TakeoffCraft)
+
+- The 0.5 app tests run against the frozen js-0.5 (forks/work/ref, a scratch repo of links): test-civilcraft-*.mjs 21
+  of 29 pass whole (3d 107, agent 25, blocks 58, cad 141, codes 33, drape 28, features 44, flprofile 26, hydro 37, labels 20,
+  mapout 19, masshaul 16, parcels 52, points 46, sections 73, sheets 73, staking 26, super 37, traverse 34, undo 10, why 19);
+  the other 8 stop on this machine's missing oracles (Python pyproj, numpy, rasterio, ephem; poppler; a DWG reader set),
+  not on the app.
+- M9.1 (2026-10-21): CivilCraft's TIN, alignments and profiles. libs/appkit (L2, code the W5 apps share): lasso-core.js, JS's stable
+  Array#sort that stays defined for inconsistent comparators, String(number). libs/civil (L3): units.js (stations,
+  bearings, grouped numbers), points.js (point files in every column order, groups, lasso picks, the PNEZD writer),
+  robust-predicates' orient2d followed stage by stage (tin.js reads its magnitude) and an exact incircle sign,
+  Delaunator 5.1.0 (ISC) and tin.js (the constrained Delaunay surface: crossings split, Sloan's flips, Lawson,
+  boundary clipping, long-edge peeling; elevations through the triangle grid, contours chained in the JS's Map order,
+  bands, slopes, outlines, faces), alignment.js (PIs with circular curves, stations and offsets, polylines, ticks) and
+  profile.js (PVIs, parabolic curves by L or K, high and low points, ground sampled from a surface). libs/base gained
+  `js_tan` (V8's fdlibm tan: alignment curves' tangent lengths differed in the last bit with the C library's; checked bit
+  for bit against Node on 3 000 000 inputs), `js_locale_en` (toLocaleString('en-US') with fixed fractions: the
+  shortest decimal rounded half up, as ICU does) and `js_locale_compare` (localeCompare without numeric).
+  `civilcraft-cli script|bench|ops`; tools/parity/civil.mjs runs seeded call scripts (the Rust fork's cvdiff
+  generators, ours, adapted: survey coordinates, duplicates, crossings, NaN) on the frozen JS and the CLI, exact
+  (tolerance 0), and skips scripts whose ops are not ported yet: seeds 1–60, units / points / TIN 49 800 calls and
+  alignments / profiles 26 520 calls, 0 differ (the 0.5 tests' own scenarios, gen-tests t-main, where ported: 9 780 calls at seeds 1–30); a
+  10 000- and a 100 000-point surface with breaklines (contours, bands, outline) 0 differ. Timings (in-process, best
+  of 3): 10k points + 20 breaklines + contours + 2 000 elevations 469 ms JS / 94 ms C++ (5.0×); 100k + 100 breaklines
+  1 884 / 626 ms (3.0×). Goldens tests/golden/js-0.5-civil.tar.gz (seed 1); fuzz targets civil_points and civil_script.

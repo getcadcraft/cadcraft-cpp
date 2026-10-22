@@ -28,6 +28,8 @@ namespace cc::base {
 /// Math.sin / Math.cos: fdlibm's, as V8 (Node) computes them — not always the nearest double, unlike the C library's.
 [[nodiscard]] double js_sin(double x) noexcept;
 [[nodiscard]] double js_cos(double x) noexcept;
+/// Math.tan (fdlibm's, as V8 has it).
+[[nodiscard]] double js_tan(double x) noexcept;
 /// Math.atan
 [[nodiscard]] double js_atan(double x) noexcept;
 /// Math.atan2

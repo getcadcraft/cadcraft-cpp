@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done.
+Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -71,6 +71,25 @@ where the JS is exact) and a golden replayed by test_partcraft.
 | M8.6 | assemblies, BOM, drawings (drawing.js, PDF), measure, section views |
 | M8.7 | the app: libs/ui-imgui panels (history, sketcher, parameters, configurations), the 3D view through W2's renderer |
 | later | simulation, CAM, flow, CraftScript (cs-*), the exact kernel (owner decision, docs/gaps.md #23) |
+### W5 plan (2026-10-21): CivilCraft, then DetailCraft, MarkupCraft, TakeoffCraft
+
+Order: **CivilCraft first, starting with its TIN.** tin.js, raster.js, basemap.js and crs.js are shared with BimCraft
+(W3) and CadCraft (W1), so porting them first unblocks two other streams; CivilCraft is pure geometry over the DWG/DXF
+code already ported, and the Rust fork's harness (cvdiff: seeded call scripts at survey coordinates) gives an exact
+JS-against-C++ gate from day one. MarkupCraft and TakeoffCraft are smaller but open, draw and write PDFs (pdf.js
+reads and renders, pdf-lib writes): their port starts with a PDF reader / renderer choice under the licence allowlist
+(no MuPDF / Poppler: AGPL / GPL) and goes after CivilCraft; DetailCraft needs W3's IFC pieces and W4's
+shapes/sections.js.
+
+| Step | Ends with | Parity gate |
+|---|---|---|
+| M9.1 | libs/appkit (lasso-core.js, JS sort), libs/civil: units.js, points.js, robust predicates, Delaunator, tin.js, alignment.js, profile.js; `civilcraft-cli script`; tools/parity/civil.mjs (call scripts) | **done 2026-10-21**: seeds 1–60 exact (units, points, TIN 49 800 calls; alignments, profiles 26 520 calls); 10k / 100k-point surfaces exact; 3–5× the JS |
+| M9.2 | corridor.js, grading.js, sections.js, pipes.js, superelev.js, featureline.js | call scripts (gen-core, gen-civil) |
+| M9.3 | project.js (the project model, undo), clip.js, point-edit.js, desckeys.js, parcels.js, traverse.js, staking.js, hydro.js, masshaul.js, solve-why.js, drive.js | call scripts, the project file |
+| M9.4 | files: landxml.js, xml.js, dxf.js (R12), dwg-write.js (CivilCraft's DWG), plot.js (PDF), scene.js / site3d.js | file bytes = JS |
+| M9.5 | GIS: crs.js (behind an interface without the EPSG catalog: M5.8h2), raster.js, basemap.js, maplayers.js, geojson / kml / shapefile / dbf / gpkg / geotiff | call scripts; no tile fetches in tests |
+| M9.6 | the CivilCraft window (plan, profile, sections, 3D through W2's m3d) | screenshots against 0.5 |
+| M10.x / M11.x / M12.x | DetailCraft, MarkupCraft, TakeoffCraft, in that order of shared code | each app's documents and exports |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
 

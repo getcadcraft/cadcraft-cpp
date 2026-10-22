@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0 AND BSD-3-Clause
 //
-// atan and atan2 as JavaScript computes them (V8's src/base/ieee754.cc, which Math.atan / Math.atan2 run), so a port
-// gets the very same last bit. The algorithm, the constants and the comments are V8's, adapted from fdlibm;
-// the notices of both are kept as their licenses ask (THIRD_PARTY.md):
+// atan, atan2, sin, cos and tan as JavaScript computes them (V8's src/base/ieee754.cc, which Math.atan / Math.atan2
+// run), so a port gets the very same last bit. The algorithm, the constants and the comments are V8's, adapted from
+// fdlibm; the notices of both are kept as their licenses ask (THIRD_PARTY.md):
 //
 // The following is adapted from fdlibm (http://www.netlib.org/fdlibm).
 //
@@ -414,7 +414,98 @@ double js_cos(double x) noexcept {
   }
 }
 
-namespace {}  // namespace
+// ---- tan (fdlibm k_tan.c, s_tan.c, as V8's ieee754.cc has them)
+
+namespace {
+
+double set_low_zero(double d) noexcept {
+  return std::bit_cast<double>(std::bit_cast<std::uint64_t>(d) & 0xFFFFFFFF00000000ULL);
+}
+
+double kernel_tan(double x, double y, int iy) noexcept {
+  static constexpr std::array<double, 13> kT = {
+      3.33333333333334091986e-01,  /* 3FD55555, 55555563 */
+      1.33333333333201242699e-01,  /* 3FC11111, 1110FE7A */
+      5.39682539762260521377e-02,  /* 3FABA1BA, 1BB341FE */
+      2.18694882948595424599e-02,  /* 3F9664F4, 8406D637 */
+      8.86323982359930005737e-03,  /* 3F8226E3, E96E8493 */
+      3.59207910759131235356e-03,  /* 3F6D6D22, C9560328 */
+      1.45620945432529025516e-03,  /* 3F57DBC8, FEE08315 */
+      5.88041240820264096874e-04,  /* 3F4344D8, F2F26501 */
+      2.46463134818469906812e-04,  /* 3F3026F7, 1A8D1068 */
+      7.81794442939557092300e-05,  /* 3F147E88, A03792A6 */
+      7.14072491382608190305e-05,  /* 3F12B80F, 32F0A7E9 */
+      -1.85586374855275456654e-05, /* BEF375CB, DB605373 */
+      2.59073051863633712884e-05,  /* 3EFB2A70, 74BF7AD4 */
+  };
+  constexpr double kOne = 1.0;
+  constexpr double kPio4 = 7.85398163397448278999e-01;   /* 3FE921FB, 54442D18 */
+  constexpr double kPio4lo = 3.06161699786838301793e-17; /* 3C81A626, 33145C07 */
+  const std::int32_t hx = high_word(x);
+  const std::int32_t ix = hx & 0x7FFFFFFF;
+  if (ix < 0x3E300000 && std::trunc(x) == 0) {  // |x| < 2**-28
+    const std::uint32_t low = low_word(x);
+    if ((static_cast<std::uint32_t>(ix) | low | static_cast<std::uint32_t>(iy + 1)) == 0) {
+      return kOne / std::abs(x);
+    }
+    if (iy == 1) {
+      return x;
+    }
+    const double w = x + y;  // −1 / (x + y), carefully
+    const double z = set_low_zero(w);
+    const double v = y - (z - x);
+    const double a = -kOne / w;
+    const double t = set_low_zero(a);
+    const double s = kOne + t * z;
+    return t + a * (s + t * v);
+  }
+  if (ix >= 0x3FE59428) {  // |x| ≥ 0.6744
+    if (hx < 0) {
+      x = -x;
+      y = -y;
+    }
+    const double z = kPio4 - x;
+    const double w = kPio4lo - y;
+    x = z + w;
+    y = 0.0;
+  }
+  const double z = x * x;
+  double w = z * z;
+  double r = kT[1] + w * (kT[3] + w * (kT[5] + w * (kT[7] + w * (kT[9] + w * kT[11]))));
+  double v = z * (kT[2] + w * (kT[4] + w * (kT[6] + w * (kT[8] + w * (kT[10] + w * kT[12])))));
+  const double s = z * x;
+  r = y + z * (s * (r + v) + y);
+  r += kT[0] * s;
+  w = x + r;
+  if (ix >= 0x3FE59428) {
+    v = static_cast<double>(iy);
+    return static_cast<double>(1 - ((hx >> 30) & 2)) * (v - 2.0 * (x - (w * w / (w + v) - r)));
+  }
+  if (iy == 1) {
+    return w;
+  }
+  const double zz = set_low_zero(w);  // −1 / (x + r), accurately
+  v = r - (zz - x);
+  const double a = -1.0 / w;
+  const double t = set_low_zero(a);
+  const double ss = 1.0 + t * zz;
+  return t + a * (ss + t * v);
+}
+
+}  // namespace
+
+double js_tan(double x) noexcept {
+  const std::int32_t ix = high_word(x) & 0x7FFFFFFF;
+  if (ix <= 0x3FE921FB) {
+    return kernel_tan(x, 0.0, 1);
+  }
+  if (ix >= 0x7FF00000) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  std::array<double, 2> y{};
+  const int n = rem_pio2(x, y);
+  return kernel_tan(y[0], y[1], 1 - ((n & 1) << 1));
+}
 
 double js_atan(double x) noexcept {
   static constexpr std::array<double, 4> kAtanHi = {

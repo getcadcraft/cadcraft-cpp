@@ -80,6 +80,7 @@ add_subdirectory(libs/solid)      # L2
 add_subdirectory(libs/image)      # L2
 add_subdirectory(libs/cloud)      # L2
 add_subdirectory(libs/live)       # L2
+add_subdirectory(libs/appkit)     # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()
@@ -88,6 +89,7 @@ add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/io-ifc)     # L3
 add_subdirectory(libs/doc)        # L3
 add_subdirectory(libs/partcraft)  # L3
+add_subdirectory(libs/civil)      # L3
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/render)   # L3
 endif()
@@ -105,6 +107,7 @@ endif()
 
 if(CC_BUILD_APPS AND NOT EMSCRIPTEN)
   add_subdirectory(apps/cadcraft-cli)
+  add_subdirectory(apps/civilcraft-cli)
   if(CC_BUILD_GUI)
     add_subdirectory(apps/cadcraft)
     add_subdirectory(apps/cadcraft-shot)
