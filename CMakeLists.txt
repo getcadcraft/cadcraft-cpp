@@ -78,6 +78,7 @@ add_subdirectory(libs/m3d)        # L2
 add_subdirectory(libs/solid)      # L2
 add_subdirectory(libs/image)      # L2
 add_subdirectory(libs/cloud)      # L2
+add_subdirectory(libs/live)       # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2
 endif()

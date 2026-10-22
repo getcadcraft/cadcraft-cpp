@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-21 · Change: libs/solid, SolidOps on Manifold 3.5.4 (M6.1).
+Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance.
 
 ## Toolchain (pinned)
 
@@ -57,6 +57,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/base` | L0 | `Error`/`Result`, `Task<T>` (task.hpp: the awaited coroutine commands and LISP evaluation are made of), checked integers, `ByteReader` / `BitReader` (the bounds-checked readers), atomic file writes, `env_var`, `Value` (a JS-shaped value for engine models: undefined, null, bool, number, string, array, ordered object, bytes; JSON in the parity kit's form), `js.hpp` (JS semantics the ports need: trim, parseFloat/parseInt, UTF-16 lengths, toUpperCase/toLowerCase and the ICU numeric collation, both from tables generated from Node by `tools/gen/`) |
 | `libs/drawing` | L2 | `cc::drawing::compile_drawing` — BimCraft's dwg-compile.js: a drawing model → typed draw lists (spaces → batches of polylines, fills, texts, in world units), what the 2D view and the renderer read |
 | `libs/cad` | L2 | `cc::cad::import_dwg` — CadCraft 0.5's dwg-import.js (and the parts of attrs.js, dwg-props.js, dyn-blocks.js, model3d.js, panes.js, pictures.js, sheets.js, xclip.js, gcons.js it calls): a reader's model → the drawing the CadCraft document loads; JSON-shaped (base::Value), so it compares with the JS on the corpus (tools/parity/import.mjs) |
+| `libs/live` | L2 | `cc::live` — Studio Live (docs/LIVE-PROTOCOL.md v1), shared by every app: live-client.js's MessagePack (`pack` / `unpack`: JS numbers, BigInt past 2^53, plain-object key order, TextDecoder's U+FFFD, depth 512, counts checked before allocating), the envelope `{t s c n q b}`, and `SessionCore`, the decisions of desktop-shell live/session.rs (`check` / `commit`: role, locks, holds, versions per key and mode). Passes tools/live-test/vectors.json (copied to tests/golden/js-0.5-live-vectors.json): 54 envelopes, 4 decode-only, 6 bad, 11 scenarios |
 | `libs/m3d` | L2 | `cc::m3d` — the start of the ModelCraft kernel (m3d/model.js, vec.js, earcut.js): definitions, faces, instances, `toJSON`, `faceTris`, `meshDef`; and model3d.js's drawing side (`from_file`: a drawing's 3D faces as one group; `for_file3d`: 3DFACEs + CadCraft's JSON for saving) |
 | `libs/solid` | L2 | `cc::solid` — `SolidOps`: the mesh booleans of every 3D app on Manifold 3.5.4 + Clipper2 (cmake/Manifold.cmake, pinned by commit and hash), built to compute what 0.5's manifold-3d wasm computes (sequential, no FMA, libc++; one patch for libc++ 22's multimap): `Solid::of_mesh` (the status' JS name when refused), add / subtract / intersect, `union_of` / `intersection_of` (BatchBoolean), trim / split by plane, transforms, the constructors, `mesh()`; `raw()` for the rest of Manifold's API. Meshes are checked before Manifold indexes them (indices past the vertices, runs past the triangles, no positions: the wasm reads arbitrary memory there). The JS keeps every Manifold it made until it deletes it, and Manifold's lazy CSG tree flattens a nested operation only when no other handle holds it: a port keeps the same handles alive (cases.cpp does) or its triangles come out in another order. Manifold numbers meshes from one process-wide counter. `run_cases` runs tools/parity/manifold.mjs's cases |
 | `libs/image` | L2 | PNG writing (screenshots), zlib for PDF streams, and pictures.js's file side for print (`picture.hpp`: jpegInfo, 0.5's own decodePng, shrink, pdfImage); `picture-decode` (render builds only) decodes PNG / JPEG for the screen through wuffs (M5.8d) |
@@ -74,6 +75,19 @@ The engines port the CadCraft 0.5 JavaScript build, frozen for the forks at
 `/var/www/CADCRAFT/testfiles/fork-parity/js-0.5/` (site commit 594ab3e; `PIN.json` says what it is): `lib/{dwg,ifc,skp,shapes}`
 for the engines, `site/` for the app code of M3+. Never read them from the moving site repo, and never copy anything from
 `testfiles/` into this repo. The parity kit (`tools/fork-parity` in the site repo) loads the same copy.
+
+### Studio's sources (W6)
+
+Studio (the shell that hosts the apps) is two repos in 0.5: the site (`assets/js`: host.js, live-client.js,
+live-crypto.js, addons.js, addons/trust.js, app-autosave.js, the shell modules; the frozen copy above, site 594ab3e) and
+**desktop-shell** (the Tauri app: `src-tauri/src/control.rs`, the control channel and MCP over HTTP; `src-tauri/src/live/`
+mod, crypto, session, msg, net, http, relay, ws: the Live session server). The fork ports **desktop-shell at commit
+d132555** (2026-10-16, the day of the freeze; its crypto.rs gives tools/live-crypto/vectors.json), never its later 0.6
+Live fixes (76a9151). The owner copied those files, with the site's docs/LIVE-CRYPTO.md, tools/live-crypto/vectors.json,
+bin/test-live-crypto.mjs and tools/skp-test/{test,sync}.mjs from 594ab3e, into `$CADCRAFT_SITE` at the same relative
+paths (2026-10-21). The 0.5 tooling the Rust fork's harnesses use (tools/live-test/*.mjs, tools/mcp, tools/cli) is read
+from `/var/www/CADCRAFT/forks/lead/js05/tools`; noble (MIT) from the later site snapshot's `assets/vendor`, only to run
+the frozen live-crypto.js in Node. None of it enters this repo except the shared Live vectors (tests/golden).
 
 ### Engine models as `Value`
 

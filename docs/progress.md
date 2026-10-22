@@ -538,3 +538,16 @@ Last updated 2026-10-21 · Change: REL.1 (release plan: two versions behind).
   (`~/cadcraft-data/testfiles/fork-parity/js-0.5/vendor/manifold-3d/3.5.4`) lacks manifold.js / manifold.wasm; the
   snapshot's copy (/var/www/CADCRAFT/testfiles/fork-parity/js-0.5) has them, byte-identical to npm's manifold-3d 3.5.4
   (MANIFOLD_JS points the script at it).
+- M13.1 (2026-10-21, W6): Studio Live's wire format and session decisions, `libs/live` (L2, shared by every app).
+  live-client.js's MessagePack ported as it behaves in JS, not as MessagePack allows: a number is a double and an
+  integral one in the safe range writes as the smallest int (so a float64 2.0 comes back as int 2), integers past 2^53
+  are BigInts, a decoded map is a plain object (array-index keys first in number order, a repeated key keeps its place,
+  `__proto__` dropped, other key types through String()), strings through TextDecoder (U+FFFD, a leading BOM dropped)
+  and TextEncoder (a lone surrogate written as U+FFFD), ext types read as `{ext, data}`, depth 512, a count over what is
+  left refused before allocating. The envelope `{t s c n q b}` (zeros left out). `SessionCore`: desktop-shell
+  live/session.rs `check` / `commit` (d132555) — role → locks → holds → each key by mode (p, c, d, s/r), one `by` per
+  key, `exists` for any key a commit wrote, a delete dropping its key's hold. tools/live-test/vectors.json passes
+  whole: 54 envelopes encode to their bytes and back, 4 other encodings decode, 6 bad inputs are refused, the 11
+  scenarios decide every step (seq, reason and `by`) as the 0.5 server. Fuzz target live_msgpack (the writer's bytes are
+  a fixed point; the core decides whatever envelope comes out), seeded with the vectors.
+

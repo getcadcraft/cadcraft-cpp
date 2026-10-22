@@ -67,3 +67,7 @@ every float as its bits in hex. Made with `MANIFOLD_JS=<frozen copy>/vendor/mani
 tools/parity/manifold.mjs --seeds 1-2 --per 10 --golden-out tests/golden/js-0.5-manifold.json`. The test `solid.SolidOps
 gives …` replays them first in its process, as the script ran them (Manifold numbers its meshes from one process-wide
 counter, and the numbers order the output runs). The full check (10,004 cases) is the script.
+
+`js-0.5-live-vectors.json` — Studio Live's shared test vectors (docs/LIVE-PROTOCOL.md § 13), CadCraft 0.5's
+`tools/live-test/vectors.json` (site commit 594ab3e) unchanged: envelopes with their bytes, other valid encodings, bad
+inputs, and the session scenarios. The test `live.*` runs all of them on libs/live.
