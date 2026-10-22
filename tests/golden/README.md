@@ -71,3 +71,9 @@ counter, and the numbers order the output runs). The full check (10,004 cases) i
 `js-0.5-live-vectors.json` — Studio Live's shared test vectors (docs/LIVE-PROTOCOL.md § 13), CadCraft 0.5's
 `tools/live-test/vectors.json` (site commit 594ab3e) unchanged: envelopes with their bytes, other valid encodings, bad
 inputs, and the session scenarios. The test `live.*` runs all of them on libs/live.
+`js-0.5-ifc-step.tar.gz` — cc-ifc 0.5's step.js (scanStep, parseParams / parseComplex, as the parity kit's `ifc-step`
+engine runs it) for the public IFC fixture (`fixtures/showcase/bimcraft-house.ifc`): the head (schema, header, count,
+maxId, types, errors) and every instance as `[id, TYPE, params]`, canonical (`ifc-step/<file>.json`). Made with `node
+tools/parity/ifc-step.mjs build/corpus/fixtures/showcase --golden-out <dir>/ifc-step`, then the same `tar` line with
+`ifc-step`. The test `io-ifc.golden` compares them; the full check (118 files) is the kit's `run.mjs --fork cpp --engine
+ifc-step`, and `tools/parity/ifc-step.mjs --any fuzz/corpus/ifc_step` runs the fuzzer's inputs through both.

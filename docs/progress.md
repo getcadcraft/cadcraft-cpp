@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: REL.1 (release plan: two versions behind).
+Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -551,3 +551,23 @@ Last updated 2026-10-21 · Change: REL.1 (release plan: two versions behind).
   scenarios decide every step (seq, reason and `by`) as the 0.5 server. Fuzz target live_msgpack (the writer's bytes are
   a fixed point; the core decides whatever envelope comes out), seeded with the vectors.
 
+## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
+
+- M7.1 (2026-10-21): cc-ifc's STEP reader (lib/ifc/step.js) in a new L3 library, libs/io-ifc: `scan_step` indexes every
+  instance of the DATA section(s) in one pass (ids as the JS's Int32Array, max id as its double, type names, the header,
+  scan errors with their offsets), `parse_params` / `parse_complex` parse one instance when it is read (Raw values: $,
+  *, numbers through JS Number(), strings decoded in UTF-16 as the JS does — raw UTF-8 or Latin-1, '' and the \S\ \X\
+  \X2\ \X4\ escapes, the upper-casing that finds \X0\ — refs, enumerations, binaries, typed values, aggregates; errors
+  worded as step.js, with its byte offsets). `cadcraft-cli parity / bench ifc-step` (the kit's NDJSON). Parity: kit
+  ifc-step **118/118 exact** on the IFC corpus; tools/parity/ifc-step.mjs runs any files through both (the fuzzer's
+  5,071 kept inputs: 5,071/5,071 the same). Golden: tests/golden/js-0.5-ifc-step.tar.gz (the public bimcraft-house.ifc,
+  every line). Fuzz target ifc_step: its first 11 minutes × 16 workers found 16 timeouts, one cause — a DATA keyword
+  after ENDSEC with no ";" sends the 0.5 scan back to byte 0 for ever (the JS hangs too); the scan now ends there
+  (regression test, fuzz/corpus/ifc_step/regress-data-no-semicolon, docs/gaps.md #25); then 11 minutes × 16 workers
+  (about 2.4 M inputs) clean. Aggregates nested past 1,000 levels stop with V8's words (V8's own limit moves with the
+  JIT: gaps #24).
+  Bench (kit `bench.mjs --engine ifc-step --largest 6 --runs 5`, 2026-10-21, best of 5, JS / C++ ms): Molio_with_URIs
+  70.5 MB 1413 / 614 (2.30×), IFC_Schependomlaan_geo 47 MB 1754 / 503 (3.49×), IFC Schependomlaan 2088 / 478 (4.36×),
+  Clinic_Structural 18.2 MB 583 / 359 (1.62×), Duplex_MEP 17.0 MB 1041 / 155 (6.71×), Clinic_Architectural 12.4 MB
+  327 / 92.7 (3.53×); parity same on all. The lever: Raw values allocate per value (strings, item vectors); the Rust
+  fork's 6–8× says a flatter value store pays.

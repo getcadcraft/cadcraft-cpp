@@ -74,6 +74,7 @@
 #include "cc/image/png.hpp"
 #endif
 #include "cc/i18n/i18n.hpp"
+#include "cc/ifc/step.hpp"
 #include "cc/importer/importer.hpp"
 #include "cc/plot/plot.hpp"
 #include "cc/save/dwg.hpp"
@@ -91,7 +92,7 @@ void usage(std::FILE* out) {
       "  info [--isolated] <file.dwg>        version, counts and notes\n"
       "  convert [--isolated] --json <file>  the drawing model as JSON\n"
       "                                      (--isolated: parse in the sandboxed import helper)\n"
-      "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf)\n"
+      "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf, ifc-step)\n"
       "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
       "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
       "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
@@ -131,7 +132,37 @@ bool engine_known(std::string_view e) {
   return e == "dwg" || e == "dxf" || e == "ifc-step" || e == "ifc-geom" || e == "skp";
 }
 bool engine_ported(std::string_view e) {
-  return e == "dwg" || e == "dxf";
+  return e == "dwg" || e == "dxf" || e == "ifc-step";
+}
+
+/// ifc-step for the kit: NDJSON (the head, then one [id, TYPE, params] per instance in file order).
+int parity_ifc_step(std::span<const std::byte> bytes) {
+  auto ix = cc::ifc::scan_step(bytes);
+  if (!ix) {
+    print_error_json(ix.error().name, ix.error().message);
+    return 1;
+  }
+  std::string out = cc::ifc::step_head_json(*ix);
+  out += '\n';
+  for (std::size_t i = 0; i < ix->count; ++i) {
+    cc::ifc::step_line_json(bytes, *ix, i, out);
+    out += '\n';
+    if (out.size() > (std::size_t{1} << 22U)) {
+      (void)std::fwrite(out.data(), 1, out.size(), stdout);
+      out.clear();
+    }
+  }
+  (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
+/// The bench's engine call on bytes in memory: the kit's run (scan, then every line parsed); false when refused.
+bool bench_ifc_step(std::span<const std::byte> bytes) {
+  auto ix = cc::ifc::scan_step(bytes);
+  if (!ix) {
+    return false;
+  }
+  return cc::ifc::step_parse_all(bytes, *ix) <= ix->count;
 }
 
 /// The engine's model of the file's bytes, as the 0.5 app builds it (DXF: BimCraft's decode, then readDxfModel).
@@ -162,6 +193,9 @@ int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
   if (!bytes) {
     print_error_json("io", bytes.error().message);
     return 1;
+  }
+  if (engine == "ifc-step") {
+    return parity_ifc_step(*bytes);
   }
   auto parsed = run_engine(engine, *bytes);
   if (!parsed) {
@@ -666,8 +700,16 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
       print_error_json("io", warm.error().message);
       return 1;
     }
-    const auto warm_model = run_engine(engine, *warm);
-    (void)warm_model;
+    if (engine == "ifc-step") {
+      if (!bench_ifc_step(*warm)) {
+        auto ix = cc::ifc::scan_step(*warm);
+        print_error_json("StepError", ix ? "" : ix.error().message);
+        return 1;
+      }
+    } else {
+      const auto warm_model = run_engine(engine, *warm);
+      (void)warm_model;
+    }
   }
   cc::base::Array open_ms;
   cc::base::Array parse_ms;
@@ -679,7 +721,11 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
       print_error_json("io", bytes.error().message);
       return 1;
     }
-    const auto model = run_engine(engine, *bytes);
+    if (engine == "ifc-step") {
+      (void)bench_ifc_step(*bytes);
+    } else {
+      const auto model = run_engine(engine, *bytes);
+    }
     const auto t2 = Clock::now();
     open_ms.emplace_back(std::round(ms(t1 - t0) * 1000) / 1000);
     parse_ms.emplace_back(std::round(ms(t2 - t1) * 1000) / 1000);

@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-21 · Change: release plan, two versions behind; fork 0.5 workstreams (REL.1).
+Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -153,4 +153,18 @@ Each step ports commands.js commands with the geom.js / helper code they use, pa
 | M5.6 | sheets and plotting: LAYOUT, MVIEW, VPORTS, MSPACE / PSPACE, VPLAYER, PLOT (PDF), split screen — **M5.6a done 2026-10-20** (the sheet commands); **M5.6b done 2026-10-20** (plot.js, the PDF writer, `cadcraft-cli plot`, 307 PDFs byte for byte); **M5.6c done 2026-10-20** (the tabs follow the document, PLOT in the viewer); MSPACE / PSPACE inside a viewport and split panes wait (docs/gaps.md) |
 | M5.7 | files: CadCraft's DXF reader (dxf.js readDxf) so a DXF opens as a document, NEW, OPEN, the clipboard commands — **M5.7a done 2026-10-20** (the reader, 214/214 documents); **M5.7b done 2026-10-20** (the clipboard, NEW / OPEN in the viewer) |
 | M5.8 | constraints and parameters (gcons.js, params.js), xrefs, pictures, sheet sets — **M5.8a done 2026-10-20** (TTR / TTT, TEXTMASK, XCLIP, the settings commands, HELP); **M5.8b done 2026-10-20** (picture commands, the drawing's picture files); **M5.8c done 2026-10-20** (pictures in PDFs); **M5.8d done 2026-10-20** (pictures on screen, wuffs); **M5.8e done 2026-10-20** (constraints and parameters: solver, parameter table, the commands); **M5.8f done 2026-10-20** (constraints in saved files, through MIRROR, TRIM and the clipboard); **M5.8g done 2026-10-20** (the viewer's constraint overlay and Parameters panel); **M5.8g2 done 2026-10-20** (SWBOUT, SolidWorks sketch exports opened); **M5.8h1 done 2026-10-20** (point clouds: libs/cloud reader); M5.8h2 coordinate systems (waits on the owner: the EPSG-derived catalog), **M5.8h3 done 2026-10-21** (LAZ, laz-perf), **M5.8h4 done 2026-10-21** (POINTCLOUDATTACH / POINTCLOUD, the cloud under the drawing, Node snap), **M5.8h5 done 2026-10-21** (VIEWBASE); M5.8i AutoLISP (APPLOAD, ALIASEDIT, REINIT; lisp/) |
+
+## M7 plan (W3, 2026-10-21): cc-ifc + BimCraft
+
+cc-ifc (lib/ifc, 6.3 k lines) is ported first and gated by the parity kit's two IFC engines on the corpus
+(`run.mjs --fork cpp --engine ifc-step,ifc-geom`), then BimCraft (54 k lines) on top of it.
+
+| Step | Ends with | Parity gate |
+|---|---|---|
+| M7.1 | `libs/io-ifc` STEP reader (step.js), `cadcraft-cli parity / bench ifc-step`, fuzz target `ifc_step`, tools/parity/ifc-step.mjs (differential on any files) | kit ifc-step 118/118 exact — **done 2026-10-21** |
+| M7.2 | schema tables (schema.js, generated from the 0.5 tables), model.js (IfcFile: lines, types, edits, save), api.js's line and property calls | model calls against the JS on the corpus |
+| M7.3 | geometry without booleans: geo-math, geo-mesh, geo-tri, geo-ctx, geo-style, geo-curve, geo-profile, geo-solid, geo-brep, geo-nurbs, geo-align, geometry.js; `parity / bench ifc-geom` | kit ifc-geom on the files with no opening or boolean |
+| M7.4 | geo-bool.js on Manifold 3.5.4 (W2's cmake/Manifold.cmake, SolidOps) | kit ifc-geom 115/115 |
+| M7.5 | the importer helper for IFC (out of process, as DWG); fuzz targets for the model and the geometry | the helper's model = in-process on the corpus |
+| M7.6+ | BimCraft: its document and commands (ifc-model.js, ifc-edit.js, ifc-props, ifc-tree, ifc-find, ifc-qto, …), then the UI on W2's 3D view | test-bimcraft cases that pass on js-0.5, BimCraft documents |
 

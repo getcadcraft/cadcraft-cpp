@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance.
+Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1).
 
 ## Toolchain (pinned)
 
@@ -67,6 +67,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
 | `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs); `write_dxf` (dxf.js, R12, straight from the document) and `write_dxf2000` (dxf2000.js, R2000, from the DWG writer model with `model_only`), the same text as the JS (tools/parity/dxf-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
 | `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
+| `libs/io-ifc` | L3 | `cc::ifc` — cc-ifc (CadCraft 0.5 lib/ifc, the IFC engine BimCraft and DetailCraft use): `scan_step` / `parse_params` / `parse_complex` (step.js: one pass indexes every instance, parameters parsed when read, strings decoded in UTF-16 as the JS does), step values as `Raw`; the parity kit's ifc-step engine (`step_head_json`, `step_line_json`). Model, geometry and the API follow (M7.2+) |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module. `cc::dwg::write_dwg` — the port of `writeDwg` (src/w*.cpp: bits, CRCs, R2004/R2007 compressors and file layouts, the object encoders, the source's objects copied, tables, solids, surfaces, data storage), byte for byte the JS writer's output (tools/parity/dwg-write.mjs) |
 
 ### The JS reference
