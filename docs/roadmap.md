@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1).
+Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -162,7 +162,8 @@ cc-ifc (lib/ifc, 6.3 k lines) is ported first and gated by the parity kit's two 
 | Step | Ends with | Parity gate |
 |---|---|---|
 | M7.1 | `libs/io-ifc` STEP reader (step.js), `cadcraft-cli parity / bench ifc-step`, fuzz target `ifc_step`, tools/parity/ifc-step.mjs (differential on any files) | kit ifc-step 118/118 exact — **done 2026-10-21** |
-| M7.2 | schema tables (schema.js, generated from the 0.5 tables), model.js (IfcFile: lines, types, edits, save), api.js's line and property calls | model calls against the JS on the corpus |
+| M7.2 | schema tables (schema.js, generated from the 0.5 tables) | every entity and type as schema.js reads them — **done 2026-10-21** |
+| M7.2b | model.js (IfcFile: lines, types, edits, save), api.js's line and property calls | saves byte for byte, model calls against the JS |
 | M7.3 | geometry without booleans: geo-math, geo-mesh, geo-tri, geo-ctx, geo-style, geo-curve, geo-profile, geo-solid, geo-brep, geo-nurbs, geo-align, geometry.js; `parity / bench ifc-geom` | kit ifc-geom on the files with no opening or boolean |
 | M7.4 | geo-bool.js on Manifold 3.5.4 (W2's cmake/Manifold.cmake, SolidOps) | kit ifc-geom 115/115 |
 | M7.5 | the importer helper for IFC (out of process, as DWG); fuzz targets for the model and the geometry | the helper's model = in-process on the corpus |

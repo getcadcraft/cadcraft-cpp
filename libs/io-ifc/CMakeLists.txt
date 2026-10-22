@@ -1,9 +1,9 @@
 cc_library(io-ifc LAYER 3
-  SOURCES src/step.cpp
+  SOURCES src/step.cpp src/schema.cpp
   DEPS cc::base)
 
 cc_test(io-ifc
-  SOURCES tests/step_test.cpp tests/golden_test.cpp
+  SOURCES tests/step_test.cpp tests/golden_test.cpp tests/schema_test.cpp
   DEPS cc::io-ifc)
 if(TARGET test_io-ifc)
   target_include_directories(test_io-ifc PRIVATE ${PROJECT_SOURCE_DIR}/tests/support)

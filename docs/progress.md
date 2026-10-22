@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core).
+Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -609,4 +609,10 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   and a test); then wildcards on long strings were slow (now the greedy matcher, and charged), and a GCC 14 build found
   co_await inside ?: evaluated on both arms (rewritten as if; GCC passes the suite). Then 15 min × 4 workers,
   385 209 inputs: no crash, timeout or out-of-memory.
+- M7.2 (2026-10-21): cc-ifc's schema.js. The three schema tables (IFC2X3, IFC4, IFC4X3; owner's exception to section 4,
+  attribution kept: docs/architecture.md) converted from the frozen 0.5 tables by tools/gen/ifc-schema.mjs into
+  libs/io-ifc/src/schema_tables.inc, the same rows in the same order; `Schema` builds every entity once (attributes,
+  supertypes first, parsed type codes, derived sets, subtypes depth first in table order) and is immutable after, so
+  threads may share it; `type_code` / `name_of_code` (CRC-32, the apps' IFC constants). Test: a digest of every entity
+  and type computed the same way in node from js-0.5 (3/3 schemas the same), type codes, schema names.
 
