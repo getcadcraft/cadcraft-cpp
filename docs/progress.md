@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader).
+Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -584,3 +584,29 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader).
   out-of-bounds write in the decoder on a crafted stream, published 2026-10-22; fixed in 1.2.1). Brotli came in only
   through FreeType's `brotli` feature, which decodes WOFF2 fonts; the fork's FreeType loads its own bundled OFL fonts
   only, never a document's or a WOFF2, so the feature is dropped instead of patching a port: brotli is no longer built.
+
+## 2026-10-21 (W1: CadCraft LISP, worktree cc-lisp)
+
+- M5.8i1 (2026-10-21, W1): the LISP core, libs/lisp (L4): CadCraft 0.5's lisp/types.js, reader.js, interp.js,
+  builtins.js, vl.js, wild.js and missing.js — values (integers apart from reals and wrapping at 32 bits, strings in
+  WTF-8 indexed in UTF-16 units as the JS indexes them, interned symbols, shared conses and functions freed without
+  recursion), the reader, the evaluator (coroutines, `Task<Value>`, so `(command …)` can await the drawing in M5.8i2;
+  dynamic scope restored by RAII; `*error*` heard where the error happens, as 0.5), every built-in that needs no
+  drawing in the JS's definition order, wildcards matched by hand with the JS RegExp's semantics and V8's words for a
+  bad range. `cadcraft-cli lisp <sessions.json>` and tools/parity/lisp.mjs (each session gets fresh JS modules, so the
+  module-scope counters start over as the CLI's do) compare every step's value, error, cancel flag and printed pieces:
+  **27/27 sessions, 980/980 steps** (tests/lisp: the 0.5 suite's "The language" section — its 171 cases bar textbox,
+  reader errors, *error* and dynamic scope, output, files, the loop — and about 800 more cases of ours: numbers and how
+  reals print, comparison, lists, sorting, strings and surrogates, wildcards, rtos / angtos / angtof / distof / cvunit,
+  geometry, special forms, routines' commands, files, the nesting limits). Goldens in tests/golden/js-0.5-lisp.tar.gz,
+  replayed by `lisp.golden`. Measured: a plain recursion takes about 0.8 KB a level in release, 2.5 KB under ASan
+  (4 KB with 30 arguments), and `(r 100000)` runs in 0.44 s where the JS takes 1.2 s; `Interp::kMaxDepth` = 250 000
+  nested evaluations keeps a runaway near 0.65–1 GB under ASan. Limits where 0.5 has only memory or V8's stack (read
+  nesting 4 096, equal 7 000 deep, spreads of 125 000 elements, the longest string) answer with V8's own words
+  (docs/gaps.md #26). fuzz target `lisp` (read + evaluate with a 100 000-step budget that also counts the list elements,
+  string units and wildcard work a built-in does, and a 64 K longest string; 28 seeds): its first minute found the
+  reader overflowing the native stack under ASan below its 4 096 cap (now an explicit stack; regress-reader-nesting.lsp
+  and a test); then wildcards on long strings were slow (now the greedy matcher, and charged), and a GCC 14 build found
+  co_await inside ?: evaluated on both arms (rewritten as if; GCC passes the suite). Then 15 min × 4 workers,
+  385 209 inputs: no crash, timeout or out-of-memory.
+

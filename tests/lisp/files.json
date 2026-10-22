@@ -1,0 +1,223 @@
+[
+ {
+  "name": "files",
+  "steps": [
+   {
+    "eval": "(open \"x\" \"q\")"
+   },
+   {
+    "eval": "(open \"x\" \"\")"
+   },
+   {
+    "eval": "(open \"nope.txt\" \"r\")"
+   },
+   {
+    "eval": "(setq f (open \"W.TXT\" \"W\")) (write-line \"a\" f) (write-char 65 f) (princ \"p\" f) (prin1 \"q\" f) (print 1 f) (close f)"
+   },
+   {
+    "eval": "(setq f (open \"w.txt\" \"r\")) (list (read-char f) (read-line f) (read-line f) (read-line f) (read-line f))"
+   },
+   {
+    "eval": "(close f) (read-char f)"
+   },
+   {
+    "eval": "(read-line f)"
+   },
+   {
+    "eval": "(close 5)"
+   },
+   {
+    "eval": "(read-line 5)"
+   },
+   {
+    "eval": "(write-line \"x\" 5)"
+   },
+   {
+    "eval": "(write-line 5)"
+   },
+   {
+    "eval": "(write-line \"x\" f)"
+   },
+   {
+    "eval": "(setq g (open \"w.txt\" \"a\")) (write-line \"more\" g) (close g) (setq g (open \"w.txt\" \"r\")) (list (read-line g) (read-line g) (read-line g) (read-line g) (read-line g))"
+   },
+   {
+    "eval": "(vl-file-size \"w.txt\")"
+   },
+   {
+    "eval": "(vl-file-size \"none\")"
+   },
+   {
+    "eval": "(vl-file-rename \"w.txt\" \"b.txt\")"
+   },
+   {
+    "eval": "(vl-file-rename \"nope\" 5)"
+   },
+   {
+    "eval": "(vl-file-rename \"b.txt\" \"b.txt\")"
+   },
+   {
+    "eval": "(findfile \"w.txt\")"
+   },
+   {
+    "eval": "(findfile \"B.TXT\")"
+   },
+   {
+    "eval": "(vl-file-copy \"b.txt\" \"d/c.txt\")"
+   },
+   {
+    "eval": "(vl-file-copy \"b.txt\" \"d/c.txt\" t)"
+   },
+   {
+    "eval": "(vl-file-size \"c.txt\")"
+   },
+   {
+    "eval": "(vl-directory-files nil \"*.TXT\")"
+   },
+   {
+    "eval": "(vl-directory-files)"
+   },
+   {
+    "eval": "(vl-directory-files \"x\" \"?.txt\")"
+   },
+   {
+    "eval": "(vl-directory-files \"x\" \"\")"
+   },
+   {
+    "eval": "(vl-file-delete \"b.txt\")"
+   },
+   {
+    "eval": "(vl-file-delete \"b.txt\")"
+   },
+   {
+    "eval": "(vl-file-delete \"C.TXT\")"
+   },
+   {
+    "eval": "(vl-file-delete \"d\\\\c.txt\")"
+   },
+   {
+    "eval": "(vl-filename-mktemp)"
+   },
+   {
+    "eval": "(vl-filename-mktemp \"abc.tmp\")"
+   },
+   {
+    "eval": "(vl-filename-mktemp \"x\" \"c:\\\\dir\\\\\" \".dat\")"
+   },
+   {
+    "eval": "(vl-filename-mktemp \"\" \"\" \"\")"
+   },
+   {
+    "eval": "(vl-filename-mktemp 5)"
+   },
+   {
+    "eval": "(vl-filename-mktemp \"a.b.c\")"
+   },
+   {
+    "eval": "(vl-filename-directory \"a/b\\\\c.txt\")"
+   },
+   {
+    "eval": "(vl-filename-directory \"c.txt\")"
+   },
+   {
+    "eval": "(vl-filename-base \"a.b.c\")"
+   },
+   {
+    "eval": "(vl-filename-base \"dir.x/abc\")"
+   },
+   {
+    "eval": "(vl-filename-extension \"noext\")"
+   },
+   {
+    "eval": "(vl-filename-extension \"a.\")"
+   },
+   {
+    "eval": "(vl-filename-extension \"d.x/abc\")"
+   },
+   {
+    "eval": "(vl-file-directory-p \"x\")"
+   },
+   {
+    "eval": "(vl-mkdir \"x\")"
+   },
+   {
+    "eval": "(vl-registry-read \"x\")"
+   },
+   {
+    "eval": "(setq f (open \"crlf.txt\" \"w\")) (princ \"a\\r\\nb\\r\\n\\r\\nc\" f) (close f) (setq f (open \"crlf.txt\" \"r\")) (list (read-line f) (read-line f) (read-line f) (read-line f) (read-line f))"
+   },
+   {
+    "eval": "(setq f (open \"u.txt\" \"w\")) (write-line \"é😀\" f) (close f) (setq f (open \"u.txt\" \"r\")) (list (read-char f) (read-char f) (read-char f) (read-line f))"
+   },
+   {
+    "eval": "(vl-file-size \"u.txt\")"
+   },
+   {
+    "put": {
+     "name": "C:\\Lisp\\Tools.lsp",
+     "text": "(defun tool () \"tool\")\n(defun c:tool () (princ (tool)) (princ))"
+    }
+   },
+   {
+    "eval": "(findfile \"tools.lsp\")"
+   },
+   {
+    "eval": "(findfile \"c:/lisp/TOOLS.LSP\")"
+   },
+   {
+    "eval": "(load \"Tools\") (tool)"
+   },
+   {
+    "eval": "(load \"c:\\\\lisp\\\\tools.lsp\")"
+   },
+   {
+    "eval": "(load 5)"
+   },
+   {
+    "eval": "(load \"nothere\")"
+   },
+   {
+    "eval": "(load \"x\" nil)"
+   },
+   {
+    "put": {
+     "name": "broken.lsp",
+     "text": "(defun broken () (car 1)\n"
+    }
+   },
+   {
+    "eval": "(load \"broken\")"
+   },
+   {
+    "eval": "(vl-catch-all-error-message (vl-catch-all-apply (quote load) (list \"broken\")))"
+   },
+   {
+    "load": {
+     "name": "bad.lsp",
+     "text": "(defun x () 1))"
+    }
+   },
+   {
+    "load": {
+     "name": "good.lsp",
+     "text": "; a routine\n(defun c:greet (/ n) (setq n \"you\") (princ (strcat \"hello \" n)) (princ))\n(defun helper (a) (* a 2))\n(princ \"loaded\")\n(helper 21)"
+    }
+   },
+   {
+    "load": {
+     "name": "fails.lsp",
+     "text": "(princ \"start\")\n(car 1)\n(princ \"never\")"
+    }
+   },
+   {
+    "load": {
+     "name": "nested.lsp",
+     "text": "(load \"good\")"
+    }
+   },
+   {
+    "call": "greet"
+   }
+  ]
+ }
+]

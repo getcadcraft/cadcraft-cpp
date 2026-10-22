@@ -1,0 +1,5 @@
+(defun fact (n) (if (< n 2) 1 (* n (fact (1- n))))) (fact 10)
+(fact 13)
+(fact 12.0)
+(defun r (n) (if (> n 0) (r (1- n)) 0)) (r 3000)
+(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) (fib 18)

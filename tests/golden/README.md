@@ -77,3 +77,9 @@ maxId, types, errors) and every instance as `[id, TYPE, params]`, canonical (`if
 tools/parity/ifc-step.mjs build/corpus/fixtures/showcase --golden-out <dir>/ifc-step`, then the same `tar` line with
 `ifc-step`. The test `io-ifc.golden` compares them; the full check (118 files) is the kit's `run.mjs --fork cpp --engine
 ifc-step`, and `tools/parity/ifc-step.mjs --any fuzz/corpus/ifc_step` runs the fuzzer's inputs through both.
+
+`js-0.5-lisp.tar.gz` — CadCraft 0.5's LISP (lisp/runtime.js createLisp, no drawing) for every session file in
+`tests/lisp/`: each step's value (as prin1 prints it) or error, whether it was a cancel, every piece printed with its
+piece flag, the routines' commands and the defun c:… names reported, canonical (`lisp/<file name>`). Made with
+`node tools/parity/lisp.mjs tests/lisp/*.json --golden-out <dir>/lisp`, then the same `tar` line with `lisp`. The test
+`lisp.golden: the LISP sessions …` replays the sessions against them.

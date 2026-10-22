@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1).
+Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/lisp, the LISP core (M5.8i1); LispError beside ReadOverrun.
 
 ## Toolchain (pinned)
 
@@ -63,6 +63,7 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/image` | L2 | PNG writing (screenshots), zlib for PDF streams, and pictures.js's file side for print (`picture.hpp`: jpegInfo, 0.5's own decodePng, shrink, pdfImage); `picture-decode` (render builds only) decodes PNG / JPEG for the screen through wuffs (M5.8d) |
 | `libs/doc` | L3 | `cc::doc::Doc` — CadCraft 0.5's doc.js: the drawing a session edits (spaces, layers, blocks, layouts), one undo step per `change()`, `load()` of a drawing; equal to the JS document on the corpus (tools/parity/doc.mjs); constraints and parameters (`gcons.hpp`: gcons.js; `params_doc.hpp`: params-doc.js) on `cad::gsolve` (gsolve.js, the solver) and `cad::params` (params.js) |
 | `libs/docview` | L4 | `cc::docview::walk` — CadCraft 0.5's walk.js: what a document draws (blocks, dimensions, multileaders expanded; colours, linetypes and lineweights resolved by layer and by block; linetype dashes, pattern hatch lines, polyline widths as bands, text masks), the same events as the JS (tools/parity/walk.mjs); `to_drawing` turns those events into the renderer's draw lists, so the viewer draws the document it edits; `doc::pattern_of` (linetypes.js) lives in libs/doc |
+| `libs/lisp` | L4 | `cc::lisp::Interp` — CadCraft 0.5's LISP (lisp/types.js, reader.js, interp.js, builtins.js, vl.js, wild.js, missing.js): values (nil, T, 32-bit integers apart from reals, WTF-8 strings indexed in UTF-16 units, interned symbols, shared immutable conses freed without recursion, objects), the reader, an evaluator of coroutines (`Task<Value>`: it awaits the drawing as commands do; symmetric transfer keeps the native stack flat, so depth is an explicit counter, `kMaxDepth`), dynamic scope restored by RAII, `*error*`, every built-in that needs no drawing, wildcards matched by hand with JS RegExp semantics; `run_session` runs a parity session (tools/parity/lisp.mjs); the drawing side reaches a `Host` (libs/cmd, M5.8i2) |
 | `libs/cmd` | L5 | `cc::cmd::Engine` — CadCraft 0.5's command line (commands.js): commands are C++20 coroutines (`Task<T>`, base/task.hpp) that ask through a context (`co_await c.point(…)`, `c.select(…)`), edit the document with `doc.change()` and are one undo step each; Esc destroys the waiting command's frames (no exception for control flow; their destructors are the JS's `finally`). The host interface is what the viewer, the CLI's script runner and the tests implement. libs/cad's edit.hpp holds geom.js's editing geometry the commands use (primitives and intersections, offsetEntity, trimSplit / trimResult, extendEntity, inWindow). `run_script` replays a command script headless (`cadcraft-cli script`; tools/parity/commands.mjs runs the same scripts through the 0.5 Engine) |
 | `libs/importer` | L4 | out-of-process import: `run_helper()` spawns `apps/cadcraft-importer`, sends the file bytes on stdin, reads the model JSON back, with a wall-clock limit and an output cap; a crash, hang or garbage answer becomes an `Error` |
 | `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs); `write_dxf` (dxf.js, R12, straight from the document) and `write_dxf2000` (dxf2000.js, R2000, from the DWG writer model with `model_only`), the same text as the JS (tools/parity/dxf-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
@@ -152,6 +153,18 @@ decoder catches it at each record boundary and turns it into a note on that reco
 `DwgReadError` does in the JS reference — so a damaged record keeps the same fields it has in the JS model, which
 the parity gate compares. It never crosses a library's public API.
 
+**A second one, in libs/lisp:** `LispError` carries an error of a LISP program (AutoLISP's words: "bad argument
+type: consp: 1") from where it happens to the innermost function application, where `*error*` hears it while that
+function's locals are still bound, and on to the top level, which returns it as a `Result`. The JS throws through its
+awaits the same way, and routines depend on where `*error*` runs, so modelling it as values through every built-in
+would only re-implement unwinding. It is copied, never mutated through an `exception_ptr` (MSVC may copy on rethrow),
+and stays inside the library: the public API (`Interp::eval_text` … `Result`, `wcmatch` → `Result<bool>`, `balanced`)
+never throws it. Cancelling (Esc) is the step check's `LispError` with `cancel`, so `*error*` hears "Function
+cancelled" as in 0.5.
+
 ## Locks
 
-None yet. Every lock gets a name and a place in this order when it is added (AGENTS.md section 6, Threads).
+Every lock gets a name and a place in this order when it is added (AGENTS.md section 6, Threads).
+
+1. `lisp.symbols` (libs/lisp value.cpp): the table of interned symbols. A leaf: held only inside `cc::lisp::sym()`,
+   which calls nothing that locks.

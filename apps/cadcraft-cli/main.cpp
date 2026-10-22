@@ -22,6 +22,8 @@
 //   cadcraft-cli script <scripts.json>          command scripts (libs/cmd run_script) on a fresh drawing: what was
 //                                                printed and prompted, the model, undo labels
 //                                                (tools/parity/commands.mjs)
+//   cadcraft-cli lisp <sessions.json>           LISP sessions (libs/lisp run_session): each step's value or error and
+//                                                every piece printed (tools/parity/lisp.mjs)
 //   cadcraft-cli dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]
 //                                                the drawing saved as DXF R12 (dxf.js) or R2000 (dxf2000.js); prints
 //                                                the report (tools/parity/dxf-save.mjs)
@@ -76,6 +78,7 @@
 #include "cc/i18n/i18n.hpp"
 #include "cc/ifc/step.hpp"
 #include "cc/importer/importer.hpp"
+#include "cc/lisp/script.hpp"
 #include "cc/plot/plot.hpp"
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
@@ -103,6 +106,7 @@ void usage(std::FILE* out) {
       "  dxf-save <in.dwg> r12|2000 <out.dxf> [--bench <runs>]\n"
       "  walk <in.dwg>                         what the drawing draws (walk.js events of each space, JSON)\n"
       "  script <scripts.json>                 command scripts on a fresh drawing (one JSON line each)\n"
+      "  lisp <sessions.json>                  LISP sessions: each step's value or error and what it printed\n"
       "  plot <in.dwg> --out <out.pdf> [--sheet NAME | --model] [--pen MM] [--colour]\n"
       "                                        a PDF of a sheet, of the model at its extents, or of every sheet\n"
       "  plot-parity <in.dwg>                  each sheet and the model as uncompressed PDFs (the parity kit)\n"
@@ -483,6 +487,41 @@ int cmd_script(const std::filesystem::path& file, std::string_view argv0) {
     std::string js;
     try {
       cc::base::write_json(cc::cmd::run_script(sc, *words, {}, script_pdf), js);
+    } catch (const std::exception& e) {
+      js.clear();
+      cc::base::write_json(cc::base::make_object({{"$error", cc::base::make_object({{"message", e.what()}})}}), js);
+    }
+    js += '\n';
+    (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  }
+  return 0;
+}
+
+int cmd_lisp(const std::filesystem::path& file, std::string_view argv0) {
+  const auto text = cc::base::read_file(file, std::uint64_t{1} << 26U);
+  if (!text) {
+    print_error_json("io", text.error().message);
+    return 1;
+  }
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  const auto sessions = cc::base::parse_json(cc::base::as_text(*text));
+  if (!sessions || !sessions->is_array()) {
+    print_error_json("invalid", sessions ? std::string("a session file is a JSON array") : sessions.error().message);
+    return 1;
+  }
+  for (const cc::base::Value& session : sessions->as_array()) {
+    std::string js;
+    try {
+      cc::base::write_json(cc::lisp::run_session(session, &*words), js);
     } catch (const std::exception& e) {
       js.clear();
       cc::base::write_json(cc::base::make_object({{"$error", cc::base::make_object({{"message", e.what()}})}}), js);
@@ -1196,6 +1235,9 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "script" && args.size() == 3) {
     return cmd_script(std::filesystem::path(args[2]), args[0]);
+  }
+  if (cmd == "lisp" && args.size() == 3) {
+    return cmd_lisp(std::filesystem::path(args[2]), args[0]);
   }
   if (cmd == "doc" && args.size() == 3) {
     return cmd_import(std::filesystem::path(args[2]), args[0], true);

@@ -1,0 +1,458 @@
+[
+ {
+  "name": "strings",
+  "steps": [
+   {
+    "eval": "(strcat)"
+   },
+   {
+    "eval": "(strcat \"a\" 1)"
+   },
+   {
+    "eval": "(strlen)"
+   },
+   {
+    "eval": "(strlen \"héllo\")"
+   },
+   {
+    "eval": "(strlen \"😀\")"
+   },
+   {
+    "eval": "(substr \"héllo\" 2 2)"
+   },
+   {
+    "eval": "(substr \"😀x\" 2)"
+   },
+   {
+    "eval": "(substr \"abc\" 0)"
+   },
+   {
+    "eval": "(substr \"abc\" 2 -1)"
+   },
+   {
+    "eval": "(substr \"abc\" 5)"
+   },
+   {
+    "eval": "(substr \"abc\" 2 0)"
+   },
+   {
+    "eval": "(substr \"abc\" 1 nil)"
+   },
+   {
+    "eval": "(strcase \"straße\")"
+   },
+   {
+    "eval": "(strcase \"ÀÉÎ\" t)"
+   },
+   {
+    "eval": "(strcase \"ǅ\")"
+   },
+   {
+    "eval": "(strcase \"a\" nil)"
+   },
+   {
+    "eval": "(ascii \"\")"
+   },
+   {
+    "eval": "(ascii \"é\")"
+   },
+   {
+    "eval": "(ascii \"😀\")"
+   },
+   {
+    "eval": "(chr 233)"
+   },
+   {
+    "eval": "(chr 0)"
+   },
+   {
+    "eval": "(chr 65601)"
+   },
+   {
+    "eval": "(strlen (chr 55357))"
+   },
+   {
+    "eval": "(strcat (chr 55357) (chr 56832))"
+   },
+   {
+    "eval": "(strlen (strcat (chr 55357) (chr 56832)))"
+   },
+   {
+    "eval": "(chr -1)"
+   },
+   {
+    "eval": "(itoa -5)"
+   },
+   {
+    "eval": "(itoa 5.0)"
+   },
+   {
+    "eval": "(atoi \" -12x\")"
+   },
+   {
+    "eval": "(atoi \"x\")"
+   },
+   {
+    "eval": "(atoi \"99999999999\")"
+   },
+   {
+    "eval": "(atoi \"+7\")"
+   },
+   {
+    "eval": "(atof \"  -1.5e3x\")"
+   },
+   {
+    "eval": "(atof \".e5\")"
+   },
+   {
+    "eval": "(atof \"1e\")"
+   },
+   {
+    "eval": "(atof \"Infinity\")"
+   },
+   {
+    "eval": "(atof \"-.5\")"
+   },
+   {
+    "eval": "(atof \"1.5E+2\")"
+   },
+   {
+    "eval": "(atof \"\")"
+   },
+   {
+    "eval": "(prin1 \"a\\\"b\\\\c\\e\")"
+   },
+   {
+    "eval": "(vl-prin1-to-string \"x\\ty\")"
+   },
+   {
+    "eval": "\"\\q\""
+   },
+   {
+    "eval": "(ascii \"\\7\")"
+   },
+   {
+    "eval": "\"\\1011\""
+   },
+   {
+    "eval": "\"\\777\""
+   },
+   {
+    "eval": "(strlen \"\\0\")"
+   },
+   {
+    "eval": "\"a\\\\b\""
+   },
+   {
+    "eval": "\"multi\nline\""
+   }
+  ]
+ },
+ {
+  "name": "vl-string functions",
+  "steps": [
+   {
+    "eval": "(vl-string-search \"a\" \"banana\" 2)"
+   },
+   {
+    "eval": "(vl-string-search \"\" \"abc\" 10)"
+   },
+   {
+    "eval": "(vl-string-search \"a\" \"banana\" -5)"
+   },
+   {
+    "eval": "(vl-string-search \"😀\" \"x😀\")"
+   },
+   {
+    "eval": "(vl-string-search 1 \"a\")"
+   },
+   {
+    "eval": "(vl-string-search \"a\" 1)"
+   },
+   {
+    "eval": "(vl-string-subst \"x\" \"a\" \"banana\" 2)"
+   },
+   {
+    "eval": "(vl-string-subst \"x\" \"\" \"abc\")"
+   },
+   {
+    "eval": "(vl-string-subst \"x\" \"z\" \"abc\")"
+   },
+   {
+    "eval": "(vl-string-trim \"ab\" \"abcba\")"
+   },
+   {
+    "eval": "(vl-string-right-trim \" \\t\" \"x \\t \")"
+   },
+   {
+    "eval": "(vl-string-left-trim \"\" \"abc\")"
+   },
+   {
+    "eval": "(vl-string-translate \"abc\" \"x\" \"aabbcc\")"
+   },
+   {
+    "eval": "(vl-string-translate \"abc\" \"\" \"abc\")"
+   },
+   {
+    "eval": "(vl-string-translate \"😀\" \"x\" \"a😀b\")"
+   },
+   {
+    "eval": "(vl-string-translate \"a\" \"😀\" \"aa\")"
+   },
+   {
+    "eval": "(vl-string-position 97 \"banana\" nil t)"
+   },
+   {
+    "eval": "(vl-string-position 97 \"banana\" 2)"
+   },
+   {
+    "eval": "(vl-string-position 97 \"banana\" 2 t)"
+   },
+   {
+    "eval": "(vl-string-position 122 \"abc\")"
+   },
+   {
+    "eval": "(vl-string-position 97 \"\" nil t)"
+   },
+   {
+    "eval": "(vl-string-position 97 \"abc\" -3 t)"
+   },
+   {
+    "eval": "(vl-string-position 97 \"abc\" 99)"
+   },
+   {
+    "eval": "(vl-string-position 65633 \"a\")"
+   },
+   {
+    "eval": "(vl-string-mismatch \"abcd\" \"abxd\")"
+   },
+   {
+    "eval": "(vl-string-mismatch \"ABc\" \"abC\" 0 0 t)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"abc\" \"xbc\" 1 1)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"ab\" \"ab\" -1 -1)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"ab\" \"ab\" -1 -1 t)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"ab\" \"ab\" 0.0 0)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"ab\" \"ab\" 1.5)"
+   },
+   {
+    "eval": "(vl-string-mismatch \"straße\" \"STRASSE\" 0 0 t)"
+   },
+   {
+    "eval": "(vl-string-elt \"abc\" 3)"
+   },
+   {
+    "eval": "(vl-string-elt \"😀\" 1)"
+   },
+   {
+    "eval": "(vl-string->list \"a😀\")"
+   },
+   {
+    "eval": "(vl-list->string '(55357 56832))"
+   },
+   {
+    "eval": "(vl-list->string nil)"
+   },
+   {
+    "eval": "(vl-list->string '(65 1.0))"
+   },
+   {
+    "eval": "(vl-princ-to-string '(\"a\" 1.5 b))"
+   },
+   {
+    "eval": "(vl-prin1-to-string (quote (quote x)))"
+   },
+   {
+    "eval": "(vl-prin1-to-string '(quote x y))"
+   },
+   {
+    "eval": "(vl-prin1-to-string '(1 . (2 . 3)))"
+   },
+   {
+    "eval": "(vl-symbol-name 'straße)"
+   },
+   {
+    "eval": "(vl-symbol-name \"x\")"
+   },
+   {
+    "eval": "(vl-symbolp 'a)"
+   },
+   {
+    "eval": "(vl-symbolp nil)"
+   }
+  ]
+ },
+ {
+  "name": "wildcards",
+  "steps": [
+   {
+    "eval": "(wcmatch \"abc\" \"a*\")"
+   },
+   {
+    "eval": "(wcmatch \"abc\" \"*c\")"
+   },
+   {
+    "eval": "(wcmatch \"abc\" \"a?c\")"
+   },
+   {
+    "eval": "(wcmatch \"abc\" \"~a*\")"
+   },
+   {
+    "eval": "(wcmatch \"b\" \"a,b,c\")"
+   },
+   {
+    "eval": "(wcmatch \"bx\" \"[abc]x\")"
+   },
+   {
+    "eval": "(wcmatch \"dx\" \"[~abc]x\")"
+   },
+   {
+    "eval": "(wcmatch \"b\" \"[a-c]\")"
+   },
+   {
+    "eval": "(wcmatch \"]\" \"[]]\")"
+   },
+   {
+    "eval": "(wcmatch \"qx\" \"[~]x\")"
+   },
+   {
+    "eval": "(wcmatch \"5\" \"#\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"@\")"
+   },
+   {
+    "eval": "(wcmatch \" \" \".\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \".\")"
+   },
+   {
+    "eval": "(wcmatch \"a.b\" \"a`.b\")"
+   },
+   {
+    "eval": "(wcmatch \"a,b\" \"a`,b\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"[z-a]\")"
+   },
+   {
+    "eval": "(wcmatch \"x\" \"x,[z-a]\")"
+   },
+   {
+    "eval": "(wcmatch \"x\" \"[b-a],x\")"
+   },
+   {
+    "eval": "(wcmatch \"`\" \"`\")"
+   },
+   {
+    "eval": "(wcmatch \"a`\" \"a`\")"
+   },
+   {
+    "eval": "(wcmatch \"\" \"*\")"
+   },
+   {
+    "eval": "(wcmatch \"\" \"\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"\")"
+   },
+   {
+    "eval": "(wcmatch \"AB\" \"ab\")"
+   },
+   {
+    "eval": "(wcmatch \"😀\" \"?\")"
+   },
+   {
+    "eval": "(wcmatch \"😀\" \"??\")"
+   },
+   {
+    "eval": "(wcmatch \"a\\nb\" \"a?b\")"
+   },
+   {
+    "eval": "(wcmatch \"[\" \"[\")"
+   },
+   {
+    "eval": "(wcmatch \"[ab\" \"[ab\")"
+   },
+   {
+    "eval": "(wcmatch \"x-y\" \"x-y\")"
+   },
+   {
+    "eval": "(wcmatch \"a^b\" \"a^b\")"
+   },
+   {
+    "eval": "(wcmatch \"^\" \"[^]\")"
+   },
+   {
+    "eval": "(wcmatch \"\\\\\" \"[\\\\]\")"
+   },
+   {
+    "eval": "(wcmatch \"~\" \"`~\")"
+   },
+   {
+    "eval": "(wcmatch \"x\" \"~~x\")"
+   },
+   {
+    "eval": "(wcmatch \"-\" \"[--/]\")"
+   },
+   {
+    "eval": "(wcmatch \"b\" \"[a-c-e]\")"
+   },
+   {
+    "eval": "(wcmatch \"-\" \"[a-c-e]\")"
+   },
+   {
+    "eval": "(wcmatch \"d\" \"[a-c-e]\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"[a-\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"[a,b]\")"
+   },
+   {
+    "eval": "(wcmatch \"b]\" \"[a,b]\")"
+   },
+   {
+    "eval": "(wcmatch \"A12\" \"@##\")"
+   },
+   {
+    "eval": "(wcmatch \"LAYER-1\" \"LAYER-#,~*\")"
+   },
+   {
+    "eval": "(wcmatch \"abc\" \"~abc,x\")"
+   },
+   {
+    "eval": "(wcmatch \"é\" \"@\")"
+   },
+   {
+    "eval": "(wcmatch \"é\" \".\")"
+   },
+   {
+    "eval": "(wcmatch \"aaaaaaaaaaaaaaaaaaaab\" \"*a*a*a*a*a*a*b\")"
+   },
+   {
+    "eval": "(wcmatch 1 \"a\")"
+   },
+   {
+    "eval": "(wcmatch \"a\" 1)"
+   },
+   {
+    "eval": "(wcmatch \"a\" \"[😀-a]\")"
+   },
+   {
+    "eval": "(wcmatch \"b\" \"[a-😀]\")"
+   }
+  ]
+ }
+]

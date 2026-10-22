@@ -1,0 +1,7 @@
+(setq f (open "temp/x.txt" "w")) (write-line "one" f) (write-line "two" f) (close f)
+(setq f (open "x.txt" "r")) (list (read-line f) (read-line f) (read-line f) (close f))
+(findfile "x.txt")
+(defun libfn () 42)
+(load "lib") (libfn)
+(load "nothere" "fallback")
+(load "nothere")

@@ -1,0 +1,57 @@
+(read "")
+(read "  ")
+(read "(1 2")
+(read ")")
+(read "a b")
+(read "'x")
+(read "\"s\"")
+(read 5)
+(read "1.5")
+(read)
+(read "nil")
+(atoms-family 0 '("PI" "zz" car))
+(atoms-family 1 '(nil 1.5 "+"))
+(atoms-family 1 5)
+(atoms-family 1.0 '("zz"))
+(atoms-family 1.0 '("PI"))
+(boundp 'pi)
+(boundp 'car)
+(boundp 'qqq)
+(setq qqq nil) (boundp 'qqq)
+(boundp 5)
+(boundp 't)
+(type (lambda () 1))
+(type '(1))
+(type (open "x.txt" "w"))
+(type 'nil)
+(type 'abc)
+(type 'if)
+(lambda (x) x)
+(defun named () 1) named
+car
+(open "f.txt" "w")
+if
+(set 'zz 3) zz
+(set "zz" 3)
+(set 'zz nil) zz
+(vl-symbol-value 'pi)
+(vl-bb-set 'k 5) (vl-bb-ref 'k)
+(vl-bb-ref 'none)
+(vl-bb-set 'k nil)
+(vl-bb-ref 'k)
+(vl-doc-set 'dd 4) dd
+(vl-doc-ref 'dd)
+(setenv "Foo" "bar") (getenv "FOO")
+(getenv "none")
+(setenv "a" 1)
+(setenv "é" "x") (getenv "É")
+(ver)
+(vl-load-com)
+(gc)
+(setq ä 1) (list ä Ä)
+(vl-symbol-name 'ǆ)
+t
+(eq t 't)
+pause
+(setq t nil) t
+nil

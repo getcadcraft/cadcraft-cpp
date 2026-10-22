@@ -1,0 +1,346 @@
+[
+ {
+  "name": "rtos",
+  "steps": [
+   {
+    "eval": "(rtos 3.14159)"
+   },
+   {
+    "eval": "(rtos 1234.5 1 3)"
+   },
+   {
+    "eval": "(rtos 0.0 1 2)"
+   },
+   {
+    "eval": "(rtos -1234.5 1 3)"
+   },
+   {
+    "eval": "(rtos 15.75 3 2)"
+   },
+   {
+    "eval": "(rtos 15.75 4 4)"
+   },
+   {
+    "eval": "(rtos -15.75 4 4)"
+   },
+   {
+    "eval": "(rtos 0.0 4 2)"
+   },
+   {
+    "eval": "(rtos 2.375 5 3)"
+   },
+   {
+    "eval": "(rtos 0.001 2 2)"
+   },
+   {
+    "eval": "(rtos -0.001 2 2)"
+   },
+   {
+    "eval": "(rtos 1e25 2 2)"
+   },
+   {
+    "eval": "(rtos 1.5 6)"
+   },
+   {
+    "eval": "(rtos 1.5 0 2)"
+   },
+   {
+    "eval": "(rtos 1.5 2 20)"
+   },
+   {
+    "eval": "(rtos 1.5 2 -3)"
+   },
+   {
+    "eval": "(rtos \"x\")"
+   },
+   {
+    "eval": "(rtos 2.5 2 0)"
+   },
+   {
+    "eval": "(rtos 1.005 2 2)"
+   },
+   {
+    "eval": "(rtos 12 2 2)"
+   },
+   {
+    "eval": "(rtos 0.5 5 0)"
+   },
+   {
+    "eval": "(rtos 100.0 3 0)"
+   },
+   {
+    "eval": "(rtos 1e-310 1 3)"
+   },
+   {
+    "eval": "(rtos 5 nil 3)"
+   },
+   {
+    "eval": "(rtos 5 2 nil)"
+   },
+   {
+    "eval": "(rtos 5 2.0)"
+   }
+  ]
+ },
+ {
+  "name": "angtos and angtof",
+  "steps": [
+   {
+    "eval": "(angtos 0)"
+   },
+   {
+    "eval": "(angtos (* 2 pi) 0 4)"
+   },
+   {
+    "eval": "(angtos -1 0 3)"
+   },
+   {
+    "eval": "(angtos 1 2 3)"
+   },
+   {
+    "eval": "(angtos 1 3 4)"
+   },
+   {
+    "eval": "(angtos 1 1 0)"
+   },
+   {
+    "eval": "(angtos 1 1 3)"
+   },
+   {
+    "eval": "(angtos 1 1 5)"
+   },
+   {
+    "eval": "(angtos 1 1 8)"
+   },
+   {
+    "eval": "(angtos 0.1 4 3)"
+   },
+   {
+    "eval": "(angtos (/ pi 2) 4 2)"
+   },
+   {
+    "eval": "(angtos pi 4)"
+   },
+   {
+    "eval": "(angtos 4 4 4)"
+   },
+   {
+    "eval": "(angtos 1 5 2)"
+   },
+   {
+    "eval": "(angtos 1 -1 2)"
+   },
+   {
+    "eval": "(angtos 1.0472 1 4)"
+   },
+   {
+    "eval": "(angtos 0.99999999 1 6)"
+   },
+   {
+    "eval": "(angtos 1e400 0 2)"
+   },
+   {
+    "eval": "(angtos 1 0 nil)"
+   },
+   {
+    "eval": "(angtof \"45\")"
+   },
+   {
+    "eval": "(angtof \"45d30'15\\\"\" 1)"
+   },
+   {
+    "eval": "(angtof \"45d\")"
+   },
+   {
+    "eval": "(angtof \"-10d30'\")"
+   },
+   {
+    "eval": "(angtof \"1.5r\")"
+   },
+   {
+    "eval": "(angtof \"100g\")"
+   },
+   {
+    "eval": "(angtof \"100\" 2)"
+   },
+   {
+    "eval": "(angtof \"1\" 3)"
+   },
+   {
+    "eval": "(angtof \"N45dE\" 4)"
+   },
+   {
+    "eval": "(angtof \"S30d15'W\")"
+   },
+   {
+    "eval": "(angtof \"N 45d E\")"
+   },
+   {
+    "eval": "(angtof \"abc\")"
+   },
+   {
+    "eval": "(angtof \"1e2\")"
+   },
+   {
+    "eval": "(angtof \"  90  \")"
+   },
+   {
+    "eval": "(angtof \"Ex\")"
+   },
+   {
+    "eval": "(angtof \"N45E\")"
+   },
+   {
+    "eval": "(angtof \"n45dw\")"
+   },
+   {
+    "eval": "(angtof \"NE\")"
+   },
+   {
+    "eval": "(angtof \"45d30\\\"\")"
+   },
+   {
+    "eval": "(angtof \"45.5d\")"
+   },
+   {
+    "eval": "(angtof \"45.d\")"
+   },
+   {
+    "eval": "(angtof \"\")"
+   },
+   {
+    "eval": "(angtof \"rr\")"
+   },
+   {
+    "eval": "(angtof 5)"
+   }
+  ]
+ },
+ {
+  "name": "distof and cvunit",
+  "steps": [
+   {
+    "eval": "(distof \"1'6\\\"\" 4)"
+   },
+   {
+    "eval": "(distof \"1'-6 1/2\\\"\" 4)"
+   },
+   {
+    "eval": "(distof \"1.5e1\")"
+   },
+   {
+    "eval": "(distof \"abc\")"
+   },
+   {
+    "eval": "(distof \"3/4\" 5)"
+   },
+   {
+    "eval": "(distof \"1 1/2\")"
+   },
+   {
+    "eval": "(distof \"12\" 1)"
+   },
+   {
+    "eval": "(distof \"12\" 3)"
+   },
+   {
+    "eval": "(distof \"1'\" 2)"
+   },
+   {
+    "eval": "(distof \"1'\" 1)"
+   },
+   {
+    "eval": "(distof \"\")"
+   },
+   {
+    "eval": "(distof \"-2'\" 3)"
+   },
+   {
+    "eval": "(cvunit 1 \"foot\" \"inch\")"
+   },
+   {
+    "eval": "(cvunit '(1 2) \"m\" \"mm\")"
+   },
+   {
+    "eval": "(cvunit 1 \"kg\" \"m\")"
+   },
+   {
+    "eval": "(cvunit 1 \"furlong\" \"m\")"
+   },
+   {
+    "eval": "(cvunit \"x\" \"m\" \"mm\")"
+   },
+   {
+    "eval": "(cvunit nil \"m\" \"mm\")"
+   },
+   {
+    "eval": "(cvunit 1 \" Inch \" \"MM\")"
+   },
+   {
+    "eval": "(cvunit 1 \"constructor\" \"constructor\")"
+   },
+   {
+    "eval": "(cvunit 1 \"__proto__\" \"inch\")"
+   },
+   {
+    "eval": "(cvunit 1 \"sq foot\" \"sq inch\")"
+   },
+   {
+    "eval": "(cvunit 1 \"acre\" \"hectare\")"
+   },
+   {
+    "eval": "(cvunit '(1 \"a\") \"m\" \"mm\")"
+   },
+   {
+    "eval": "(cvunit 1 \"m\")"
+   }
+  ]
+ },
+ {
+  "name": "geometry",
+  "steps": [
+   {
+    "eval": "(polar '(0 0 0) pi 1)"
+   },
+   {
+    "eval": "(distance '(0 0 0) '(1 1))"
+   },
+   {
+    "eval": "(distance '(0 0 1) '(0 0 5))"
+   },
+   {
+    "eval": "(angle '(1 1) '(0 0))"
+   },
+   {
+    "eval": "(angle '(0 0) '(0 0))"
+   },
+   {
+    "eval": "(inters '(0 0 0) '(10 0 10) '(5 -5) '(5 5))"
+   },
+   {
+    "eval": "(inters '(0 0) '(1 0) '(0 1) '(1 1))"
+   },
+   {
+    "eval": "(polar '(0) 0 1)"
+   },
+   {
+    "eval": "(polar '(0 \"a\") 0 1)"
+   },
+   {
+    "eval": "(distance '(1 2 3 4) '(0 0))"
+   },
+   {
+    "eval": "(polar '(1 2) 0.5 2.5)"
+   },
+   {
+    "eval": "(inters '(0 0) '(2 2) '(3 0) '(0 3) t)"
+   },
+   {
+    "eval": "(inters '(0 0) '(1 1) '(0 0) '(1 1))"
+   },
+   {
+    "eval": "(distance '(1e200 0) '(-1e200 0))"
+   }
+  ]
+ }
+]

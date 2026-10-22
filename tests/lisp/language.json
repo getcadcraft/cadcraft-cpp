@@ -1,0 +1,796 @@
+[
+ {
+  "name": "the 0.5 suite's cases, one session",
+  "steps": [
+   {
+    "eval": "(+ 1 2)"
+   },
+   {
+    "eval": "(/ 7 2)"
+   },
+   {
+    "eval": "(/ 7 2.0)"
+   },
+   {
+    "eval": "(+ 1 2.0)"
+   },
+   {
+    "eval": "'(1 . 2)"
+   },
+   {
+    "eval": "(cadr (list 1 2 3))"
+   },
+   {
+    "eval": "(setq a 5) (* a a)"
+   },
+   {
+    "eval": "(defun sq (x / y) (setq y (* x x)) y) (sq 4)"
+   },
+   {
+    "eval": "y"
+   },
+   {
+    "eval": "(mapcar '(lambda (x) (* 2 x)) '(1 2 3))"
+   },
+   {
+    "eval": "(mapcar (function 1+) '(1 2))"
+   },
+   {
+    "eval": "(mapcar '+ '(1 2 3) '(10 20))"
+   },
+   {
+    "eval": "(strcat \"a\" \"b\")"
+   },
+   {
+    "eval": "(substr \"hello\" 2 3)"
+   },
+   {
+    "eval": "(substr \"hello\" 3)"
+   },
+   {
+    "eval": "(strlen \"abc\" \"de\")"
+   },
+   {
+    "eval": "(wcmatch \"BLOCK1\" \"BLOCK#\")"
+   },
+   {
+    "eval": "(wcmatch \"abc\" \"*break,*cancel*,*exit*\")"
+   },
+   {
+    "eval": "(wcmatch \"Function cancelled\" \"*cancel*\")"
+   },
+   {
+    "eval": "(wcmatch \"A-12\" \"~*-##\")"
+   },
+   {
+    "eval": "(wcmatch \"x\" \"[a-z]\")"
+   },
+   {
+    "eval": "(wcmatch \"*\" \"`*\")"
+   },
+   {
+    "eval": "(wcmatch \"door\" \"@@@@\")"
+   },
+   {
+    "eval": "(rtos 3.14159 2 2)"
+   },
+   {
+    "eval": "(rtos 2.5 2 3)"
+   },
+   {
+    "eval": "(rtos 18.5 4 2)"
+   },
+   {
+    "eval": "(rtos 0.5 5 2)"
+   },
+   {
+    "eval": "(angtos pi 0 2)"
+   },
+   {
+    "eval": "(angtos (/ pi 4) 1 4)"
+   },
+   {
+    "eval": "(angtos (/ pi 4) 1 2)"
+   },
+   {
+    "eval": "(angtos pi 3 2)"
+   },
+   {
+    "eval": "(angtof \"90\")"
+   },
+   {
+    "eval": "(distof \"12.5\")"
+   },
+   {
+    "eval": "(polar '(0 0) 0 5)"
+   },
+   {
+    "eval": "(polar '(1 1 1) (/ pi 2) 2)"
+   },
+   {
+    "eval": "(distance '(0 0) '(3 4))"
+   },
+   {
+    "eval": "(angle '(0 0) '(0 -1))"
+   },
+   {
+    "eval": "(inters '(0 0) '(10 10) '(0 10) '(10 0))"
+   },
+   {
+    "eval": "(inters '(0 0) '(1 1) '(0 10) '(10 0))"
+   },
+   {
+    "eval": "(inters '(0 0) '(1 1) '(0 10) '(10 0) nil)"
+   },
+   {
+    "eval": "(assoc 2 '((1 . \"a\") (2 . \"b\")))"
+   },
+   {
+    "eval": "(cond ((= 1 2) \"no\") (t \"yes\"))"
+   },
+   {
+    "eval": "(cond ((+ 1 2)))"
+   },
+   {
+    "eval": "(setq i 0) (while (< i 10) (setq i (1+ i))) i"
+   },
+   {
+    "eval": "(setq s 0) (foreach x '(1 2 3) (setq s (+ s x))) s"
+   },
+   {
+    "eval": "(repeat 3 (setq s (1+ s)))"
+   },
+   {
+    "eval": "(apply '+ '(1 2 3))"
+   },
+   {
+    "eval": "(vl-load-com)"
+   },
+   {
+    "eval": "(type 1)"
+   },
+   {
+    "eval": "(type 1.0)"
+   },
+   {
+    "eval": "(type \"a\")"
+   },
+   {
+    "eval": "(type 'a)"
+   },
+   {
+    "eval": "(type nil)"
+   },
+   {
+    "eval": "(type car)"
+   },
+   {
+    "eval": "(car nil)"
+   },
+   {
+    "eval": "(rem 7 3)"
+   },
+   {
+    "eval": "(rem -7 3)"
+   },
+   {
+    "eval": "(boole 6 5 3)"
+   },
+   {
+    "eval": "(boole 1 12 5)"
+   },
+   {
+    "eval": "(boole 7 12 5)"
+   },
+   {
+    "eval": "(logand 125 64)"
+   },
+   {
+    "eval": "(logior 1 2 4)"
+   },
+   {
+    "eval": "(lsh 1 4)"
+   },
+   {
+    "eval": "(~ 0)"
+   },
+   {
+    "eval": "(read \"(1 2)\")"
+   },
+   {
+    "eval": "(eval '(+ 1 1))"
+   },
+   {
+    "eval": "(nth 1 '(a b c))"
+   },
+   {
+    "eval": "(nth 5 '(a b c))"
+   },
+   {
+    "eval": "(member 2 '(1 2 3))"
+   },
+   {
+    "eval": "(1+ 2147483647)"
+   },
+   {
+    "eval": "(equal '(1 2.0) '(1 2.0001) 0.001)"
+   },
+   {
+    "eval": "(equal '(1 2.0) '(1 2.0001))"
+   },
+   {
+    "eval": "(eq 'a 'a)"
+   },
+   {
+    "eval": "(eq '(1) '(1))"
+   },
+   {
+    "eval": "(= 1 1.0)"
+   },
+   {
+    "eval": "(= \"a\" \"a\")"
+   },
+   {
+    "eval": "(/= 1 2 1)"
+   },
+   {
+    "eval": "(fix 3.7)"
+   },
+   {
+    "eval": "(fix -3.7)"
+   },
+   {
+    "eval": "(float 3)"
+   },
+   {
+    "eval": "(atof \"2.5mm\")"
+   },
+   {
+    "eval": "(atoi \"42abc\")"
+   },
+   {
+    "eval": "(itoa 42)"
+   },
+   {
+    "eval": "(chr 65)"
+   },
+   {
+    "eval": "(ascii \"A\")"
+   },
+   {
+    "eval": "(strcase \"abc\")"
+   },
+   {
+    "eval": "(strcase \"ABC\" t)"
+   },
+   {
+    "eval": "(abs -2)"
+   },
+   {
+    "eval": "(min 1 2.0)"
+   },
+   {
+    "eval": "(max 1 2)"
+   },
+   {
+    "eval": "(sqrt 16)"
+   },
+   {
+    "eval": "(expt 2 10)"
+   },
+   {
+    "eval": "(expt 2.0 0.5)"
+   },
+   {
+    "eval": "(gcd 12 18)"
+   },
+   {
+    "eval": "(atan 1 1)"
+   },
+   {
+    "eval": "(sin 0)"
+   },
+   {
+    "eval": "(exp 0)"
+   },
+   {
+    "eval": "(log 1)"
+   },
+   {
+    "eval": "(append '(1) '(2 3) nil '(4))"
+   },
+   {
+    "eval": "(reverse '(1 2 3))"
+   },
+   {
+    "eval": "(length '(1 2 3))"
+   },
+   {
+    "eval": "(last '(1 2 3))"
+   },
+   {
+    "eval": "(subst 'x 'b '(a b c b))"
+   },
+   {
+    "eval": "(cons 1 '(2))"
+   },
+   {
+    "eval": "(cons 1 2)"
+   },
+   {
+    "eval": "(list)"
+   },
+   {
+    "eval": "(not nil)"
+   },
+   {
+    "eval": "(null 0)"
+   },
+   {
+    "eval": "(atom 1)"
+   },
+   {
+    "eval": "(listp nil)"
+   },
+   {
+    "eval": "(boundp 'zzz)"
+   },
+   {
+    "eval": "(and 1 2)"
+   },
+   {
+    "eval": "(and)"
+   },
+   {
+    "eval": "(or nil nil)"
+   },
+   {
+    "eval": "(if nil 1)"
+   },
+   {
+    "eval": "(if 0 1 2)"
+   },
+   {
+    "eval": "(progn 1 2 3)"
+   },
+   {
+    "eval": "(set 'q 7) q"
+   },
+   {
+    "eval": "(vl-sort '(3 1 2) '<)"
+   },
+   {
+    "eval": "(vl-sort '(\"b\" \"A\" \"c\") '<)"
+   },
+   {
+    "eval": "(vl-sort-i '(30 10 20) '<)"
+   },
+   {
+    "eval": "(vl-remove-if '(lambda (x) (> x 1)) '(1 2 3))"
+   },
+   {
+    "eval": "(vl-remove-if-not 'numberp '(1 \"a\" 2))"
+   },
+   {
+    "eval": "(vl-remove 2 '(1 2 3 2))"
+   },
+   {
+    "eval": "(vl-position 'c '(a b c))"
+   },
+   {
+    "eval": "(vl-some 'minusp '(1 -2))"
+   },
+   {
+    "eval": "(vl-every 'numberp '(1 2))"
+   },
+   {
+    "eval": "(vl-member-if 'minusp '(1 -2 3))"
+   },
+   {
+    "eval": "(vl-string-search \"lo\" \"hello\")"
+   },
+   {
+    "eval": "(vl-string-search \"z\" \"hello\")"
+   },
+   {
+    "eval": "(vl-string-subst \"J\" \"h\" \"hah\")"
+   },
+   {
+    "eval": "(vl-string-trim \" \" \"  x  \")"
+   },
+   {
+    "eval": "(vl-string-trim \"()\" \"(0 1)\")"
+   },
+   {
+    "eval": "(vl-string-left-trim \"0\" \"007\")"
+   },
+   {
+    "eval": "(vl-string-translate \"ab\" \"xy\" \"abc\")"
+   },
+   {
+    "eval": "(vl-string->list \"AB\")"
+   },
+   {
+    "eval": "(vl-list->string '(72 105))"
+   },
+   {
+    "eval": "(vl-princ-to-string \"a\")"
+   },
+   {
+    "eval": "(vl-prin1-to-string \"a\")"
+   },
+   {
+    "eval": "(vl-princ-to-string '(0 1))"
+   },
+   {
+    "eval": "(vl-symbol-name 'abc)"
+   },
+   {
+    "eval": "(vl-list* 1 2 '(3))"
+   },
+   {
+    "eval": "(vl-string-position (ascii \"l\") \"hello\")"
+   },
+   {
+    "eval": "(vl-filename-base \"c:\\\\dir\\\\a.lsp\")"
+   },
+   {
+    "eval": "(vl-filename-extension \"a.dcl\")"
+   },
+   {
+    "eval": "(cvunit 1 \"inch\" \"mm\")"
+   },
+   {
+    "eval": "(cvunit 180 \"degree\" \"radian\")"
+   },
+   {
+    "eval": "(vl-catch-all-error-p (vl-catch-all-apply '/ '(1 0)))"
+   },
+   {
+    "eval": "(vl-catch-all-error-message (vl-catch-all-apply '/ '(1 0)))"
+   },
+   {
+    "eval": "(vl-catch-all-apply '+ '(1 2))"
+   },
+   {
+    "eval": "(car 1)"
+   },
+   {
+    "eval": "(foo)"
+   },
+   {
+    "eval": "(sqrt -1)"
+   },
+   {
+    "eval": "(1+ \"a\")"
+   },
+   {
+    "eval": "(defun f2 (a) a) (f2)"
+   },
+   {
+    "eval": "(defun f3 () 1) (f3 2)"
+   },
+   {
+    "eval": ";| inline |; (+ 1 ;| x |; 2)"
+   },
+   {
+    "eval": "\"a\\nb\""
+   },
+   {
+    "eval": "\"tab\\t\""
+   },
+   {
+    "eval": "\"\\101\""
+   },
+   {
+    "eval": "1."
+   },
+   {
+    "eval": ".5"
+   },
+   {
+    "eval": "1e3"
+   },
+   {
+    "eval": "-3"
+   },
+   {
+    "eval": "3000000000"
+   },
+   {
+    "eval": "'(a . (b c))"
+   },
+   {
+    "eval": "(quote (1 2))"
+   },
+   {
+    "eval": "(read \"x\")"
+   },
+   {
+    "eval": "(atoms-family 1 '(\"CAR\" \"ZZZQQ\"))"
+   },
+   {
+    "eval": "(ver)"
+   }
+  ]
+ },
+ {
+  "name": "reader errors",
+  "steps": [
+   {
+    "eval": "(+ 1 2"
+   },
+   {
+    "eval": "(+ 1 2))"
+   },
+   {
+    "eval": "\"abc"
+   },
+   {
+    "eval": ")"
+   },
+   {
+    "eval": "'"
+   },
+   {
+    "eval": "(a . )"
+   },
+   {
+    "eval": "(a . b c)"
+   },
+   {
+    "eval": "( . a)"
+   },
+   {
+    "eval": "(1 2 . 3)"
+   },
+   {
+    "eval": "'(1 . 2 . 3)"
+   },
+   {
+    "eval": "(a .b)"
+   },
+   {
+    "eval": "(a. b)"
+   },
+   {
+    "eval": "(1 2"
+   },
+   {
+    "eval": "(+ 1 2) (car 1) (+ 3 4)"
+   },
+   {
+    "eval": ";| open comment"
+   },
+   {
+    "eval": "; only a comment"
+   },
+   {
+    "eval": ""
+   },
+   {
+    "eval": "   "
+   },
+   {
+    "eval": "\"a\\"
+   },
+   {
+    "eval": "\"\\"
+   }
+  ]
+ },
+ {
+  "name": "*error* and dynamic scope",
+  "steps": [
+   {
+    "eval": "(defun g (/ *error*) (defun *error* (m) (princ (strcat \"caught:\" m))) (car 1)) (g)"
+   },
+   {
+    "eval": "(car 1)"
+   },
+   {
+    "eval": "*error*"
+   },
+   {
+    "eval": "(setq x 1) (defun h (/ x) (setq x 2) (k)) (defun k () x)"
+   },
+   {
+    "eval": "(h)"
+   },
+   {
+    "eval": "x"
+   },
+   {
+    "eval": "(defun *error* (m) (princ (strcat \"E:\" m))) (car 1)"
+   },
+   {
+    "eval": "(exit)"
+   },
+   {
+    "eval": "(quit)"
+   },
+   {
+    "eval": "(vl-exit-with-value 5)"
+   },
+   {
+    "eval": "(vl-exit-with-error \"boom\")"
+   },
+   {
+    "eval": "(defun *error* (m) (car 2)) (car 1)"
+   },
+   {
+    "eval": "(defun *error* (m) (car 1)) (car 1)"
+   },
+   {
+    "eval": "(setq *error* \"x\") (car 1)"
+   },
+   {
+    "eval": "(setq *error* '((m) (princ (list 'got m)))) (car 1)"
+   },
+   {
+    "eval": "(setq *error* princ) (car 1)"
+   },
+   {
+    "eval": "(setq *error* quote) (car 1)"
+   },
+   {
+    "eval": "(setq *error* nil) (defun inner () (car 1)) (defun outer (/ *error*) (defun *error* (m) (princ \"outer:\")) (inner)) (outer)"
+   },
+   {
+    "eval": "(defun f (a / b) (setq b 5) (car a)) (setq a 1 b 2) (f 3)"
+   },
+   {
+    "eval": "(list a b)"
+   },
+   {
+    "eval": "(setq v 1) (foreach v '(7 8) (princ v)) v"
+   },
+   {
+    "eval": "(defun fe () (foreach v '(1 2) (car v))) (fe) v"
+   },
+   {
+    "eval": "(defun *error* (m) (princ (strcat \"[\" m \"]\")) (princ (list a b))) (f 9)"
+   },
+   {
+    "eval": "(setq *error* nil)"
+   },
+   {
+    "eval": "(vl-catch-all-apply 'car '(1))"
+   },
+   {
+    "eval": "(type (vl-catch-all-apply 'car '(1)))"
+   },
+   {
+    "eval": "(defun *error* (m) (princ \"no\")) (vl-catch-all-apply '(lambda () (car 1)) nil)"
+   },
+   {
+    "eval": "(vl-catch-all-error-message (vl-catch-all-apply 'exit nil))"
+   },
+   {
+    "eval": "(vl-catch-all-error-message (vl-catch-all-apply 'zzz nil))"
+   },
+   {
+    "eval": "(vl-catch-all-error-message (vl-catch-all-apply '+ 5))"
+   },
+   {
+    "eval": "(vl-catch-all-error-message 5)"
+   },
+   {
+    "eval": "(vl-catch-all-error-p 5)"
+   },
+   {
+    "eval": "(setq *error* nil)"
+   },
+   {
+    "eval": "(vl-catch-all-apply '(lambda (x) (vl-catch-all-apply 'car (list x))) '(1))"
+   }
+  ]
+ },
+ {
+  "name": "output",
+  "steps": [
+   {
+    "eval": "(princ \"a\\nb\") (prin1 \"q\") (print 1) (terpri)"
+   },
+   {
+    "eval": "(princ)"
+   },
+   {
+    "eval": "(prin1)"
+   },
+   {
+    "eval": "(print)"
+   },
+   {
+    "eval": "(princ '(1 \"a\" 2.5 b))"
+   },
+   {
+    "eval": "(prin1 '(1 \"a\\\"b\\\\c\\e\\t\\r\\n\" b))"
+   },
+   {
+    "eval": "(prompt \"p\") (prompt 5)"
+   },
+   {
+    "eval": "(princ \"x\" 0.0)"
+   },
+   {
+    "eval": "(princ \"x\" \"\")"
+   },
+   {
+    "eval": "(princ \"x\" 5)"
+   },
+   {
+    "eval": "(write-line \"w\")"
+   },
+   {
+    "eval": "(write-char 66)"
+   },
+   {
+    "eval": "(write-char 66 nil)"
+   },
+   {
+    "eval": "(princ 'sym) (princ 1e10) (princ -0.0)"
+   }
+  ]
+ },
+ {
+  "name": "a function 0.5 does not have yet",
+  "steps": [
+   {
+    "eval": "(vlax-curve-getdistatpoint nil nil)"
+   },
+   {
+    "eval": "(vlax-curve-getdistatpoint nil nil)"
+   },
+   {
+    "eval": "(xload \"x\")"
+   },
+   {
+    "eval": "(acet-ss-drag-move)"
+   },
+   {
+    "eval": "(nosuchfunction)"
+   }
+  ]
+ },
+ {
+  "name": "files in memory",
+  "steps": [
+   {
+    "eval": "(setq f (open \"temp/x.txt\" \"w\")) (write-line \"one\" f) (write-line \"two\" f) (close f)"
+   },
+   {
+    "eval": "(setq f (open \"x.txt\" \"r\")) (list (read-line f) (read-line f) (read-line f) (close f))"
+   },
+   {
+    "eval": "(findfile \"x.txt\")"
+   },
+   {
+    "put": {
+     "name": "lib.lsp",
+     "text": "(defun libfn () 42)"
+    }
+   },
+   {
+    "eval": "(load \"lib\") (libfn)"
+   },
+   {
+    "eval": "(load \"nothere\" \"fallback\")"
+   },
+   {
+    "eval": "(load \"nothere\")"
+   }
+  ]
+ },
+ {
+  "name": "a loop of 200 000 steps",
+  "steps": [
+   {
+    "eval": "(setq i 0) (while (< i 200000) (setq i (1+ i)))"
+   },
+   {
+    "eval": "i"
+   }
+  ]
+ }
+]

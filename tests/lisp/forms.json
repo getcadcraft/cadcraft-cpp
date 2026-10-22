@@ -1,0 +1,427 @@
+[
+ {
+  "name": "special forms",
+  "steps": [
+   {
+    "eval": "(if)"
+   },
+   {
+    "eval": "(if t)"
+   },
+   {
+    "eval": "(if t 1 2 3)"
+   },
+   {
+    "eval": "(cond)"
+   },
+   {
+    "eval": "(cond (nil 1) (2))"
+   },
+   {
+    "eval": "(cond 5)"
+   },
+   {
+    "eval": "(cond (1 . 2))"
+   },
+   {
+    "eval": "(while nil 1)"
+   },
+   {
+    "eval": "(repeat 0 1)"
+   },
+   {
+    "eval": "(repeat -1 1)"
+   },
+   {
+    "eval": "(repeat 2.0 1)"
+   },
+   {
+    "eval": "(repeat)"
+   },
+   {
+    "eval": "(foreach)"
+   },
+   {
+    "eval": "(foreach x)"
+   },
+   {
+    "eval": "(foreach x 5)"
+   },
+   {
+    "eval": "(foreach 5 '(1))"
+   },
+   {
+    "eval": "(foreach x '(1 2 . 3) (princ x))"
+   },
+   {
+    "eval": "(setq)"
+   },
+   {
+    "eval": "(setq a)"
+   },
+   {
+    "eval": "(setq 5 1)"
+   },
+   {
+    "eval": "(setq a 1 b)"
+   },
+   {
+    "eval": "a"
+   },
+   {
+    "eval": "(progn)"
+   },
+   {
+    "eval": "(and nil (car 1))"
+   },
+   {
+    "eval": "(or 1 (car 1))"
+   },
+   {
+    "eval": "(quote)"
+   },
+   {
+    "eval": "(quote 1 2)"
+   },
+   {
+    "eval": "(function car)"
+   },
+   {
+    "eval": "(function (lambda (x) x))"
+   },
+   {
+    "eval": "(function zzz)"
+   },
+   {
+    "eval": "(function 'a)"
+   },
+   {
+    "eval": "((lambda (x) (* x x)) 3)"
+   },
+   {
+    "eval": "((function +) 1 2)"
+   },
+   {
+    "eval": "(\"a\" 1)"
+   },
+   {
+    "eval": "(1 2)"
+   },
+   {
+    "eval": "(nil)"
+   },
+   {
+    "eval": "(setq q 5) (q)"
+   },
+   {
+    "eval": "(setq q 'car) (q '(1 2))"
+   },
+   {
+    "eval": "(setq q '(lambda (x) x)) (q 7)"
+   },
+   {
+    "eval": "(setq q '((x) (* x 2))) (q 4)"
+   },
+   {
+    "eval": "(setq q '((x / y) (setq y x) (list x y))) (q 4)"
+   },
+   {
+    "eval": "(eval 'pi)"
+   },
+   {
+    "eval": "(eval 5)"
+   },
+   {
+    "eval": "(eval '(quote x))"
+   },
+   {
+    "eval": "(eval)"
+   },
+   {
+    "eval": "(lambda)"
+   },
+   {
+    "eval": "(lambda 5)"
+   },
+   {
+    "eval": "(lambda (1) 1)"
+   },
+   {
+    "eval": "(defun)"
+   },
+   {
+    "eval": "(defun 5 ())"
+   },
+   {
+    "eval": "(defun f)"
+   },
+   {
+    "eval": "(defun f (a / b c) (list a b c)) (f 1)"
+   },
+   {
+    "eval": "(defun f (a b) (list a b)) (f 1)"
+   },
+   {
+    "eval": "(f 1 2 3)"
+   },
+   {
+    "eval": "(defun c: () 1)"
+   },
+   {
+    "eval": "(defun c:hello () (princ \"hi\") (princ))"
+   },
+   {
+    "eval": "(defun c:two () 2)"
+   },
+   {
+    "eval": "(defun c:HELLO () (princ \"again\") (princ))"
+   },
+   {
+    "eval": "(defun-q dq (x) x) (dq 3)"
+   },
+   {
+    "eval": "(defun f (a a) a) (f 1 2)"
+   },
+   {
+    "eval": "(defun f (/ x x) x) (f)"
+   }
+  ]
+ },
+ {
+  "name": "routines' commands",
+  "steps": [
+   {
+    "eval": "(defun c:hello () (princ \"hi\") (princ))"
+   },
+   {
+    "eval": "(defun c:val () 42)"
+   },
+   {
+    "eval": "(defun c:bad () (car 1))"
+   },
+   {
+    "eval": "(setq c:notfn 5)"
+   },
+   {
+    "eval": "(setq c:list '(() 7))"
+   },
+   {
+    "call": "hello"
+   },
+   {
+    "call": "C:VAL"
+   },
+   {
+    "call": "bad"
+   },
+   {
+    "call": "nope"
+   },
+   {
+    "call": "notfn"
+   },
+   {
+    "call": "list"
+   },
+   {
+    "call": "c:hello"
+   }
+  ]
+ },
+ {
+  "name": "recursion",
+  "steps": [
+   {
+    "eval": "(defun fact (n) (if (< n 2) 1 (* n (fact (1- n))))) (fact 10)"
+   },
+   {
+    "eval": "(fact 13)"
+   },
+   {
+    "eval": "(fact 12.0)"
+   },
+   {
+    "eval": "(defun r (n) (if (> n 0) (r (1- n)) 0)) (r 3000)"
+   },
+   {
+    "eval": "(defun fib (n) (if (< n 2) n (+ (fib (- n 1)) (fib (- n 2))))) (fib 18)"
+   }
+  ]
+ },
+ {
+  "name": "symbols, values, environment",
+  "steps": [
+   {
+    "eval": "(read \"\")"
+   },
+   {
+    "eval": "(read \"  \")"
+   },
+   {
+    "eval": "(read \"(1 2\")"
+   },
+   {
+    "eval": "(read \")\")"
+   },
+   {
+    "eval": "(read \"a b\")"
+   },
+   {
+    "eval": "(read \"'x\")"
+   },
+   {
+    "eval": "(read \"\\\"s\\\"\")"
+   },
+   {
+    "eval": "(read 5)"
+   },
+   {
+    "eval": "(read \"1.5\")"
+   },
+   {
+    "eval": "(read)"
+   },
+   {
+    "eval": "(read \"nil\")"
+   },
+   {
+    "eval": "(atoms-family 0 '(\"PI\" \"zz\" car))"
+   },
+   {
+    "eval": "(atoms-family 1 '(nil 1.5 \"+\"))"
+   },
+   {
+    "eval": "(atoms-family 1 5)"
+   },
+   {
+    "eval": "(atoms-family 1.0 '(\"zz\"))"
+   },
+   {
+    "eval": "(atoms-family 1.0 '(\"PI\"))"
+   },
+   {
+    "eval": "(boundp 'pi)"
+   },
+   {
+    "eval": "(boundp 'car)"
+   },
+   {
+    "eval": "(boundp 'qqq)"
+   },
+   {
+    "eval": "(setq qqq nil) (boundp 'qqq)"
+   },
+   {
+    "eval": "(boundp 5)"
+   },
+   {
+    "eval": "(boundp 't)"
+   },
+   {
+    "eval": "(type (lambda () 1))"
+   },
+   {
+    "eval": "(type '(1))"
+   },
+   {
+    "eval": "(type (open \"x.txt\" \"w\"))"
+   },
+   {
+    "eval": "(type 'nil)"
+   },
+   {
+    "eval": "(type 'abc)"
+   },
+   {
+    "eval": "(type 'if)"
+   },
+   {
+    "eval": "(lambda (x) x)"
+   },
+   {
+    "eval": "(defun named () 1) named"
+   },
+   {
+    "eval": "car"
+   },
+   {
+    "eval": "(open \"f.txt\" \"w\")"
+   },
+   {
+    "eval": "if"
+   },
+   {
+    "eval": "(set 'zz 3) zz"
+   },
+   {
+    "eval": "(set \"zz\" 3)"
+   },
+   {
+    "eval": "(set 'zz nil) zz"
+   },
+   {
+    "eval": "(vl-symbol-value 'pi)"
+   },
+   {
+    "eval": "(vl-bb-set 'k 5) (vl-bb-ref 'k)"
+   },
+   {
+    "eval": "(vl-bb-ref 'none)"
+   },
+   {
+    "eval": "(vl-bb-set 'k nil)"
+   },
+   {
+    "eval": "(vl-bb-ref 'k)"
+   },
+   {
+    "eval": "(vl-doc-set 'dd 4) dd"
+   },
+   {
+    "eval": "(vl-doc-ref 'dd)"
+   },
+   {
+    "eval": "(setenv \"Foo\" \"bar\") (getenv \"FOO\")"
+   },
+   {
+    "eval": "(getenv \"none\")"
+   },
+   {
+    "eval": "(setenv \"a\" 1)"
+   },
+   {
+    "eval": "(setenv \"é\" \"x\") (getenv \"É\")"
+   },
+   {
+    "eval": "(ver)"
+   },
+   {
+    "eval": "(vl-load-com)"
+   },
+   {
+    "eval": "(gc)"
+   },
+   {
+    "eval": "(setq ä 1) (list ä Ä)"
+   },
+   {
+    "eval": "(vl-symbol-name 'ǆ)"
+   },
+   {
+    "eval": "t"
+   },
+   {
+    "eval": "(eq t 't)"
+   },
+   {
+    "eval": "pause"
+   },
+   {
+    "eval": "(setq t nil) t"
+   },
+   {
+    "eval": "nil"
+   }
+  ]
+ }
+]

@@ -1,0 +1,1 @@
+(defun c:test (/ *error*) (defun *error* (m) (princ m)) (vl-catch-all-apply (quote car) (list 1)) (load "lib") (libfn 4))

@@ -1,0 +1,5 @@
+(vlax-curve-getdistatpoint nil nil)
+(vlax-curve-getdistatpoint nil nil)
+(xload "x")
+(acet-ss-drag-move)
+(nosuchfunction)
