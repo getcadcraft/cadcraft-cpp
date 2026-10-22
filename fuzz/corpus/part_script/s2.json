@@ -1,0 +1,1 @@
+{"calls":[{"op":"shapes.sectionItem","args":["HSS4X4X1/4",{"view":"elevation","length":"2500"}]},{"op":"shapes.localItem","args":[{"name":"x","source_attrs":{"CC-PART-STD":"EN"}}]},{"op":"shapes.bbox","args":[[[1,2],[3]]]},{"op":"shapes.loopLength","args":[[]]},{"op":"nope","args":[]}]}

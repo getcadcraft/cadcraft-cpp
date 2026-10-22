@@ -1,0 +1,1 @@
+{"calls":[{"op":"shapes.makePart","args":["iso4017","M8",{"length":"40"}]},{"op":"shapes.partItem","args":["spur-gear","m2",{"teeth":31,"bore":8}]},{"op":"shapes.partItem","args":["din6885","8x7",null]},{"op":"shapes.makePart","args":["asme-hex-bolt","1/2","$null"]}]}

@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables).
+Last updated 2026-10-21 · Change: M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -55,6 +55,22 @@ fork 0.5 is released; when 0.9 is released, fork 0.7.** A fork release `0.N` mea
 Order inside each stream: the JS tests and goldens first, then the engine, then the UI. Code that several apps share
 in 0.5 (the same file in several app folders) is ported once, by the first stream that needs it, into a shared library
 the others link. M5.8h2 (a cloud's coordinate system) still waits for the owner's decision on the EPSG catalog.
+
+### W4 plan: PartCraft (M8)
+
+Each step is gated by tools/parity/part.mjs (the call scripts on the frozen modules against `cadcraft-cli part`, exact
+where the JS is exact) and a golden replayed by test_partcraft.
+
+| Step | What |
+|---|---|
+| M8.1 | lib/shapes (sections, parts, items) in libs/shapes; the harness and `run_script` — **done 2026-10-21: 46 596 / 46 596 calls, exact** |
+| M8.2 | expr / params ops on libs/cad's ports, params-part.js, configs.js, bom.js, threads.js, gdt.js (gen-core) |
+| M8.3 | the sketch (sketch.js, solver.js, sketch-spline.js, sketch-intersect.js, sketch-tools.js) |
+| M8.4 | the part document (part.js, params-uses.js, refgeom.js), the .pcpart file and pcscript (script.js) |
+| M8.5 | the mesh kernel (kernel.js, meshfaces.js, faces.js, threads) on W2's SolidOps; exports (STL, 3MF, STEP from the mesh, IFC) |
+| M8.6 | assemblies, BOM, drawings (drawing.js, PDF), measure, section views |
+| M8.7 | the app: libs/ui-imgui panels (history, sketcher, parameters, configurations), the 3D view through W2's renderer |
+| later | simulation, CAM, flow, CraftScript (cs-*), the exact kernel (owner decision, docs/gaps.md #23) |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)
 

@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables).
+Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -616,3 +616,24 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   threads may share it; `type_code` / `name_of_code` (CRC-32, the apps' IFC constants). Test: a digest of every entity
   and type computed the same way in node from js-0.5 (3/3 schemas the same), type codes, schema names.
 
+## 2026-10-21 (workstream W4: PartCraft)
+
+- M8.1 (2026-10-21): lib/shapes in C++ (libs/shapes, L1): sections.js (the 1335-row AISC v16.0 / EN 10365 table, built
+  in the JS's order with its field order; displayName, findSection in any case, familyRows; outline with fdlibm's
+  sin / cos, exactArea, bbox with Math.min's NaN and -0, shoelace, loopLength with V8's hypot), parts.js (ten families,
+  sizes, default options, makePart on untrusted options as Number() reads them, LIBRARY_SET) and items.js (section and
+  elevation items, part items for every family, local items with the CC0 credit; the description cut at 500 UTF-16
+  units). The rows come from the frozen JS through tools/gen/shapes-tables.mjs (each number as the JS evaluates it).
+  The parity harness is the Rust fork's pcdiff adapted for `cadcraft-cli part` (tools/parity/part.mjs, generators and
+  JS driver in tools/parity/part/, paths from the env): libs/partcraft `run_script` answers the driver's op names, and a
+  generator gen-shapes.mjs covers lib/shapes (every section's record, outline at seg 6 and 8, area, loops and section
+  item; every family and size; seeded cases: names in any case and with junk, hand-made profiles, untrusted options,
+  elevation lengths, local items). Parity: 46 596 / 46 596 calls the same, exact (zero tolerance), seeds 1–30. Golden
+  tests/golden/js-0.5-part.tar.gz (seed 1, every 9th section: 15 996 calls) replayed by test_partcraft. Fuzz target
+  part_script (any JSON script through run_script): 11 minutes × 16 workers (about 8.6 M inputs), and again on the final
+  code 10.5 minutes × 12 workers, nothing found; a
+  segment count over 4096 is refused there (the JS runs out of memory; docs/gaps.md).
+- 0.5's PartCraft tests run against the frozen app from a scratch layout (bin/test-partcraft*.mjs and
+  tools/partcraft-test/ from forks/work/ref): test-partcraft.mjs needs OpenCascade (replicad-opencascadejs, LGPL) for its
+  exact-kernel sections and stops in its simulation section; test-partcraft-params.mjs needs tools/partcraft-cli/partcraft.mjs
+  and test-partcraft-sw.mjs tools/partcraft-sw/fixtures/, neither copied; bin/test-shapes.mjs was not copied either.

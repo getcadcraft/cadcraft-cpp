@@ -79,6 +79,7 @@
 #include "cc/ifc/step.hpp"
 #include "cc/importer/importer.hpp"
 #include "cc/lisp/script.hpp"
+#include "cc/partcraft/script.hpp"
 #include "cc/plot/plot.hpp"
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
@@ -113,6 +114,7 @@ void usage(std::FILE* out) {
       "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
       "  cloud <file> [--budget N]           a point cloud (LAS, LAZ, XYZ, PTS) as CadCraft reads it\n"
       "  manifold <cases.json>               SolidOps parity cases (tools/parity/manifold.mjs)\n"
+      "  part <script.json>                  PartCraft / lib/shapes call scripts (tools/parity/part.mjs)\n"
       "  version                             print the version\n");
 }
 
@@ -1104,6 +1106,23 @@ int cmd_cloud(const std::filesystem::path& file, double budget, std::string_view
   return write();
 }
 
+int cmd_part(const std::filesystem::path& file) {
+  const auto text = cc::base::read_file(file, std::uint64_t{1} << 30U);
+  if (!text) {
+    print_error_json("io", text.error().message);
+    return 1;
+  }
+  const auto script = cc::base::parse_json(cc::base::as_text(*text));
+  if (!script) {
+    print_error_json("invalid", script.error().message);
+    return 1;
+  }
+  std::string js = cc::base::to_json(cc::partcraft::run_script(*script));
+  js += '\n';
+  (void)std::fwrite(js.data(), 1, js.size(), stdout);
+  return 0;
+}
+
 int run(const std::vector<std::string_view>& args) {
   if (args.size() < 2 || args[1] == "help" || args[1] == "--help") {
     usage(stdout);
@@ -1232,6 +1251,9 @@ int run(const std::vector<std::string_view>& args) {
   if (cmd == "cloud" && (args.size() == 3 || (args.size() == 5 && args[3] == "--budget"))) {
     const double budget = args.size() == 5 ? cc::base::js_number(args[4]) : 2e6;
     return cmd_cloud(std::filesystem::path(args[2]), budget, args[0]);
+  }
+  if (cmd == "part" && args.size() == 3) {
+    return cmd_part(args[2]);
   }
   if (cmd == "script" && args.size() == 3) {
     return cmd_script(std::filesystem::path(args[2]), args[0]);

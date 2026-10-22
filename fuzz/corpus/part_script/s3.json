@@ -1,0 +1,1 @@
+{"calls":[{"op":"shapes.outline","args":[{"kind":"CHS","D":100,"t":5},2.5]},{"op":"shapes.outline","args":[{"kind":"RHS","h":100,"b":50,"t":4,"ro":8,"ri":4},0]},{"op":"shapes.displayName","args":["HSS4.500X0.237"]},{"op":"shapes.familyRows","args":["UPN"]},{"op":"shapes.partOptions","args":["iso4014","M36"]}]}

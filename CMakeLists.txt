@@ -72,6 +72,7 @@ endif()
 # Libraries in layer order (cc_library refuses a dependency that is not defined yet).
 add_subdirectory(libs/base)       # L0
 add_subdirectory(libs/i18n)       # L1
+add_subdirectory(libs/shapes)     # L1
 add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/cad)        # L2
 add_subdirectory(libs/m3d)        # L2
@@ -86,6 +87,7 @@ add_subdirectory(libs/io-dwg)     # L3
 add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/io-ifc)     # L3
 add_subdirectory(libs/doc)        # L3
+add_subdirectory(libs/partcraft)  # L3
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/render)   # L3
 endif()

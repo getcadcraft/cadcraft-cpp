@@ -1,0 +1,1 @@
+{"calls":[{"op":"shapes.findSection","args":["w12x26"]},{"op":"shapes.outline","args":[{"kind":"I","d":300,"bf":150,"tw":7,"tf":10,"r":15},6]},{"op":"shapes.exactArea","args":[{"kind":"L","b":50,"t":5,"h":70}]}]}
