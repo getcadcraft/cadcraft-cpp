@@ -83,6 +83,7 @@
 #include "cc/plot/plot.hpp"
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
+#include "cc/skp/skp.hpp"
 
 namespace {
 
@@ -96,7 +97,7 @@ void usage(std::FILE* out) {
       "  info [--isolated] <file.dwg>        version, counts and notes\n"
       "  convert [--isolated] --json <file>  the drawing model as JSON\n"
       "                                      (--isolated: parse in the sandboxed import helper)\n"
-      "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf, ifc-step)\n"
+      "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf, ifc-step, skp)\n"
       "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
       "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
       "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
@@ -138,7 +139,14 @@ bool engine_known(std::string_view e) {
   return e == "dwg" || e == "dxf" || e == "ifc-step" || e == "ifc-geom" || e == "skp";
 }
 bool engine_ported(std::string_view e) {
-  return e == "dwg" || e == "dxf" || e == "ifc-step";
+  return e == "dwg" || e == "dxf" || e == "ifc-step" || e == "skp";
+}
+
+/// cc-skp (libs/io-skp): the typed model, or its refusal.
+cc::skp::Result<cc::skp::Model> run_skp(std::span<const std::byte> bytes) {
+  return cc::skp::read_skp(std::span<const std::uint8_t>(
+      reinterpret_cast<const std::uint8_t*>(bytes.data()),  // NOLINT(cppcoreguidelines-pro-type-reinterpret-cast)
+      bytes.size()));
 }
 
 /// ifc-step for the kit: NDJSON (the head, then one [id, TYPE, params] per instance in file order).
@@ -203,12 +211,22 @@ int cmd_parity(std::string_view engine, const std::filesystem::path& file) {
   if (engine == "ifc-step") {
     return parity_ifc_step(*bytes);
   }
-  auto parsed = run_engine(engine, *bytes);
-  if (!parsed) {
-    print_error_json(errc_name(parsed.error().code), parsed.error().message);
-    return 1;
+  cc::base::Value model;
+  if (engine == "skp") {
+    auto skp = run_skp(*bytes);
+    if (!skp) {
+      print_error_json(skp.error().code, skp.error().message);
+      return 1;
+    }
+    model = cc::skp::to_value(*skp);
+  } else {
+    auto parsed = run_engine(engine, *bytes);
+    if (!parsed) {
+      print_error_json(errc_name(parsed.error().code), parsed.error().message);
+      return 1;
+    }
+    model = std::move(*parsed);
   }
-  cc::base::Value model = std::move(*parsed);
   if (cc::base::Value* rep = model.find("report")) {
     rep->erase("ms");
   }
@@ -747,6 +765,9 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
         print_error_json("StepError", ix ? "" : ix.error().message);
         return 1;
       }
+    } else if (engine == "skp") {
+      const auto warm_model = run_skp(*warm);
+      (void)warm_model;
     } else {
       const auto warm_model = run_engine(engine, *warm);
       (void)warm_model;
@@ -764,6 +785,9 @@ int cmd_bench(std::string_view engine, const std::filesystem::path& file, int ru
     }
     if (engine == "ifc-step") {
       (void)bench_ifc_step(*bytes);
+    } else if (engine == "skp") {
+      const auto model = run_skp(*bytes);
+      (void)model;
     } else {
       const auto model = run_engine(engine, *bytes);
     }

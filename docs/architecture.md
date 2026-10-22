@@ -1,6 +1,6 @@
 # Architecture
 
-Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/lisp, the LISP core (M5.8i1); LispError beside ReadOverrun; the IFC schema tables, the owner's exception to section 4 (M7.2); libs/shapes and libs/partcraft (M8.1); libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/appkit and libs/civil (M9.1).
+Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/lisp, the LISP core (M5.8i1); LispError beside ReadOverrun; the IFC schema tables, the owner's exception to section 4 (M7.2); libs/shapes and libs/partcraft (M8.1); libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/appkit and libs/civil (M9.1); libs/solid (SolidOps on Manifold 3.5.4, M6.1); libs/live (Studio Live's MessagePack, envelope and session decisions, M13.1); the Studio sources' provenance; libs/io-ifc, the STEP reader (M7.1); libs/io-skp (cc-skp, M14.1).
 
 ## Toolchain (pinned)
 
@@ -73,6 +73,8 @@ CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC 
 | `libs/save` | L4 | `cc::save::save_dwg` — CadCraft 0.5's dwg-save.js: the document → cc-dwg's writer model → `write_dwg`; the same bytes as the JS for the same document (tools/parity/dwg-save.mjs); `write_dxf` (dxf.js, R12, straight from the document) and `write_dxf2000` (dxf2000.js, R2000, from the DWG writer model with `model_only`), the same text as the JS (tools/parity/dxf-save.mjs). The helpers it shares with the commands live in libs/cad (geom.hpp: text layout, bounds, attributes, leaders; dims.hpp: dims.js + dimstyle.js; save_parts.hpp: dwg-props.js write side, colours, hatch patterns, vports, pictures, clips) |
 | `libs/io-dxf` | L3 | `cc::dxf::read_dxf_model` — BimCraft's dxf-model.js: ASCII DXF → the same model as read_dwg; `decode_text` as BimCraft decodes the bytes |
 | `libs/io-ifc` | L3 | `cc::ifc` — cc-ifc (CadCraft 0.5 lib/ifc, the IFC engine BimCraft and DetailCraft use): `scan_step` / `parse_params` / `parse_complex` (step.js: one pass indexes every instance, parameters parsed when read, strings decoded in UTF-16 as the JS does), step values as `Raw`; the parity kit's ifc-step engine (`step_head_json`, `step_line_json`). `schema_for` / `Schema` (schema.js: entities with every attribute in file order, subtypes, defined types, CRC-32 type codes) on the generated tables (src/schema_tables.inc, tools/gen/ifc-schema.mjs). Model, geometry and the API follow (M7.3+) |
+| `libs/io-ifc` | L3 | `cc::ifc` — cc-ifc (CadCraft 0.5 lib/ifc, the IFC engine BimCraft and DetailCraft use): `scan_step` / `parse_params` / `parse_complex` (step.js: one pass indexes every instance, parameters parsed when read, strings decoded in UTF-16 as the JS does), step values as `Raw`; the parity kit's ifc-step engine (`step_head_json`, `step_line_json`). Model, geometry and the API follow (M7.2+) |
+| `libs/io-skp` | L3 | `cc::skp::read_skp` — cc-skp (CadCraft 0.5 lib/skp), SketchUp 3 … 2026: the 2021+ ZIP container (vff.cpp, zip.cpp on zlib) and the classic MFC object stream (legacy.cpp: the store map, the slot-base bootstrap, the annotation "burns"), one source file per JS module. The model is **typed** (`cc::skp::Model`: materials, layers, defs with faces / loose edges / soft edges / instances, column-major 4×4, inches, Z up) — the shape W2's m3d importer reads; `to_value` gives the JS object field for field for the parity kit. Messages are cc-skp's own English, generated from messages.js (`tools/gen/skp-messages.mjs`), or a catalog's words |
 | `libs/io-dwg` | L3 | `cc::dwg::read_dwg` — the C++ port of cc-dwg `readDwg` (container, LZ, Reed–Solomon, header, classes, object map, ~100 object types, tables, multileaders, dynamic blocks, ACIS, data storage); one source file per JS module. `cc::dwg::write_dwg` — the port of `writeDwg` (src/w*.cpp: bits, CRCs, R2004/R2007 compressors and file layouts, the object encoders, the source's objects copied, tables, solids, surfaces, data storage), byte for byte the JS writer's output (tools/parity/dwg-write.mjs) |
 
 ### The IFC schema tables (owner, 2026-10-21)
@@ -172,6 +174,11 @@ would only re-implement unwinding. It is copied, never mutated through an `excep
 and stays inside the library: the public API (`Interp::eval_text` … `Result`, `wcmatch` → `Result<bool>`, `balanced`)
 never throws it. Cancelling (Esc) is the step check's `LispError` with `cancel`, so `*error*` hears "Function
 cancelled" as in 0.5.
+**A second one, in libs/io-skp** (M14.1): cc-skp's readers raise `SkpError` from deep inside a walk, and the classic
+reader decides which failures it can recover from by *where* it catches them (a record it cannot make sense of ends
+the model's entity list, or makes the walk try the next store-map base). The port keeps those places exactly: its
+readers throw `detail::Fail` (an Error) and legacy.cpp's `Misparse`, caught where the JS catches; `read_skp` catches
+everything and returns `std::expected`. Nothing escapes the library.
 
 ## Locks
 

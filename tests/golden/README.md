@@ -94,3 +94,7 @@ C++ side has): each script `civil/<gen>-1-<k>.json` and the JS results `civil/<g
 call, canonical). Made with `node tools/parity/civil.mjs --seed 1 --golden-out <dir>/civil`, then the same `tar` line
 with `civil`. The test `civil.golden: …` replays the scripts and compares; the full check (any seeds) is
 `tools/parity/civil.mjs --seeds 1-60`.
+`skp/` — cc-skp's hand-made test files (the builders of CadCraft 0.5's tools/skp-test/test.mjs: the known-geometry
+model, the refusals, the ZIP faults, a few cuts), each `<name>.skp` with the frozen readSkp's answer `<name>.json` (its
+model, bytes as {"$base64": …}, or its error {code, message}). Synthetic bytes only. Made with
+`node tools/gen/skp-fixtures.mjs`. The test `io-skp.golden` compares; the corpus check (27 files) is the parity kit's.
