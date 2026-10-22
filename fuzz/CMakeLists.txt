@@ -14,3 +14,4 @@ cc_fuzz(parametric SOURCES fuzz_parametric.cpp DEPS cc::doc cc::i18n cc::base CO
 cc_fuzz(picture SOURCES fuzz_picture.cpp DEPS cc::doc CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/picture)
 cc_fuzz(prop_value SOURCES fuzz_prop_value.cpp DEPS cc::cmd cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/prop_value)
 cc_fuzz(cad_dxf SOURCES fuzz_cad_dxf.cpp DEPS cc::cad cc::io-dxf cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/dxf)
+cc_fuzz(solid SOURCES fuzz_solid.cpp DEPS cc::solid cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/solid)

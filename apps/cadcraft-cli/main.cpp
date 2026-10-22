@@ -69,6 +69,7 @@
 #include "cc/dwg/write.hpp"
 #include "cc/dxf/read.hpp"
 #include "cc/engine/script_save.hpp"
+#include "m3d_cli.hpp"
 #if defined(CC_HAVE_IMAGE)
 #include "cc/image/png.hpp"
 #endif
@@ -106,6 +107,7 @@ void usage(std::FILE* out) {
       "  plot-parity <in.dwg>                  each sheet and the model as uncompressed PDFs (the parity kit)\n"
       "                                      open a DWG as CadCraft does and save it as a DWG of that version\n"
       "  cloud <file> [--budget N]           a point cloud (LAS, LAZ, XYZ, PTS) as CadCraft reads it\n"
+      "  manifold <cases.json>               SolidOps parity cases (tools/parity/manifold.mjs)\n"
       "  version                             print the version\n");
 }
 
@@ -1026,6 +1028,9 @@ int run(const std::vector<std::string_view>& args) {
   if (cmd == "version" || cmd == "--version") {
     std::println("cadcraft-cli {}", kVersion);
     return 0;
+  }
+  if (const auto r = cc::cli::run_m3d(args)) {  // the 3D commands: m3d_cli.cpp
+    return *r;
   }
   const bool isolated = args.size() > 2 && args[2] == "--isolated";
   const std::size_t a = isolated ? 3 : 2;

@@ -46,7 +46,7 @@ fork 0.5 is released; when 0.9 is released, fork 0.7.** A fork release `0.N` mea
 | W | Stream | JS (unique lines) | Libraries (new unless noted) | Parity gate |
 |---|---|---|---|---|
 | W1 | CadCraft complete: LISP (M5.8i), the rest of gaps, the 3D tab once W2's kernel lands | lisp/ 4.4 k + rest | libs/lisp, libs/cmd (existing) | command scripts, LISP scripts, 0.5 test-cadcraft-lisp cases |
-| W2 | m3d kernel + ModelCraft (Manifold behind `SolidOps`) | 14 k + shared 22 k | libs/m3d (existing), libs/modelcraft | model JSON, mesh / export bytes |
+| W2 | m3d kernel + ModelCraft (Manifold behind `SolidOps`) | 14 k + shared 22 k | libs/m3d (existing), libs/solid (M6.1: Manifold 3.5.4, 10,004 / 10,004 cases bit-identical to the wasm), libs/modelcraft | model JSON, mesh / export bytes |
 | W3 | cc-ifc + BimCraft | 54 k + lib/ifc 6 k | libs/io-ifc, libs/bimcraft | IFC model JSON on the corpus, BimCraft documents |
 | W4 | PartCraft | 52 k | libs/partcraft | documents, exports |
 | W5 | CivilCraft, DetailCraft, MarkupCraft, TakeoffCraft | 46 k | one library each | each app's documents and exports |

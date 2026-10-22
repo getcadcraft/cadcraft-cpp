@@ -60,3 +60,10 @@ points, viewports, masks, construction lines), canonical (`walk/<file>.json`). M
 build/corpus/fixtures --golden-out <dir>/walk`, then the same `tar` line with `walk`. The test `docview.golden: …`
 compares; the full check (108 drawings) is `tools/parity/walk.mjs`.
 
+
+`js-0.5-manifold.json` — manifold-3d 3.5.4 (the WebAssembly CadCraft 0.5 loads; `vendor/manifold-3d/3.5.4` of the frozen
+copy) on 24 cases of tools/parity/manifold.mjs (four fixed, seeds 1–2 × 10): each case's steps and the wasm's result,
+every float as its bits in hex. Made with `MANIFOLD_JS=<frozen copy>/vendor/manifold-3d/3.5.4/manifold.js node
+tools/parity/manifold.mjs --seeds 1-2 --per 10 --golden-out tests/golden/js-0.5-manifold.json`. The test `solid.SolidOps
+gives …` replays them first in its process, as the script ran them (Manifold numbers its meshes from one process-wide
+counter, and the numbers order the output runs). The full check (10,004 cases) is the script.

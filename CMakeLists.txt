@@ -58,6 +58,7 @@ endif()
 
 find_package(ZLIB REQUIRED)  # libs/image: PNG, the PDF streams
 include(LazPerf)  # libs/cloud: LAZ points, pinned by commit: cmake/LazPerf.cmake
+include(Manifold)  # libs/solid: Manifold 3.5.4 + Clipper2, pinned by commit: cmake/Manifold.cmake
 if(CC_BUILD_RENDER)
   find_package(Freetype REQUIRED)
   include(Wuffs)  # PNG / JPEG decoding for pictures on screen, pinned by commit: cmake/Wuffs.cmake
@@ -74,6 +75,7 @@ add_subdirectory(libs/i18n)       # L1
 add_subdirectory(libs/drawing)    # L2
 add_subdirectory(libs/cad)        # L2
 add_subdirectory(libs/m3d)        # L2
+add_subdirectory(libs/solid)      # L2
 add_subdirectory(libs/image)      # L2
 add_subdirectory(libs/cloud)      # L2
 if(CC_BUILD_RENDER)

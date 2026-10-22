@@ -513,3 +513,28 @@ Last updated 2026-10-21 · Change: REL.1 (release plan: two versions behind).
   fork 0.5, 0.9 → 0.7), fork 0.5 is everything in 0.5 (eight apps and Studio) at parity with js-0.5, CadCraft 0.7 is
   expected within about a month, and the work runs as parallel workstreams. docs/roadmap.md has the plan, the size
   measured (about 190 k unique JS lines left) and workstreams W1–W6.
+
+## 2026-10-21 (W2: m3d kernel + ModelCraft, worktree w2-modelcraft)
+
+- M6.1 (2026-10-21): Manifold 3.5.4 behind `SolidOps` (libs/solid, L2), shared by W2 (ModelCraft's solids.js, text3d.js),
+  W3 (cc-ifc geo-bool.js), W4 (PartCraft) and CadCraft's 3D tab. cmake/Manifold.cmake fetches Manifold at tag v3.5.4
+  (commit ce50d78) and the Clipper2 commit its build fetches (46f6391), both hash-checked, and builds them sequential
+  (MANIFOLD_PAR=-1, no TBB), `-ffp-contract=off`, with the hardened standard library and the sanitizers. Manifold 3.5.4
+  has its own trigonometry (musl's), so libm does not matter; libc++ 22's sort.h is libc++ 21's. Found on the way:
+  (1) libc++ 22's `multimap::find` returns another of equal keys than libc++ 21's, which AssembleHalfedges relies on
+  (one configure-time patch: `lower_bound`, which also stops where a hostile mesh has no next edge instead of reading
+  `end()`); (2) the lazy CSG tree flattens a nested boolean only when no other handle holds its node, so the case
+  runner keeps every solid alive as the JS harness keeps every Manifold (6 of 44 cases differed until it did).
+  tools/parity/manifold.mjs (seeded cases: welded boxes and prisms as solids.js welds them, cubes, cylinders, spheres,
+  turns, add / subtract / intersect, batch union / intersection, trim and split by a plane, a refused open mesh) against
+  manifold-3d 3.5.4: **10,004 / 10,004 identical**, every float compared as bits (status, emptiness, volume, vertex
+  properties, triangles). `cadcraft-cli manifold <cases.json>`; tests/golden/js-0.5-manifold.json (24 cases) replayed
+  by `solid.SolidOps gives the manifold-3d 3.5.4 wasm's results bit for bit`. Fuzz target `solid` (hostile meshes and
+  JSON cases): within a minute it found Manifold's Merge reading the vertices of a triangle index past them (and the
+  constructor would read past its runs, or divide by a numProp of 0), then CreateHalfedges pairing the halfedges of a
+  mesh whose edges do not pair up and its manifold check reading past them; SolidOps now checks those before Manifold
+  sees the mesh, after Manifold's own checks so a refused mesh gets the status Manifold gives it (regression tests +
+  fuzz/corpus/solid/regress-*). Then 12 minutes × 10 workers (1.45 M inputs): clean. Note: the local frozen copy
+  (`~/cadcraft-data/testfiles/fork-parity/js-0.5/vendor/manifold-3d/3.5.4`) lacks manifold.js / manifold.wasm; the
+  snapshot's copy (/var/www/CADCRAFT/testfiles/fork-parity/js-0.5) has them, byte-identical to npm's manifold-3d 3.5.4
+  (MANIFOLD_JS points the script at it).
