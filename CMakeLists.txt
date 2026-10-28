@@ -84,7 +84,9 @@ add_subdirectory(libs/image)      # L2
 add_subdirectory(libs/cloud)      # L2
 add_subdirectory(libs/live)       # L2
 add_subdirectory(libs/mcp)        # L2
-add_subdirectory(libs/control)    # L2
+if(NOT EMSCRIPTEN)
+  add_subdirectory(libs/control)  # L2: the desktop control channel (no control socket on the web)
+endif()
 add_subdirectory(libs/autosave)   # L2
 add_subdirectory(libs/addons)     # L2
 add_subdirectory(libs/appkit)     # L2

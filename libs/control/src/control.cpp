@@ -600,16 +600,20 @@ base::Value Server::info() const {
 }
 
 void Server::stop() {
-  if (listen_fd_ >= 0) {
+  // the acceptor reads listen_fd_ until it has stopped: stop and join it first, then close the socket (closing first
+  // was a data race, and the descriptor could be reused while the acceptor still polled it)
+  if (acceptor_.joinable()) {
     acceptor_.request_stop();
 #if !defined(_WIN32)
-    ::shutdown(static_cast<int>(listen_fd_), SHUT_RDWR);
+    if (listen_fd_ >= 0) {
+      ::shutdown(static_cast<int>(listen_fd_), SHUT_RDWR);  // wakes a poll at once; Windows wakes on its 200 ms poll
+    }
 #endif
+    acceptor_.join();
+  }
+  if (listen_fd_ >= 0) {
     close_socket(listen_fd_);
     listen_fd_ = -1;
-  }
-  if (acceptor_.joinable()) {
-    acceptor_.join();
   }
   std::vector<std::jthread> threads;
   {

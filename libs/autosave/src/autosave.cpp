@@ -34,7 +34,7 @@ namespace {
 template <class T>
 void let_go(const StoreResult<T>& /*r*/) {}
 
-std::string hex(std::string_view s) {
+[[maybe_unused]] std::string hex(std::string_view s) {  // the native store only
   static constexpr std::string_view kHex = "0123456789abcdef";
   std::string out;
   for (const char c : s) {
