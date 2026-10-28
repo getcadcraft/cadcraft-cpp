@@ -571,3 +571,12 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader).
   Clinic_Structural 18.2 MB 583 / 359 (1.62×), Duplex_MEP 17.0 MB 1041 / 155 (6.71×), Clinic_Architectural 12.4 MB
   327 / 92.7 (3.53×); parity same on all. The lever: Raw values allocate per value (strings, item vectors); the Rust
   fork's 6–8× says a flatter value store pays.
+- FZ.6 (2026-10-22): the nightly fuzz of cmd_script (run 39749853648, the first nightly after FZ.3–FZ.5: cloud then ran
+  its 600 s clean) timed out on a script whose MIRRORs of everything double the drawing. The stack was sampled in
+  Doc::change's copy of the step's ops for the edit hooks, but moving them instead of copying them changed nothing
+  measurable (1.10 s vs 1.29 s for 19,600 objects mirrored to 156,800, release build): the time is the drawing's growth,
+  which 0.5 has too. So the bound belongs to the fuzzer, not the app: `ScriptLimits::max_objects` (0 = none, as 0.5;
+  the CLI and the parity runs keep none) stops a script with "*script object limit*" once the drawing passes it, and
+  fuzz_cmd_script sets 20,000 (0.5's own ARRAY cap). The CI artifact was not kept, so the regression input is a
+  synthetic doubling script (fuzz/corpus/cmd_script/regress-mirror-doubling.json: 12 s of CPU under ASan before, 5.5 s
+  after) and a test. cmd_script then ran 10 minutes × 4 workers clean.

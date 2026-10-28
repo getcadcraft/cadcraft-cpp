@@ -196,6 +196,16 @@ Value run_script(const Value& script, const i18n::Catalog& words, const ScriptLi
         host.print("*script step limit*");
         break;
       }
+      if (limits.max_objects != 0) {
+        std::size_t objects = d.model()->size() + (d.in_model() ? 0 : d.entities().size());
+        for (const doc::Layout& l : d.layouts()) {
+          objects += l.entities ? l.entities->size() : 0;
+        }
+        if (objects > limits.max_objects) {
+          host.print("*script object limit*");
+          break;
+        }
+      }
       if (s.is_string()) {
         eng.text(s.as_string());
       } else if (const Value* pf = s.is_object() && !s.is_point() ? s.find("pictures") : nullptr) {

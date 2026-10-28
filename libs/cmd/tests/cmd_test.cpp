@@ -157,6 +157,22 @@ TEST_CASE("a hostile script stops at its step limit") {
   CHECK(limited);
 }
 
+TEST_CASE("a script that doubles the drawing stops at its object limit (fuzz_cmd_script timeout, nightly 2026-10-22)") {
+  // MIRROR of everything doubles the drawing, so a short script asks for millions of objects (0.5 does the same work);
+  // the fuzzer bounds the objects, not the app
+  const auto parsed = cc::base::parse_json(R"({"name":"doubling","steps":["CIRCLE","0,0","1",{"select":[1]},
+      "ARRAYRECT","COU","140","140","X","SELECTALL","MIRROR","-5,0","10,7","N","SELECTALL","MIRROR","-5,1","10,8","N",
+      "SELECTALL","MIRROR","-5,2","10,9","N","SELECTALL","MIRROR","-5,3","10,10","N"]})");
+  REQUIRE(parsed);
+  const Value r = cc::cmd::run_script(*parsed, words(), {.max_steps = 2000, .max_objects = 20000});
+  bool limited = false;
+  for (const Value& l : r["log"].as_array()) {
+    limited = limited || cc::base::js_string(l.as_array()[1]) == "*script object limit*";
+  }
+  CHECK(limited);
+  CHECK(r["model"].as_array().size() <= std::size_t{2} * 20000);
+}
+
 TEST_CASE("a script's pick that no id can be is no pick (fuzz_cmd_script: 1.44e23 as an id was undefined behaviour)") {
   const auto parsed = cc::base::parse_json(
       R"({"name":"huge pick","steps":["LINE","0,0",{"click":[5,5],"pick":144444444444444444444444},{"click":[1,1],"pick":-3},""]})");

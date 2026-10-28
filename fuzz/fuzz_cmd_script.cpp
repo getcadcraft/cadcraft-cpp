@@ -21,7 +21,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
     return 0;
   }
   try {
-    (void)cc::cmd::run_script(*v, kWords, {.max_steps = 2000});
+    (void)cc::cmd::run_script(*v, kWords, {.max_steps = 2000, .max_objects = 20000});
   } catch (const std::exception&) {  // NOLINT(bugprone-empty-catch) — a command's refusal the engine would print
   }
   return 0;

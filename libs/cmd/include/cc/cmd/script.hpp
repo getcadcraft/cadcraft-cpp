@@ -19,6 +19,9 @@ namespace cc::cmd {
 
 struct ScriptLimits {
   std::size_t max_steps = 100000;
+  /// Stop once the drawing holds more objects than this after a step (0 = no limit, as in 0.5). For the fuzzer: MIRROR
+  /// and COPY double a drawing, so a short script can ask for millions of objects, as it can of 0.5.
+  std::size_t max_objects = 0;
 };
 
 /// What a caller adds to a script's result once its steps are done (the CLI and the tests: the PDF a script asks for).
