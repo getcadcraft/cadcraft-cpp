@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -570,6 +570,17 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   byte), growing if the stream does give more. The answers were already 0.5's ("unpacks to the wrong size", "does not
   unpack"); now in 5 MB and no time. The 6 files are regression tests (io-skp) and corpus entries
   (fuzz/corpus/skp/regress-big-claim-*). Parity still 27/27.
+- M13.2 (2026-10-28, W6): Studio Live's secure channel, `libs/live` crypto.cpp (docs/LIVE-CRYPTO.md; live-crypto.js and
+  desktop-shell live/crypto.rs, d132555). SPAKE2 on Ed25519 as the RustCrypto spake2 crate does it (joiner = side A,
+  host = side B, the M/N points, the transcript hash), HKDF-SHA256 for the keys, HMAC confirmations compared in constant
+  time, ChaCha20-Poly1305 frames (11-byte header as the AAD; nonce = direction | epoch | counter; only the exact next
+  counter opens), the host's rekey, the exporter, invite codes, link secrets, room tags and signed-in names
+  (LV.19 assertions, Ed25519). Every primitive is libsodium 1.0.22 (ISC, vcpkg's port: a small additive vcpkg.json
+  change, not on the web build, which is 0.5's JS); the CI ubuntu job installs autoconf, autoconf-archive, automake
+  and libtool for it. tools/live-crypto/vectors.json (copied to tests/golden/js-0.5-live-crypto-vectors.json) passes
+  byte for byte: the 4 handshake cases (messages, confirmations, keys, frames, rekey, exporter), codes, links and room
+  tags, plus test-live-crypto.mjs's checks (wrong codes and contexts, tampered / replayed / reflected frames): 294
+  assertions. Fuzz target live_frame (frames into both ends of a real session).
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 

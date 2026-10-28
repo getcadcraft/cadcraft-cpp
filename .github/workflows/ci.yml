@@ -37,7 +37,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/llvm-apt.gpg] http://apt.llvm.org/noble/ llvm-toolchain-noble-${LLVM_VERSION} main" \
             | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends ninja-build g++-14 \
+          sudo apt-get install -y -q --no-install-recommends ninja-build g++-14 autoconf autoconf-archive automake libtool \
             clang-${LLVM_VERSION} clang-tidy-${LLVM_VERSION} clang-format-${LLVM_VERSION} lld-${LLVM_VERSION} llvm-${LLVM_VERSION} \
             libc++-${LLVM_VERSION}-dev libc++abi-${LLVM_VERSION}-dev libclang-rt-${LLVM_VERSION}-dev \
             pkg-config libx11-dev libx11-xcb-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \

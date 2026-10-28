@@ -57,6 +57,9 @@ if(CC_BUILD_TESTS)
 endif()
 
 find_package(ZLIB REQUIRED)  # libs/image: PNG, the PDF streams
+if(NOT EMSCRIPTEN)
+  find_package(unofficial-sodium CONFIG REQUIRED)  # libs/live crypto, libs/addons signatures (ISC)
+endif()
 include(LazPerf)  # libs/cloud: LAZ points, pinned by commit: cmake/LazPerf.cmake
 include(Manifold)  # libs/solid: Manifold 3.5.4 + Clipper2, pinned by commit: cmake/Manifold.cmake
 if(CC_BUILD_RENDER)
