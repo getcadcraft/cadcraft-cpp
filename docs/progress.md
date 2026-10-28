@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -635,6 +635,12 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   supertypes first, parsed type codes, derived sets, subtypes depth first in table order) and is immutable after, so
   threads may share it; `type_code` / `name_of_code` (CRC-32, the apps' IFC constants). Test: a digest of every entity
   and type computed the same way in node from js-0.5 (3/3 schemas the same), type codes, schema names.
+- MSVC.1 (2026-10-27): main's MSVC job crashed in `io-ifc.step: errors worded as step.js` (SIGSEGV, stack overflow:
+  job 122102100818). The STEP parser recursed list → value → list once per nesting level up to its cap of 1,000
+  levels, which fits Linux's 8 MB stack but not Windows' 1 MB with MSVC's larger frames. The parser now keeps open
+  aggregates on an explicit stack (the same cap, the same values, errors and offsets: kit ifc-step 118/118, the
+  fuzzer's kept inputs the same as the JS through tools/parity/ifc-step.mjs). Regression test: 999 levels parse, write
+  and free, 1,001 stop with V8's words; the suite passes under `ulimit -s 256` (256 KB).
 
 ## 2026-10-21 (workstream W4: PartCraft)
 

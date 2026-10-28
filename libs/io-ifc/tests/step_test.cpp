@@ -88,3 +88,13 @@ TEST_CASE("step: a DATA with no ; after ENDSEC ends the scan (the JS starts over
   REQUIRE(ix.has_value());
   CHECK(ix->count == 1);
 }
+
+TEST_CASE("step: aggregates 999 deep parse, write and free on a small stack (MSVC.1: MSVC's 1 MB stack overflowed)") {
+  const std::string deep = "(" + std::string(998, '(') + "1" + std::string(998, ')') + ");";
+  const std::string got = params(deep);
+  CHECK(got == std::string(999, '[') + "1" + std::string(999, ']'));
+  const std::string over = std::string(1001, '(') + std::string(1001, ')') + ";";
+  CHECK(params(over) == "!Maximum call stack size exceeded");
+  const std::string typed = "(" + std::string(500, 'X') + "(" + std::string(900, '(') + std::string(900, ')') + "));";
+  CHECK(params(typed).starts_with("[{\"typed\":"));
+}

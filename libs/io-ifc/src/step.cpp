@@ -407,41 +407,114 @@ class Parser {
 
   [[nodiscard]] std::size_t pos() const noexcept { return i_; }
 
-  // NOLINTNEXTLINE(misc-no-recursion) — bounded by kMaxDepth
+  /// The parameter list at i: iterative (aggregates nest on an explicit stack, capped at kMaxDepth — the JS recurses
+  /// on V8's stack; a recursive parser here overflowed MSVC's 1 MB stack before the cap: MSVC.1).
   StepResult<RawList> list() {
-    if (++depth_ > kMaxDepth) {
-      return std::unexpected(StepError{"RangeError", "Maximum call stack size exceeded"});
-    }
-    i_ = skip(b_, i_, end_);
-    if (at(b_, i_) != kLp) {
-      return fail("Expected (");
-    }
-    ++i_;
-    RawList out;
-    i_ = skip(b_, i_, end_);
-    if (at(b_, i_) == kRp) {
+    struct Frame {
+      RawList items;
+      bool typed = false;
+      std::string name;
+    };
+    std::vector<Frame> st;
+    // Opens a list at i (b[i] is past any blanks; the JS's list(): depth, "(", the empty list). → true when it closed
+    // at once (empty); the frame is pushed either way.
+    auto open = [&](Frame f) -> StepResult<bool> {
+      if (st.size() + 1 > kMaxDepth) {
+        return std::unexpected(StepError{"RangeError", "Maximum call stack size exceeded"});
+      }
+      i_ = skip(b_, i_, end_);
+      if (at(b_, i_) != kLp) {
+        return fail("Expected (");
+      }
       ++i_;
-      --depth_;
-      return out;
+      st.push_back(std::move(f));
+      i_ = skip(b_, i_, end_);
+      if (at(b_, i_) == kRp) {
+        ++i_;
+        return true;
+      }
+      return false;
+    };
+    auto close = [&]() -> Raw {
+      Frame f = std::move(st.back());
+      st.pop_back();
+      Raw r;
+      if (!f.typed) {
+        r.kind = Raw::Kind::list;
+        r.items = std::move(f.items);
+        return r;
+      }
+      r.kind = Raw::Kind::typed;
+      r.text = std::move(f.name);
+      if (f.items.size() == 1) {
+        r.items.push_back(std::move(f.items[0]));
+      } else {
+        Raw l;
+        l.kind = Raw::Kind::list;
+        l.items = std::move(f.items);
+        r.items.push_back(std::move(l));
+      }
+      return r;
+    };
+    auto first = open(Frame{});
+    if (!first) {
+      return std::unexpected(std::move(first.error()));
+    }
+    if (*first) {
+      return RawList{};
     }
     for (;;) {
-      auto v = value();
-      if (!v) {
-        return std::unexpected(std::move(v.error()));
-      }
-      out.push_back(std::move(*v));
+      // one value (the JS's value())
+      Raw done;
       i_ = skip(b_, i_, end_);
       const int c = at(b_, i_);
-      if (c == kComma) {
-        ++i_;
-        continue;
+      bool opened = false;
+      StepResult<bool> empty = false;
+      if (c == kLp) {
+        opened = true;
+        empty = open(Frame{});
+      } else if (starts_typed(c)) {
+        Keyword kw = keyword_at(b_, i_, end_);
+        i_ = skip(b_, kw.next, end_);
+        if (at(b_, i_) != kLp) {
+          return fail("Expected ( after " + kw.name);
+        }
+        opened = true;
+        empty = open(Frame{{}, true, std::move(kw.name)});
+      } else {
+        auto v = scalar(c);
+        if (!v) {
+          return std::unexpected(std::move(v.error()));
+        }
+        done = std::move(*v);
       }
-      if (c == kRp) {
-        ++i_;
-        --depth_;
-        return out;
+      if (opened) {
+        if (!empty) {
+          return std::unexpected(std::move(empty.error()));
+        }
+        if (!*empty) {
+          continue;  // its first value next
+        }
+        done = close();
       }
-      return fail("Expected , or )");
+      // after a value: ",", or ")" closing lists (several at once), or an error
+      for (;;) {
+        st.back().items.push_back(std::move(done));
+        i_ = skip(b_, i_, end_);
+        const int d = at(b_, i_);
+        if (d == kComma) {
+          ++i_;
+          break;
+        }
+        if (d != kRp) {
+          return fail("Expected , or )");
+        }
+        ++i_;
+        if (st.size() == 1) {
+          return std::move(st.back().items);
+        }
+        done = close();
+      }
     }
   }
 
@@ -450,10 +523,14 @@ class Parser {
     return std::unexpected(step_error(std::move(msg), i_));
   }
 
-  // NOLINTNEXTLINE(misc-no-recursion) — bounded by kMaxDepth (list)
-  StepResult<Raw> value() {
-    i_ = skip(b_, i_, end_);
-    const int c = at(b_, i_);
+  /// A typed value starts with a keyword character that no other value starts with (the JS's value() tests the
+  /// digits and signs first).
+  [[nodiscard]] static bool starts_typed(int c) noexcept {
+    return is_key_char(c) && !is_digit(c) && c != kMinus && c != kPlus;
+  }
+
+  /// A value that is not an aggregate or a typed value, at i (b[i] == c); the JS's value() for those.
+  StepResult<Raw> scalar(int c) {
     Raw r;
     if (c == kDollar) {
       ++i_;
@@ -517,15 +594,6 @@ class Parser {
       i_ = j + 1;
       return r;
     }
-    if (c == kLp) {
-      auto l = list();
-      if (!l) {
-        return std::unexpected(std::move(l.error()));
-      }
-      r.kind = Raw::Kind::list;
-      r.items = std::move(*l);
-      return r;
-    }
     if (c == kDquote) {
       std::size_t j = i_ + 1;
       while (j < end_ && at(b_, j) != kDquote) {
@@ -538,28 +606,6 @@ class Parser {
     }
     if (is_digit(c) || c == kMinus || c == kPlus || c == kDot) {
       return number();
-    }
-    if (is_key_char(c)) {
-      Keyword kw = keyword_at(b_, i_, end_);
-      i_ = skip(b_, kw.next, end_);
-      if (at(b_, i_) != kLp) {
-        return fail("Expected ( after " + kw.name);
-      }
-      auto inner = list();
-      if (!inner) {
-        return std::unexpected(std::move(inner.error()));
-      }
-      r.kind = Raw::Kind::typed;
-      r.text = std::move(kw.name);
-      if (inner->size() == 1) {
-        r.items.push_back(std::move((*inner)[0]));
-      } else {
-        Raw l;
-        l.kind = Raw::Kind::list;
-        l.items = std::move(*inner);
-        r.items.push_back(std::move(l));
-      }
-      return r;
     }
     std::string ch;
     base::append_code_point(ch, static_cast<std::uint32_t>(c < 0 ? 0 : c));
@@ -606,7 +652,6 @@ class Parser {
   U8 b_;
   std::size_t i_;
   std::size_t end_;
-  std::size_t depth_ = 0;
 };
 
 StepResult<RawList> parse_params_u8(U8 b, std::size_t start, std::size_t end) {
