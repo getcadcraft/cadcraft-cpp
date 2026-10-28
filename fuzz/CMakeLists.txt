@@ -22,3 +22,4 @@ cc_fuzz(part_script SOURCES fuzz_part_script.cpp DEPS cc::partcraft cc::base COR
 cc_fuzz(civil_points SOURCES fuzz_civil_points.cpp DEPS cc::civil cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/civil_points)
 cc_fuzz(civil_script SOURCES fuzz_civil_script.cpp DEPS cc::civil cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/civil_script)
 cc_fuzz(skp SOURCES fuzz_skp.cpp DEPS cc::io-skp CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/skp)
+cc_fuzz(m3d SOURCES fuzz_m3d.cpp DEPS cc::m3d cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/m3d)

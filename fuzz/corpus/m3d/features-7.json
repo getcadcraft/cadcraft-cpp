@@ -1,0 +1,1 @@
+{"name":"flip, hide, isolate, show","units":"m","steps":[{"op":"rect","p":[0,0,0],"w":2,"h":1},{"op":"pushPull","face":{"last":true},"d":1},{"op":"flip","sel":{"all":"everything"},"c":[3,0,0],"n":[1,0,0],"copy":true},{"op":"solidInfo"},{"op":"hide","sel":[{"t":"f","id":{"facing":[0,0,1]}}]},{"op":"isolate","sel":[{"t":"f","id":{"facing":[0,0,-1]}}]},{"op":"unhideAll"}]}

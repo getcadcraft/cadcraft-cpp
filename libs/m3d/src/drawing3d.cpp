@@ -205,7 +205,7 @@ std::optional<File3d> for_file3d(const Model& m, std::string_view units) {
   File3d out;
   m.walk([&](const Def& def, const Mat4& wm) {
     const auto W = [&](std::int64_t v) {
-      const Vec3 p = apply(wm, def.vert(v));
+      const Vec3 p = m3d::apply(wm, def.vert(v));
       return Vec3{p[0] / k, p[1] / k, p[2] / k};
     };
     for (const auto& [fid, f] : def.faces.items()) {
@@ -235,7 +235,7 @@ std::optional<File3d> for_file3d(const Model& m, std::string_view units) {
           along.emplace(b, a);
         }
       }
-      for (const auto& [a, b, c] : face_tris(def, f)) {
+      for (const auto& [a, b, c] : face_tris(def, f, Kernel::cadcraft)) {
         const auto vis = [&](std::int64_t p, std::int64_t q) { return along.contains({p, q}); };
         const int invis = (vis(a, b) ? 0 : 1) | (vis(b, c) ? 0 : 2) | (vis(c, a) ? 0 : 8);
         const Vec3 C = W(c);

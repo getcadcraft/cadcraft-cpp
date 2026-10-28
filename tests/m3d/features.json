@@ -1,0 +1,204 @@
+{"about": "The kernel's 0.4 / 0.5 features as kernel calls: curves, offset, smooth curves, follow me, flip, hide, paint, soften, intersect, the solid checker, dimensions, tags, sections, axes, lights, scenes, clipboard, outliner, imports.",
+ "scripts": [
+  {"name": "an arc, closed by a line, its radius changed", "units": "m", "steps": [
+    {"op": "arc", "c": [2,0,0], "u": [1,0,0], "r": 2, "sweep": 180, "segs": 12},
+    {"op": "edge", "p": [0,0,0], "q": [4,0,0]},
+    {"op": "curveInfo", "curve": "arc:26"},
+    {"op": "change", "label": "Radius", "steps": [{"op": "curveRadius", "curve": "arc:26", "r": 3}]},
+    {"op": "curveInfo", "curve": "arc:26"},
+    {"op": "undo"}
+  ]},
+  {"name": "a circle pushed: the radius is fixed, a copy is a curve of its own", "units": "m", "steps": [
+    {"op": "ngon", "c": [0,5,0], "r": 1, "sides": 24, "curve": "circle"},
+    {"op": "curveRadius", "curve": "circle:50", "r": 1.5},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "curveRadius", "curve": "circle:50", "r": 2},
+    {"op": "copy", "sel": [{"t": "e", "id": 3}, {"t": "e", "id": 5}, {"t": "e", "id": 7}]},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "offset: inward on a screen, outward ring, a chain, too far", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1.6, "h": 0.9},
+    {"op": "pushPull", "face": {"last": true}, "d": 0.05},
+    {"op": "offsetFace", "face": {"facing": [0,0,1]}, "d": 0.03},
+    {"op": "pushPull", "face": {"facing": [0,0,1], "area": 1.2936}, "d": -0.005},
+    {"op": "solidInfo"},
+    {"op": "rect", "p": [5,0,0], "w": 4, "h": 3},
+    {"op": "offsetFace", "face": {"area": 12}, "d": -0.5},
+    {"op": "offsetFace", "face": {"area": 12}, "d": 3},
+    {"op": "edge", "p": [10,0,0], "q": [13,0,0]},
+    {"op": "edge", "p": [13,0,0], "q": [13,2,0]},
+    {"op": "offsetChain", "edges": [{"between": [[10,0,0],[13,0,0]]}, {"between": [[13,0,0],[13,2,0]]}], "d": 0.2}
+  ]},
+  {"name": "a circle offsets to a circle", "units": "m", "steps": [
+    {"op": "ngon", "c": [2,1.5,0], "r": 1, "sides": 24, "curve": "circle"},
+    {"op": "offsetFace", "face": {"last": true}, "d": 0.25},
+    {"op": "curveInfo", "curve": "circle:50"}
+  ]},
+  {"name": "smooth curves: drawn, edited, refused once they bound a face", "units": "m", "steps": [
+    {"op": "spline", "pts": [[0,0,0],[2,3,0],[5,1,0],[8,4,0]]},
+    {"op": "spline", "pts": [[0,0,0],[1,0,0]]},
+    {"op": "spline", "pts": [[0,0,0]]},
+    {"op": "editSpline", "curve": "curve:50", "pts": [[0,0,0],[2,4,0],[5,0,0],[8,4,0]]},
+    {"op": "spline", "pts": [[10,0,0],[12,2,0],[14,0,0],[12,-2,0]], "closed": true},
+    {"op": "editSpline", "curve": "curve:168", "pts": [[10,0,0],[12,3,0],[14,0,0]]},
+    {"op": "move", "sel": {"all": "edges"}, "by": [0,0,1]}
+  ]},
+  {"name": "follow me: a profile along an L path, a ring", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "u": [0,1,0], "v": [0,0,1], "w": 0.5, "h": 0.5},
+    {"op": "edge", "p": [0,0,0], "q": [4,0,0], "faces": false},
+    {"op": "edge", "p": [4,0,0], "q": [4,3,0], "faces": false},
+    {"op": "follow", "face": {"last": true}, "along": [{"between": [[0,0,0],[4,0,0]]}, {"between": [[4,0,0],[4,3,0]]}]},
+    {"op": "solidInfo"},
+    {"op": "follow", "face": 999, "along": []},
+    {"op": "follow", "face": {"last": true}, "along": []}
+  ]},
+  {"name": "follow me around a closed square", "units": "m", "steps": [
+    {"op": "ngon", "c": [5,0,0.5], "n": [0,1,0], "u": [1,0,0], "r": 0.25, "sides": 8},
+    {"op": "edge", "p": [5,0,0.5], "q": [5,4,0.5], "faces": false},
+    {"op": "edge", "p": [5,4,0.5], "q": [9,4,0.5], "faces": false},
+    {"op": "edge", "p": [9,4,0.5], "q": [9,0,0.5], "faces": false},
+    {"op": "edge", "p": [9,0,0.5], "q": [5,0,0.5], "faces": false},
+    {"op": "chainThrough", "edge": {"between": [[5,4,0.5],[9,4,0.5]]}},
+    {"op": "follow", "face": {"last": true}, "along": [{"between": [[5,0,0.5],[5,4,0.5]]}, {"between": [[5,4,0.5],[9,4,0.5]]}, {"between": [[9,4,0.5],[9,0,0.5]]}, {"between": [[9,0,0.5],[5,0,0.5]]}]},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "flip, hide, isolate, show", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 2, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "flip", "sel": {"all": "everything"}, "c": [3,0,0], "n": [1,0,0], "copy": true},
+    {"op": "solidInfo"},
+    {"op": "hide", "sel": [{"t": "f", "id": {"facing": [0,0,1]}}]},
+    {"op": "isolate", "sel": [{"t": "f", "id": {"facing": [0,0,-1]}}]},
+    {"op": "unhideAll"}
+  ]},
+  {"name": "paint: faces, a placement, a material, an image, refusals", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "paint", "faces": [{"facing": [0,0,1]}], "c": "#C0392B"},
+    {"op": "paint", "faces": [{"facing": [1,0,0]}], "c": "mat:brick-red"},
+    {"op": "paint", "faces": [{"facing": [0,1,0]}], "c": "img:t1x|0.5,0,0,0,0,0,1,0.25|#abcdef"},
+    {"op": "paint", "faces": [{"facing": [-1,0,0]}], "c": "red"},
+    {"op": "paint", "faces": [{"facing": [0,0,1]}]},
+    {"op": "group", "sel": {"all": "everything"}},
+    {"op": "paintInst", "inst": 28, "c": "#2E9D57"},
+    {"op": "worldTriangles"}
+  ]},
+  {"name": "soften by angle, a cylinder's edges", "units": "m", "steps": [
+    {"op": "ngon", "c": [0,0,0], "r": 1, "sides": 12},
+    {"op": "pushPull", "face": {"last": true}, "d": 2},
+    {"op": "soften", "edges": {"all": true}, "deg": 0},
+    {"op": "soften", "edges": {"all": true}, "deg": 45},
+    {"op": "soften", "edges": {"all": true}, "deg": 95}
+  ]},
+  {"name": "intersect faces: two boxes in each other", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 2, "h": 2},
+    {"op": "pushPull", "face": {"last": true}, "d": 2},
+    {"op": "group", "sel": {"all": "everything"}},
+    {"op": "rect", "p": [1,1,1], "w": 2, "h": 2},
+    {"op": "pushPull", "face": {"last": true}, "d": 2},
+    {"op": "intersect", "sel": {"all": "faces"}},
+    {"op": "intersect", "sel": {"all": "faces"}, "others": "selection"}
+  ]},
+  {"name": "the solid checker and its fixes", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "reverse", "faces": [{"facing": [1,0,0]}]},
+    {"op": "edge", "p": [3,0,0], "q": [4,0,0]},
+    {"op": "solidProblems"},
+    {"op": "fixSolid"},
+    {"op": "solidProblems"},
+    {"op": "erase", "sel": [{"t": "f", "id": {"facing": [0,0,1]}}]},
+    {"op": "solidProblems"},
+    {"op": "fixSolid"},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "dimensions that resize", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 4, "h": 2},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "dim", "a": [0,0,0], "b": [4,0,0], "off": [0,-1,0]},
+    {"op": "dimLength", "dim": 1, "L": 5},
+    {"op": "dimLength", "dim": 1, "L": -1},
+    {"op": "edgeLength", "edge": {"between": [[0,0,1],[0,2,1]]}, "L": 3},
+    {"op": "group", "sel": {"all": "everything"}},
+    {"op": "defSize", "def": "d2", "axis": 2, "size": 2.5},
+    {"op": "defSize", "def": "d2", "axis": 2, "size": 0},
+    {"op": "dim", "a": [0,0,0], "b": [9,9,9]},
+    {"op": "guideLine", "p": [0,0,0], "d": [0,0,2]},
+    {"op": "guidePoint", "p": [1,1,1]}
+  ]},
+  {"name": "radius, diameter and angle dimensions", "units": "m", "steps": [
+    {"op": "ngon", "c": [0,0,0], "r": 1, "sides": 24, "curve": "circle"},
+    {"op": "radialDim", "curve": "circle:50", "off": [1,1,0]},
+    {"op": "radialDim", "curve": "circle:50", "off": [1,1,0], "kind": "dia"},
+    {"op": "radialDim", "curve": "nope:1", "off": [1,1,0]},
+    {"op": "dimLength", "dim": 2, "L": 4},
+    {"op": "dimLength", "dim": 1, "L": 1.5},
+    {"op": "edge", "p": [5,0,0], "q": [7,0,0]},
+    {"op": "edge", "p": [5,0,0], "q": [5,2,0]},
+    {"op": "angleDim", "o": [5,0,0], "a": [7,0,0], "b": [5,2,0], "off": [0.5,0.5,0]},
+    {"op": "dimLength", "dim": 3, "L": 1},
+    {"op": "change", "label": "Radius", "steps": [{"op": "dimLength", "dim": 1, "L": 0.5}]},
+    {"op": "undo"}
+  ]},
+  {"name": "tags, sections, axes, lights, what scenes show", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "group", "sel": {"all": "everything"}},
+    {"op": "addTag", "name": "Walls"},
+    {"op": "addTag", "name": "walls"},
+    {"op": "addTag"},
+    {"op": "setTag", "insts": [10], "name": "Walls"},
+    {"op": "setTag", "insts": [10], "name": "Nope"},
+    {"op": "renameTag", "old": "walls", "name": "Wall"},
+    {"op": "renameTag", "old": "Wall", "name": "walls 2"},
+    {"op": "tagHidden", "name": "Wall", "hidden": true},
+    {"op": "tagCounts"},
+    {"op": "captureVis"},
+    {"op": "deleteTag", "name": "Wall"},
+    {"op": "section", "p": [0.5,0.5,0.5], "n": [0,0,2]},
+    {"op": "section", "p": [0.5,0.5,0.5], "n": [1,0,0], "name": "Cut\u0007 A"},
+    {"op": "deleteSection", "id": 3},
+    {"op": "axes", "o": [1,2,0], "x": [0,1,0], "y": [-1,0,0]},
+    {"op": "axes", "o": [0,0,0], "x": [1,0,0], "y": [2,0,0]},
+    {"op": "light", "light": {"kind": "spot", "p": [1,1,3], "dir": [0,0,-5], "lumens": 1e9, "angle": 2, "color": "#ABCDEF", "name": "Lamp"}},
+    {"op": "light", "light": {"kind": "candle", "p": [0,0,0]}},
+    {"op": "setLight", "id": 4, "patch": {"on": false, "size": [100, 0.001]}},
+    {"op": "deleteLight", "id": 4},
+    {"op": "hide", "sel": [{"t": "i", "id": 10}]},
+    {"op": "captureVis"},
+    {"op": "applyVis", "vis": {"insts": [], "tags": [], "section": 2, "cuts": false}},
+    {"op": "resetAxes"}
+  ]},
+  {"name": "clipboard: copy, paste, a component kept, refusals", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "group", "sel": {"all": "everything"}, "kind": "component", "name": "Cube"},
+    {"op": "rect", "p": [3,0,0], "w": 1, "h": 2},
+    {"op": "copyClip", "sel": {"all": "everything"}},
+    {"op": "pasteClip", "m": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,5,0,1]},
+    {"op": "pasteClip", "clip": {"format": "x"}},
+    {"op": "pasteClip", "m": [1,2,3]},
+    {"op": "copyClip", "sel": []},
+    {"op": "moveInto", "from": [], "inst": 27, "to": []},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "outliner: a group moved into another, and into itself", "units": "m", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "group", "sel": {"all": "faces"}},
+    {"op": "rect", "p": [3,0,0], "w": 1, "h": 1},
+    {"op": "group", "sel": [{"t": "f", "id": {"last": true}}]},
+    {"op": "moveInto", "from": [], "inst": 20, "to": [10]},
+    {"op": "moveInto", "from": [], "inst": 10, "to": [10]},
+    {"op": "moveInto", "from": [], "inst": 99, "to": []}
+  ]},
+  {"name": "imports: meshDef with holes, colours, a bent quad, segments; edgesDef", "units": "m", "steps": [
+    {"op": "meshDef", "name": "Mesh", "place": true, "polys": [
+      {"loops": [[[0,0,0],[4,0,0],[4,4,0],[0,4,0]], [[1,1,0],[2,1,0],[2,2,0],[1,2,0]]], "color": "#123456"},
+      [[0,0,0],[4,0,0],[4,0,1],[0,0,1]],
+      [[0,0,0],[0,4,0],[0,4,1],[0,0,1.3]],
+      [[5,5,5],[5,5,5],[5,5,5]]
+    ], "segs": [[[0,0,0],[0,0,5]], [[0,0,0],[0,0,0]]]},
+    {"op": "edgesDef", "name": "Site", "place": true, "segs": [[[0,0,0],[10,0,0]], [[10,0,0],[10,0.000001,0]]]},
+    {"op": "solidInfo", "path": [1]},
+    {"op": "worldTriangles"}
+  ]}
+ ]}

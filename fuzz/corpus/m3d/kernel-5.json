@@ -1,0 +1,1 @@
+{"name":"a lone face pushed down","steps":[{"op":"rect","p":[0,0,0],"w":2,"h":2},{"op":"pushPull","face":{"last":true},"d":-1},{"op":"solidInfo"}]}

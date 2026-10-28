@@ -98,3 +98,8 @@ with `civil`. The test `civil.golden: …` replays the scripts and compares; the
 model, the refusals, the ZIP faults, a few cuts), each `<name>.skp` with the frozen readSkp's answer `<name>.json` (its
 model, bytes as {"$base64": …}, or its error {code, message}). Synthetic bytes only. Made with
 `node tools/gen/skp-fixtures.mjs`. The test `io-skp.golden` compares; the corpus check (27 files) is the parity kit's.
+`js-0.5-m3d.tar.gz` — CadCraft 0.5's ModelCraft kernel (assets/apps/modelcraft/dev/model.js) on every model script in
+`tests/m3d/` (hand-written: kernel.json, features.json; seeded: random.json from tools/parity/m3d-gen.mjs --seeds 1-10
+--per 10): each step's result or error words and the model after it, canonical (`m3d/<file name>`). Made with
+`node tools/parity/m3d.mjs tests/m3d/*.json --golden-out <dir>/m3d`, then the same `tar` line with `m3d`. The test
+`m3d.golden: …` replays them.

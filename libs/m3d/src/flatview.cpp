@@ -43,7 +43,7 @@ void collect(const Model& model, const Frame& V, std::vector<Tri>& tris, std::ve
       if (const auto it = P.find(vid); it != P.end()) {
         return it->second;
       }
-      const Vec3 p = apply(m, def.vert(vid));
+      const Vec3 p = m3d::apply(m, def.vert(vid));
       const Vec3 q{dot(p, V.u), dot(p, V.v), dot(p, V.w)};
       P.emplace(vid, q);
       return q;
@@ -51,12 +51,12 @@ void collect(const Model& model, const Frame& V, std::vector<Tri>& tris, std::ve
     std::unordered_map<std::int64_t, double> facing;  // face id → its normal · w (toward the viewer > 0)
     std::map<std::pair<std::int64_t, std::int64_t>, std::vector<std::int64_t>> by_edge;
     for (const auto& [fid, f] : def.faces.items()) {
-      for (const auto& tr : face_tris(def, f)) {
+      for (const auto& tr : face_tris(def, f, Kernel::cadcraft)) {
         tris.push_back({at(tr[0]), at(tr[1]), at(tr[2])});
       }
       const Vec3 n = face_normal(def, f);
-      const Vec3 o = apply(m, {0, 0, 0});
-      const Vec3 e = apply(m, n);
+      const Vec3 o = m3d::apply(m, {0, 0, 0});
+      const Vec3 e = m3d::apply(m, n);
       facing[fid] = dot({e[0] - o[0], e[1] - o[1], e[2] - o[2]}, V.w);
       for (const auto& l : f.loops) {
         for (std::size_t i = 0; i < l.size(); ++i) {

@@ -1,0 +1,1 @@
+{"name":"a stretched vertex folds a face","steps":[{"op":"rect","p":[0,0,0],"w":2,"h":2},{"op":"move","sel":[{"t":"e","id":{"between":[[2,0,0],[2,2,0]]}}],"by":[0,0,1]},{"op":"solidInfo"}]}

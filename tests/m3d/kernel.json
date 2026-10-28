@@ -1,0 +1,107 @@
+{"about": "The kernel's edits, after bin/test-modelcraft.mjs (0.5): edges make faces, holes, push/pull, undo.",
+ "scripts": [
+  {"name": "edges make faces, a split, a dangling line, erasing merges", "steps": [
+    {"op": "edge", "p": [0,0,0], "q": [4,0,0]},
+    {"op": "edge", "p": [4,0,0], "q": [4,3,0]},
+    {"op": "edge", "p": [4,3,0], "q": [0,3,0]},
+    {"op": "edge", "p": [0,3,0], "q": [0,0,0]},
+    {"op": "edge", "p": [2,0,0], "q": [2,3,0]},
+    {"op": "edge", "p": [1,1.5,0], "q": [1.5,1.5,0]},
+    {"op": "eraseEdges", "edges": [{"between": [[2,0,0],[2,3,0]]}]},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "holes: a rectangle and a circle inside a face", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 10, "h": 10},
+    {"op": "rect", "p": [3,3,0], "w": 2, "h": 2},
+    {"op": "ngon", "c": [7,7,0], "r": 1, "sides": 24, "curve": "circle"},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "push/pull: box, taller, back, to zero", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 4, "h": 3},
+    {"op": "pushPull", "face": {"last": true}, "d": 2.5},
+    {"op": "solidInfo"},
+    {"op": "pushPull", "face": {"facing": [0,0,1]}, "d": 1.5},
+    {"op": "pushPull", "face": {"facing": [0,0,1]}, "d": -1.5},
+    {"op": "pushPull", "face": {"facing": [0,0,1]}, "d": -10},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "a window pushed through a wall", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 4, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 3},
+    {"op": "rect", "p": [1,0,0.5], "u": [1,0,0], "v": [0,0,1], "w": 1, "h": 1.5},
+    {"op": "pushPull", "face": {"facing": [0,-1,0], "area": 1.5}, "d": -5},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "a bump, pushed back, a recess", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 4, "h": 4},
+    {"op": "pushPull", "face": {"last": true}, "d": 2},
+    {"op": "rect", "p": [1,1,2], "w": 2, "h": 2},
+    {"op": "pushPull", "face": {"facing": [0,0,1], "area": 4}, "d": 1},
+    {"op": "pushPull", "face": {"facing": [0,0,1], "area": 4, "nth": 0}, "d": -1},
+    {"op": "pushPull", "face": {"facing": [0,0,1], "area": 4}, "d": -0.5},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "a lone face pushed down", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 2, "h": 2},
+    {"op": "pushPull", "face": {"last": true}, "d": -1},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "undo, redo and a live preview", "steps": [
+    {"op": "change", "label": "Rectangle", "steps": [{"op": "rect", "p": [0,0,0], "w": 4, "h": 3}]},
+    {"op": "change", "label": "Push/pull", "steps": [{"op": "pushPull", "face": {"last": true}, "d": 2}]},
+    {"op": "undo"}, {"op": "undo"}, {"op": "undo"},
+    {"op": "redo"}, {"op": "redo"},
+    {"op": "begin"},
+    {"op": "preview", "steps": [{"op": "pushPull", "face": {"facing": [0,0,1]}, "d": 0.5}]},
+    {"op": "preview", "steps": [{"op": "pushPull", "face": {"facing": [0,0,1]}, "d": 1}]},
+    {"op": "preview", "steps": [{"op": "pushPull", "face": {"facing": [0,0,1]}, "d": 1.5}]},
+    {"op": "commit", "label": "Push/pull"},
+    {"op": "solidInfo"},
+    {"op": "undo"},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "an L-shape and a corner pad", "steps": [
+    {"op": "polygon", "pts": [[0,0,0],[4,0,0],[4,1,0],[1,1,0],[1,3,0],[0,3,0]]},
+    {"op": "pushPull", "face": {"last": true}, "d": 2.5},
+    {"op": "rect", "p": [3,0,0], "u": [1,0,0], "v": [0,0,1], "w": 1, "h": 1},
+    {"op": "pushPull", "face": {"facing": [0,-1,0], "area": 1}, "d": 0.5},
+    {"op": "solidInfo"}, {"op": "solidProblems"}
+  ]},
+  {"name": "move, rotate, scale, copy", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 2, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "move", "sel": {"all": "everything"}, "by": [1,2,0]},
+    {"op": "rotate", "sel": {"all": "everything"}, "axis": [0,0,1], "deg": 90, "about": [1,2,0]},
+    {"op": "scale", "sel": {"all": "everything"}, "s": 2, "about": [0,0,0]},
+    {"op": "copy", "sel": {"all": "everything"}, "by": [10,0,0]},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "a stretched vertex folds a face", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 2, "h": 2},
+    {"op": "move", "sel": [{"t": "e", "id": {"between": [[2,0,0],[2,2,0]]}}], "by": [0,0,1]},
+    {"op": "solidInfo"}
+  ]},
+  {"name": "groups and components", "steps": [
+    {"op": "rect", "p": [0,0,0], "w": 1, "h": 1},
+    {"op": "pushPull", "face": {"last": true}, "d": 1},
+    {"op": "group", "sel": {"all": "everything"}, "kind": "component", "name": "Box"},
+    {"op": "place", "def": "d1", "m": [1,0,0,0, 0,1,0,0, 0,0,1,0, 3,0,0,1]},
+    {"op": "place", "def": "d1", "m": [0,1,0,0, -1,0,0,0, 0,0,1,0, 6,0,0,1]},
+    {"op": "rect", "path": [27], "p": [0.25,0.25,1], "w": 0.5, "h": 0.5},
+    {"op": "pushPull", "path": [27], "face": {"facing": [0,0,1], "area": 0.25}, "d": 0.5},
+    {"op": "makeUnique", "inst": 28},
+    {"op": "explode", "inst": 29},
+    {"op": "purge"},
+    {"op": "worldTriangles"}
+  ]},
+  {"name": "files: tampered and good", "steps": [
+    {"op": "load", "json": {"format": "nope"}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 2, "defs": []}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 1, "defs": []}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 1, "defs": [{"id": "d1", "kind": "group", "verts": [], "edges": [], "faces": [], "insts": []}]}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 1, "defs": [{"id": "root", "verts": [[1, 0, 0, 0]], "edges": [[2, 1, 7]]}]}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 1, "defs": [{"id": "root", "insts": [{"id": 1, "def": "d1", "m": [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]}]}, {"id": "d1", "insts": [{"id": 1, "def": "d1", "m": [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]}]}]}},
+    {"op": "load", "json": {"format": "modelcraft", "version": 1, "units": "mm", "nextId": 3, "defs": [{"id": "root", "name": "My\u0001 model", "next": 2, "verts": [[1,0,0,0],[2,1,0,0],[3,1,1,0],[4,0,1,0]], "edges": [[5,1,2,1],[6,2,3,0,"arc:9"]], "faces": [{"id": 7, "loops": [[1,2,3,4]], "color": "#AABBCC"}], "insts": [{"id": 8, "def": "d2", "m": [1,0,0,0,0,1,0,0,0,0,1,0,5,5,0,1], "name": "Thing", "tag": "Walls"}]}, {"id": "d2", "kind": "component", "verts": [], "edges": [], "faces": [], "insts": []}], "guides": [{"id": 9, "kind": "line", "p": [0,0,0], "d": [0,0,3]}, {"id": "x"}], "scenes": [{"name": "One", "cam": {"eye": [10,10,10], "target": [0,0,0]}, "style": {"mode": "wire", "sun": {"month": 13}}}], "tags": [{"name": "walls"}, {"name": "Roof", "hidden": true}]}},
+    {"op": "solidInfo"}
+  ]}
+ ]}

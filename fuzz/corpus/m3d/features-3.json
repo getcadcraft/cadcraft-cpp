@@ -1,0 +1,1 @@
+{"name":"a circle offsets to a circle","units":"m","steps":[{"op":"ngon","c":[2,1.5,0],"r":1,"sides":24,"curve":"circle"},{"op":"offsetFace","face":{"last":true},"d":0.25},{"op":"curveInfo","curve":"circle:50"}]}

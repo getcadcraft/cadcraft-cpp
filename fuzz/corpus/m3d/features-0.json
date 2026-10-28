@@ -1,0 +1,1 @@
+{"name":"an arc, closed by a line, its radius changed","units":"m","steps":[{"op":"arc","c":[2,0,0],"u":[1,0,0],"r":2,"sweep":180,"segs":12},{"op":"edge","p":[0,0,0],"q":[4,0,0]},{"op":"curveInfo","curve":"arc:26"},{"op":"change","label":"Radius","steps":[{"op":"curveRadius","curve":"arc:26","r":3}]},{"op":"curveInfo","curve":"arc:26"},{"op":"undo"}]}

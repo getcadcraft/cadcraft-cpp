@@ -1,0 +1,1 @@
+{"name":"a window pushed through a wall","steps":[{"op":"rect","p":[0,0,0],"w":4,"h":1},{"op":"pushPull","face":{"last":true},"d":3},{"op":"rect","p":[1,0,0.5],"u":[1,0,0],"v":[0,0,1],"w":1,"h":1.5},{"op":"pushPull","face":{"facing":[0,-1,0],"area":1.5},"d":-5},{"op":"solidInfo"}]}

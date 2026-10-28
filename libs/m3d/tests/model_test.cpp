@@ -84,3 +84,58 @@ TEST_CASE("an empty model writes nothing") {
   const cc::m3d::Model m;
   CHECK_FALSE(cc::m3d::for_file3d(m, "").has_value());
 }
+
+// Fuzz target m3d, 2026-10-21 (fuzz/corpus/m3d/regress-00521f74bbbe): a polygon of no points read pts[0] past the end,
+// and a closed curve of no points divided by zero.
+TEST_CASE("the kernel takes empty polygons and curves without reading past them") {
+  cc::m3d::Model m;
+  CHECK(cc::m3d::add_polygon(m.root(), std::vector<cc::m3d::Vec3>{}).empty());
+  CHECK(cc::m3d::tag_curve(m.root(), std::vector<cc::m3d::Vec3>{}, "circle", true) == "circle:1");
+  CHECK(cc::m3d::ngon_pts({0, 0, 0}, {0, 0, 1}, {1, 0, 0}, 1, 0).empty());
+}
+
+// Fuzz target m3d, 2026-10-22 (fuzz/corpus/m3d/regress-timeout-section): with no words set, every section plane's
+// default name is the same key, and looking for a free one never ended.
+TEST_CASE("section planes get a name without the catalog") {
+  cc::m3d::set_words(nullptr);
+  cc::m3d::Model m;
+  (void)m.add_section({0, 0, 0}, {0, 0, 1});
+  (void)m.add_section({0, 0, 0}, {0, 0, 1});
+  CHECK(m.sections.size() == 2);
+}
+
+// Fuzz target m3d, 2026-10-27 (fuzz/corpus/m3d/regress-restore-*): a model holding a placement of a definition that is
+// not there cannot be restored from its own snapshot; the failed restore moved the definitions out first and left
+// null ones behind, which the next edit dereferenced. Now the model keeps every definition it had.
+TEST_CASE("a refused restore leaves the model as it was") {
+  cc::m3d::Model m;
+  (void)m.place(m.root(), "d99", cc::m3d::ident());  // a placement of nothing
+  // the JS's restore throws here too (its load refuses the snapshot); the edit guard reports it
+  CHECK_THROWS((void)m.change("x", [](cc::m3d::Model& /*mm*/) {
+    return cc::base::Result<void>(cc::base::fail(cc::base::Errc::invalid, "no"));
+  }));
+  CHECK(m.def("root") != nullptr);
+  CHECK(m.root().insts.size() == 1);
+}
+
+// Fuzz target m3d, 2026-10-27: a definition placed twice inside each of 32 levels makes 2^32 placements; a walk stops
+// after 250,000 of them (docs/gaps.md) instead of running for hours.
+TEST_CASE("a walk over an exponential nesting stops at its budget") {
+  cc::m3d::Model m;
+  std::string inner;
+  for (int level = 0; level < 32; ++level) {
+    cc::m3d::Def& d = m.new_def("group");
+    if (inner.empty()) {
+      (void)cc::m3d::v_add(d, {0, 0, 0});
+    } else {
+      (void)m.place(d, inner, cc::m3d::ident());
+      (void)m.place(d, inner, cc::m3d::translation({1, 0, 0}));
+    }
+    inner = d.id;
+  }
+  (void)m.place(m.root(), inner, cc::m3d::ident());
+  std::size_t visits = 0;
+  m.walk([&](const cc::m3d::Def& /*d*/, const cc::m3d::Mat4& /*m*/) { ++visits; });
+  CHECK(visits <= 250001);
+  CHECK(visits > 1000);
+}

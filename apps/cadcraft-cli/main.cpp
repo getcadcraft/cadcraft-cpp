@@ -122,6 +122,7 @@ void usage(std::FILE* out) {
       "  manifold <cases.json>               SolidOps parity cases (tools/parity/manifold.mjs)\n"
       "  part <script.json>                  PartCraft / lib/shapes call scripts (tools/parity/part.mjs)\n"
       "  ifc-model <file.ifc>                cc-ifc model.js facts and edits (tools/parity/ifc-model.mjs)\n"
+      "  m3d-script <scripts.json>           ModelCraft model scripts (tools/parity/m3d.mjs), one JSON line each\n"
       "  version                             print the version\n");
 }
 

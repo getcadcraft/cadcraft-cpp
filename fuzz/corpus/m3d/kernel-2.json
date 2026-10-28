@@ -1,0 +1,1 @@
+{"name":"push/pull: box, taller, back, to zero","steps":[{"op":"rect","p":[0,0,0],"w":4,"h":3},{"op":"pushPull","face":{"last":true},"d":2.5},{"op":"solidInfo"},{"op":"pushPull","face":{"facing":[0,0,1]},"d":1.5},{"op":"pushPull","face":{"facing":[0,0,1]},"d":-1.5},{"op":"pushPull","face":{"facing":[0,0,1]},"d":-10},{"op":"solidInfo"}]}

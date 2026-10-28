@@ -1,0 +1,1 @@
+{"name":"holes: a rectangle and a circle inside a face","steps":[{"op":"rect","p":[0,0,0],"w":10,"h":10},{"op":"rect","p":[3,3,0],"w":2,"h":2},{"op":"ngon","c":[7,7,0],"r":1,"sides":24,"curve":"circle"},{"op":"solidInfo"}]}

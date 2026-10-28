@@ -704,3 +704,26 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   side (default half the logical cores, at most 8; CI sets 4), one process each, and reports every failing target, not
   only the first. CI uploads the crashing and hanging inputs (fuzz-findings-<run>, kept 30 days) when the fuzz job fails:
   twice a nightly's input was lost and had to be found again.
+- M6.2 (2026-10-28): the ModelCraft kernel, model.js of 0.5 (ModelCraft's copy), ported function for function into
+  libs/m3d: vec.js; definitions with JS Map / Set semantics (idmap.hpp: insertion order, a deleted key set again goes
+  to the end, loops see what is added during them, which decides face ids and the order faces are re-made in);
+  edges and re-facing, clean-up, push/pull, erasing, transforms, stretch, copy, curves, smooth curves, offset, follow
+  me, flip, hide, paint (colours, materials, image paints), soften, intersect faces, the solid checker; the Model:
+  groups and components, explode, make unique, purge, the clipboard, guides, dimensions that resize (linear, radial,
+  angle), tags, sections, axes, lights, scenes' visibility, images, undo as per-definition JSON snapshots (a
+  definition whose JSON did not change keeps its object, as the JS's Snap), toJSON / load with every check of an
+  untrusted file (the containment check iterative). CadCraft's 3D tab keeps its older copy's faceTris
+  (`Kernel::cadcraft`). Parity: tools/parity/m3d.mjs runs model scripts (kernel calls with selectors; the model's file
+  form compared after every step, with each step's result or error words) through the frozen kernel and `cadcraft-cli
+  m3d-script`: tests/m3d (kernel.json and features.json after bin/test-modelcraft.mjs's kernel sections, random.json
+  from tools/parity/m3d-gen.mjs) 130 / 130, and 1,200 more seeded scripts 1,200 / 1,200. The harness found that an
+  edit outside change() must bump `version` in the JS (else the kernel's kept definition JSON is stale and the next
+  change() records a step that changed nothing): the script runner does, as the app does. Golden
+  tests/golden/js-0.5-m3d.tar.gz, replayed by `m3d.golden`. Fuzz target `m3d` (a native file through load, or a
+  script of up to 40 edits): it found unchecked float-to-integer casts on huge numbers (now checked), a polygon of no
+  points read past its end, and an endless search for a free section name when no catalog is loaded (bounded);
+  a failed undo restore that moved the definitions out first and left null ones (it now restores into copies), and
+  hostile files and scripts whose cost is exponential or that make NaN points as the JS does (a walk visits at most
+  250,000 placements; the fuzz budget stops a script past 4,000 elements or at a NaN point); regression tests and
+  fuzz/corpus/m3d/regress-*; then 10.5 minutes × 4 workers clean. `cadcraft-cli m3d-script` writes NaN as null, as
+  JSON.stringify does (a NaN case is checked: 131 / 131).
