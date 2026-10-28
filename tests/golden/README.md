@@ -84,7 +84,7 @@ piece flag, the routines' commands and the defun c:… names reported, canonical
 `node tools/parity/lisp.mjs tests/lisp/*.json --golden-out <dir>/lisp`, then the same `tar` line with `lisp`. The test
 `lisp.golden: the LISP sessions …` replays the sessions against them.
 `js-0.5-part.tar.gz` — the frozen 0.5 modules' answers to the part call scripts (tools/parity/part/driver.mjs), `part/<generator>.json` = [{script, js}] with js canonical. Made with `node tools/parity/part.mjs --only
-shapes,expr,params,configs,gdt,bom,threads,form,spline,sketch,part --seed 1 --golden-out <dir>/part` (then drop `shapes-all.json`, the whole table, which the parity run checks),
+shapes,expr,params,configs,gdt,bom,threads,form,spline,sketch,part,vec,refgeom --seed 1 --golden-out <dir>/part` (then drop `shapes-all.json`, the whole table, which the parity run checks),
 then the same `tar` line with `part`. The test `partcraft.golden: …` replays every script through run_script and
 compares; the full check is `node tools/parity/part.mjs --seeds 1-30 --exact`.
 `js-0.5-civil.tar.gz` — CivilCraft 0.5's DOM-free modules (units.js, points.js, tin.js, … as they are ported) run on

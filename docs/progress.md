@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -758,3 +758,7 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   readers wait for their workspaces (0.5's parity driver loads none either). params-part.js is checked through it (pp.*
   ops: targets, apply with overrides and the sketch re-solve, links, drive back, report, rollback). Parity gen-part:
   53 191 / 53 191 calls at 1e-9, seeds 1–30, the file text byte for byte; exact all but 3 (log / exp, gaps #12).
+- M8.5 (2026-10-27): vec.js (frames, column-major matrices, rotations and reflections, the dense solver, fmt) as a
+  header in libs/partcraft, and refgeom.js (reference planes, axes and points from what they reference, through the
+  caller's resolvers: the mesh kernel's next, the parity driver's tables now). Parity gen-vec + gen-refgeom: 17 845 /
+  17 845 calls, seeds 1–30, exact (zero tolerance).
