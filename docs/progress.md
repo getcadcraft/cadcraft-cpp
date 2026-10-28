@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -581,6 +581,15 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   byte for byte: the 4 handshake cases (messages, confirmations, keys, frames, rekey, exporter), codes, links and room
   tags, plus test-live-crypto.mjs's checks (wrong codes and contexts, tampered / replayed / reflected frames): 294
   assertions. Fuzz target live_frame (frames into both ends of a real session).
+- M13.3 (2026-10-28, W6): the MCP dispatcher, `libs/mcp` (L2): host.js "mcp-core" ported — initialize / tools/list /
+  tools/call / ping, the tool table with titles and groups (read, edit, save, export; a call outside the allowed groups
+  is refused as 0.5 refuses it), `check_schema` with 0.5's own quirks (names Object.prototype has count as present;
+  patterns in the 'u' flag; defaults filled), the activity log, every answer as JSON.stringify(…, null, 1). The headless
+  side of tools/mcp: `Env` (the --root folders by real path, a write never outside them, `files_list`, `doc_close`) and
+  `cadcraft-cli mcp` (server.mjs: newline JSON-RPC on stdio, --root / --allow / --log / CADCRAFT_MCP_ROOTS). The apps'
+  own tools register in apps/cadcraft-cli/mcp_server.cpp in 0.5's order (W1, W3, W5 add theirs there). Golden: the
+  frozen dispatcher answering a 40-message script on a fixed clock (tools/gen/mcp-dispatcher.mjs → tests/golden/
+  js-0.5-mcp-dispatcher.json): 40/40 answers, 17/17 log lines, 23/23 schema cases. Fuzz target mcp (the script as seeds).
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 

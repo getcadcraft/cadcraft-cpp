@@ -1,0 +1,1 @@
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"echo","arguments":{"doc":"x1","colour":"#12345g","count":0,"ratio":2,"name":"a","kind":"c","fixed":false,"pts":[1,"b",3,4],"extra":1,"any":3}}}

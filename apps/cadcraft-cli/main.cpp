@@ -89,6 +89,7 @@
 #include "cc/save/dwg.hpp"
 #include "cc/save/dxf.hpp"
 #include "cc/skp/skp.hpp"
+#include "mcp_server.hpp"
 
 namespace {
 
@@ -104,6 +105,7 @@ void usage(std::FILE* out) {
       "                                      (--isolated: parse in the sandboxed import helper)\n"
       "  parity <engine> <file>              engine output for the parity kit (engines: dwg, dxf, ifc-step, skp)\n"
       "  bench <engine> <file> [--runs N]    in-process timings for the parity kit\n"
+      "  mcp --root <folder> [--allow …]     CadCraft's MCP server over stdio (mcp --help)\n"
       "  compile <file> --json | --bench N   the 2D view's draw lists (DWG or DXF)\n"
       "  import <file.dwg>                   CadCraft's drawing (what the app's document loads) as JSON\n"
       "  doc <file.dwg>                      the document after loading that drawing, as JSON\n"
@@ -1517,6 +1519,12 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "ifc-model" && args.size() == 3) {
     return cmd_ifc_model(std::filesystem::path(args[2]));
+  if (cmd == "mcp") {
+    std::vector<std::string> rest;
+    for (std::size_t i = 2; i < args.size(); ++i) {
+      rest.emplace_back(args[i]);
+    }
+    return cc::cli::run_mcp(rest);
   }
   if (cmd == "parity" && args.size() == 4) {
     return cmd_parity(args[2], std::filesystem::path(args[3]));

@@ -1,0 +1,1790 @@
+{
+ "about": "CadCraft 0.5 host.js mcp-core on tools/gen/mcp-dispatcher.mjs (frozen js-0.5)",
+ "t0": 1792108800000,
+ "step": 7,
+ "script": [
+  {
+   "jsonrpc": "2.0",
+   "id": 1,
+   "method": "initialize",
+   "params": {
+    "protocolVersion": "2025-06-18",
+    "clientInfo": {
+     "name": "Test client",
+     "version": "1.2"
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "method": "notifications/initialized"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 2,
+   "method": "tools/list"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 3,
+   "method": "ping"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 4,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": {
+     "doc": "d12",
+     "count": 3,
+     "pts": [
+      1,
+      2
+     ],
+     "shape": "abc",
+     "any": null
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 5,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": {
+     "doc": "x1",
+     "colour": "#12345g",
+     "count": 0,
+     "ratio": 2,
+     "name": "a",
+     "kind": "c",
+     "fixed": false,
+     "pts": [
+      1,
+      "b",
+      3,
+      4
+     ],
+     "extra": 1,
+     "any": 3
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 6,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": {
+     "doc": "d1",
+     "shape": {
+      "w": 2
+     }
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 7,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": {
+     "doc": "d1",
+     "shape": {
+      "h": 1
+     }
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 8,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": {
+     "doc": "d1",
+     "count": 2.5,
+     "toString": 1,
+     "constructor": "x"
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 9,
+   "method": "tools/call",
+   "params": {
+    "name": "echo",
+    "arguments": []
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 10,
+   "method": "tools/call",
+   "params": {
+    "name": "echo"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 11,
+   "method": "tools/call",
+   "params": {
+    "name": "plain",
+    "arguments": {
+     "a": 1
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 12,
+   "method": "tools/call",
+   "params": {
+    "name": "nothing"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 13,
+   "method": "tools/call",
+   "params": {
+    "name": "loose",
+    "arguments": {
+     "a": 1,
+     "b": "two",
+     "c": 3
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 14,
+   "method": "tools/call",
+   "params": {
+    "name": "loose",
+    "arguments": {
+     "a": "one",
+     "b": "two"
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 15,
+   "method": "tools/call",
+   "params": {
+    "name": "fails"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 16,
+   "method": "tools/call",
+   "params": {
+    "name": "refuses"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 17,
+   "method": "tools/call",
+   "params": {
+    "name": "soft_error"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 18,
+   "method": "tools/call",
+   "params": {
+    "name": "picture"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 19,
+   "method": "tools/call",
+   "params": {
+    "name": "nope"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 20,
+   "method": "tools/call",
+   "params": {}
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 21,
+   "method": "tools/call",
+   "params": {
+    "name": "long_args",
+    "arguments": {
+     "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "many": {
+      "k0": 0,
+      "k1": 1,
+      "k2": 2,
+      "k3": 3,
+      "k4": 4,
+      "k5": 5,
+      "k6": 6,
+      "k7": 7,
+      "k8": 8,
+      "k9": 9,
+      "k10": 10,
+      "k11": 11,
+      "k12": 12,
+      "k13": 13,
+      "k14": 14,
+      "k15": 15,
+      "k16": 16,
+      "k17": 17,
+      "k18": 18,
+      "k19": 19,
+      "k20": 20,
+      "k21": 21,
+      "k22": 22,
+      "k23": 23,
+      "k24": 24
+     },
+     "deep": {
+      "a": {
+       "b": {
+        "c": 1
+       }
+      },
+      "list": [
+       [
+        1,
+        2
+       ],
+       [
+        3
+       ]
+      ]
+     }
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 22,
+   "method": "nope/nothing"
+  },
+  {
+   "jsonrpc": "2.0",
+   "method": "nope/note"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 23,
+   "method": "custom.echo",
+   "params": {
+    "q": 1
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 24,
+   "method": "app.info"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 25,
+   "method": "logging/setLevel",
+   "params": {
+    "level": "debug"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": "str",
+   "method": "control.hello",
+   "params": {
+    "client": {
+     "name": "script runner",
+     "version": 7
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 26,
+   "method": "tools.list"
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 27,
+   "method": "tools.call",
+   "params": {
+    "name": "plain"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 28,
+   "method": "tools.call",
+   "params": {
+    "nm": "plain"
+   }
+  },
+  {
+   "jsonrpc": "1.0",
+   "id": 29,
+   "method": "ping"
+  },
+  {
+   "id": 30
+  },
+  [
+   1,
+   2
+  ],
+  "text",
+  null,
+  {
+   "jsonrpc": "2.0",
+   "id": 31,
+   "result": {}
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": {
+    "x": 1
+   },
+   "method": 3
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 32,
+   "method": "initialize",
+   "params": {
+    "protocolVersion": "1999-01-01",
+    "clientInfo": "x"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 33,
+   "method": "initialize",
+   "params": []
+  }
+ ],
+ "answers": [
+  {
+   "jsonrpc": "2.0",
+   "id": 1,
+   "result": {
+    "protocolVersion": "2025-06-18",
+    "capabilities": {
+     "tools": {
+      "listChanged": true
+     },
+     "logging": {}
+    },
+    "serverInfo": {
+     "name": "cadcraft",
+     "title": "CadCraft",
+     "version": "0.5.0"
+    },
+    "instructions": "Test instructions."
+   }
+  },
+  null,
+  {
+   "jsonrpc": "2.0",
+   "id": 2,
+   "result": {
+    "tools": [
+     {
+      "name": "echo",
+      "title": "Echo",
+      "description": "Returns its arguments. (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {
+        "doc": {
+         "type": "string",
+         "pattern": "^d[0-9]{1,6}$"
+        },
+        "colour": {
+         "type": "string",
+         "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "count": {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 10
+        },
+        "ratio": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "name": {
+         "type": "string",
+         "minLength": 2,
+         "maxLength": 5
+        },
+        "kind": {
+         "enum": [
+          "a",
+          "b",
+          3
+         ]
+        },
+        "fixed": {
+         "const": true
+        },
+        "pts": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 3
+        },
+        "mode": {
+         "type": "string",
+         "default": "fast"
+        },
+        "shape": {
+         "anyOf": [
+          {
+           "type": "string",
+           "maxLength": 3
+          },
+          {
+           "type": "object",
+           "properties": {
+            "w": {
+             "type": "number",
+             "default": 1
+            }
+           },
+           "required": [
+            "h"
+           ],
+           "additionalProperties": false
+          }
+         ]
+        },
+        "any": {
+         "type": [
+          "string",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "doc"
+       ],
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "Echo",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "plain",
+      "title": "plain",
+      "description": "No schema; returns a number. (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "plain",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "nothing",
+      "title": "nothing",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "nothing",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "loose",
+      "title": "loose",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {
+        "a": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": {
+        "type": "string"
+       }
+      },
+      "annotations": {
+       "title": "loose",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "fails",
+      "title": "fails",
+      "description": " (Permission: edit.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "fails",
+       "readOnlyHint": false,
+       "destructiveHint": false,
+       "idempotentHint": false,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "refuses",
+      "title": "refuses",
+      "description": " (Permission: edit.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "refuses",
+       "readOnlyHint": false,
+       "destructiveHint": false,
+       "idempotentHint": false,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "soft_error",
+      "title": "soft_error",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "soft_error",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "long_args",
+      "title": "long_args",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "long_args",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 3,
+   "result": {}
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 4,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "{\n \"doc\": \"d12\",\n \"count\": 3,\n \"pts\": [\n  1,\n  2\n ],\n \"shape\": \"abc\",\n \"any\": null,\n \"mode\": \"fast\"\n}"
+     }
+    ],
+    "structuredContent": {
+     "doc": "d12",
+     "count": 3,
+     "pts": [
+      1,
+      2
+     ],
+     "shape": "abc",
+     "any": null,
+     "mode": "fast"
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 5,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.doc is not in the expected form. arguments.colour is not in the expected form. arguments.count must be at least 1. arguments.ratio must be at most 1. arguments.name must have at least 2 characters. arguments.kind must be one of \"a\", \"b\", 3. arguments.fixed must be true. arguments.pts must have at most 3 items."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 6,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.shape does not match any of the allowed shapes."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 7,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.shape does not match any of the allowed shapes."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 8,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.count must be integer."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 9,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "arguments must be an object."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 10,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.doc is required."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 11,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.a is not a known argument."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 12,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "{\n \"ok\": true\n}"
+     }
+    ],
+    "structuredContent": {
+     "ok": true
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 13,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.c must be string."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 14,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.a must be integer."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 15,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "the drawing is locked"
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 16,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "not now"
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 17,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "{\n \"error\": \"no such layer\",\n \"isError\": true\n}"
+     }
+    ],
+    "structuredContent": {
+     "error": "no such layer",
+     "isError": true
+    },
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 18,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "picture needs the export permission, which is not allowed. Restart with --allow read,edit,export."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 19,
+   "error": {
+    "code": -32602,
+    "message": "Unknown tool: nope"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 20,
+   "error": {
+    "code": -32602,
+    "message": "tools/call needs a tool name."
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 21,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "Invalid arguments: arguments.s is not a known argument. arguments.many is not a known argument. arguments.deep is not a known argument."
+     }
+    ],
+    "isError": true
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 22,
+   "error": {
+    "code": -32601,
+    "message": "Method not found: nope/nothing"
+   }
+  },
+  null,
+  {
+   "jsonrpc": "2.0",
+   "id": 23,
+   "result": {
+    "p": {
+     "q": 1
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 24,
+   "result": {
+    "app": "cadcraft",
+    "version": "0.5.0",
+    "extra": 1
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 25,
+   "result": {}
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": "str",
+   "result": {
+    "app": "cadcraft",
+    "title": "CadCraft",
+    "version": "0.5.0",
+    "protocol": 1,
+    "tools": 8
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 26,
+   "result": {
+    "tools": [
+     {
+      "name": "echo",
+      "title": "Echo",
+      "description": "Returns its arguments. (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {
+        "doc": {
+         "type": "string",
+         "pattern": "^d[0-9]{1,6}$"
+        },
+        "colour": {
+         "type": "string",
+         "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "count": {
+         "type": "integer",
+         "minimum": 1,
+         "maximum": 10
+        },
+        "ratio": {
+         "type": "number",
+         "minimum": 0,
+         "maximum": 1
+        },
+        "name": {
+         "type": "string",
+         "minLength": 2,
+         "maxLength": 5
+        },
+        "kind": {
+         "enum": [
+          "a",
+          "b",
+          3
+         ]
+        },
+        "fixed": {
+         "const": true
+        },
+        "pts": {
+         "type": "array",
+         "items": {
+          "type": "number"
+         },
+         "minItems": 2,
+         "maxItems": 3
+        },
+        "mode": {
+         "type": "string",
+         "default": "fast"
+        },
+        "shape": {
+         "anyOf": [
+          {
+           "type": "string",
+           "maxLength": 3
+          },
+          {
+           "type": "object",
+           "properties": {
+            "w": {
+             "type": "number",
+             "default": 1
+            }
+           },
+           "required": [
+            "h"
+           ],
+           "additionalProperties": false
+          }
+         ]
+        },
+        "any": {
+         "type": [
+          "string",
+          "null"
+         ]
+        }
+       },
+       "required": [
+        "doc"
+       ],
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "Echo",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "plain",
+      "title": "plain",
+      "description": "No schema; returns a number. (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "plain",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "nothing",
+      "title": "nothing",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "nothing",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "loose",
+      "title": "loose",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {
+        "a": {
+         "type": "integer"
+        }
+       },
+       "additionalProperties": {
+        "type": "string"
+       }
+      },
+      "annotations": {
+       "title": "loose",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "fails",
+      "title": "fails",
+      "description": " (Permission: edit.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "fails",
+       "readOnlyHint": false,
+       "destructiveHint": false,
+       "idempotentHint": false,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "refuses",
+      "title": "refuses",
+      "description": " (Permission: edit.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "refuses",
+       "readOnlyHint": false,
+       "destructiveHint": false,
+       "idempotentHint": false,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "soft_error",
+      "title": "soft_error",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "soft_error",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     },
+     {
+      "name": "long_args",
+      "title": "long_args",
+      "description": " (Permission: read.)",
+      "inputSchema": {
+       "type": "object",
+       "properties": {},
+       "additionalProperties": false
+      },
+      "annotations": {
+       "title": "long_args",
+       "readOnlyHint": true,
+       "destructiveHint": false,
+       "idempotentHint": true,
+       "openWorldHint": false
+      }
+     }
+    ]
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 27,
+   "result": {
+    "content": [
+     {
+      "type": "text",
+      "text": "{\n \"result\": 42\n}"
+     }
+    ],
+    "structuredContent": {
+     "result": 42
+    }
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 28,
+   "error": {
+    "code": -32602,
+    "message": "tools.call needs a tool name."
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 29,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 30,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": null,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": null,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": null,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  null,
+  {
+   "jsonrpc": "2.0",
+   "id": null,
+   "error": {
+    "code": -32600,
+    "message": "Invalid request"
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 32,
+   "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {
+     "tools": {
+      "listChanged": true
+     },
+     "logging": {}
+    },
+    "serverInfo": {
+     "name": "cadcraft",
+     "title": "CadCraft",
+     "version": "0.5.0"
+    },
+    "instructions": "Test instructions."
+   }
+  },
+  {
+   "jsonrpc": "2.0",
+   "id": 33,
+   "result": {
+    "protocolVersion": "2025-11-25",
+    "capabilities": {
+     "tools": {
+      "listChanged": true
+     },
+     "logging": {}
+    },
+    "serverInfo": {
+     "name": "cadcraft",
+     "title": "CadCraft",
+     "version": "0.5.0"
+    },
+    "instructions": "Test instructions."
+   }
+  }
+ ],
+ "log": [
+  {
+   "time": "2026-10-16T00:00:00.035Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {
+    "doc": "d12",
+    "count": 3,
+    "pts": [
+     1,
+     2
+    ],
+    "shape": "abc",
+    "any": null
+   },
+   "outcome": "ok",
+   "undo": null,
+   "ms": 0
+  },
+  {
+   "time": "2026-10-16T00:00:00.042Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {
+    "doc": "x1",
+    "colour": "#12345g",
+    "count": 0,
+    "ratio": 2,
+    "name": "a",
+    "kind": "c",
+    "fixed": false,
+    "pts": [
+     1,
+     "b",
+     3,
+     4
+    ],
+    "extra": 1,
+    "any": 3
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.doc is not in the expected form. arguments.colour is not in the expected form. arguments.count must be at least 1. arguments.ratio must be at most 1. arguments.name must have at least 2 characters. arguments.kind must be one of \"a\", \"b\", 3. arguments.fixed must be true. "
+  },
+  {
+   "time": "2026-10-16T00:00:00.049Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {
+    "doc": "d1",
+    "shape": {
+     "w": 2
+    }
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.shape does not match any of the allowed shapes."
+  },
+  {
+   "time": "2026-10-16T00:00:00.056Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {
+    "doc": "d1",
+    "shape": {
+     "h": 1
+    }
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.shape does not match any of the allowed shapes."
+  },
+  {
+   "time": "2026-10-16T00:00:00.063Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {
+    "doc": "d1",
+    "count": 2.5,
+    "toString": 1,
+    "constructor": "x"
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.count must be integer."
+  },
+  {
+   "time": "2026-10-16T00:00:00.070Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": [],
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "arguments must be an object."
+  },
+  {
+   "time": "2026-10-16T00:00:00.077Z",
+   "client": "Test client",
+   "tool": "echo",
+   "group": "read",
+   "args": {},
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.doc is required."
+  },
+  {
+   "time": "2026-10-16T00:00:00.084Z",
+   "client": "Test client",
+   "tool": "plain",
+   "group": "read",
+   "args": {
+    "a": 1
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.a is not a known argument."
+  },
+  {
+   "time": "2026-10-16T00:00:00.091Z",
+   "client": "Test client",
+   "tool": "nothing",
+   "group": "read",
+   "args": {},
+   "outcome": "ok",
+   "undo": null,
+   "ms": 0
+  },
+  {
+   "time": "2026-10-16T00:00:00.098Z",
+   "client": "Test client",
+   "tool": "loose",
+   "group": "read",
+   "args": {
+    "a": 1,
+    "b": "two",
+    "c": 3
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.c must be string."
+  },
+  {
+   "time": "2026-10-16T00:00:00.105Z",
+   "client": "Test client",
+   "tool": "loose",
+   "group": "read",
+   "args": {
+    "a": "one",
+    "b": "two"
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.a must be integer."
+  },
+  {
+   "time": "2026-10-16T00:00:00.112Z",
+   "client": "Test client",
+   "tool": "fails",
+   "group": "edit",
+   "args": {},
+   "outcome": "error",
+   "undo": null,
+   "ms": 0,
+   "message": "the drawing is locked"
+  },
+  {
+   "time": "2026-10-16T00:00:00.119Z",
+   "client": "Test client",
+   "tool": "refuses",
+   "group": "edit",
+   "args": {},
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "not now"
+  },
+  {
+   "time": "2026-10-16T00:00:00.126Z",
+   "client": "Test client",
+   "tool": "soft_error",
+   "group": "read",
+   "args": {},
+   "outcome": "error",
+   "undo": null,
+   "ms": 0,
+   "message": "no such layer"
+  },
+  {
+   "time": "2026-10-16T00:00:00.133Z",
+   "client": "Test client",
+   "tool": "picture",
+   "group": "export",
+   "args": {},
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "picture needs the export permission, which is not allowed. Restart with --allow read,edit,export."
+  },
+  {
+   "time": "2026-10-16T00:00:00.154Z",
+   "client": "Test client",
+   "tool": "long_args",
+   "group": "read",
+   "args": {
+    "s": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…",
+    "many": {
+     "k0": 0,
+     "k1": 1,
+     "k2": 2,
+     "k3": 3,
+     "k4": 4,
+     "k5": 5,
+     "k6": 6,
+     "k7": 7,
+     "k8": 8,
+     "k9": 9,
+     "k10": 10,
+     "k11": 11,
+     "k12": 12,
+     "k13": 13,
+     "k14": 14,
+     "k15": 15,
+     "k16": 16,
+     "k17": 17,
+     "k18": 18,
+     "k19": 19
+    },
+    "deep": {
+     "a": "{…}",
+     "list": "[2 items]"
+    }
+   },
+   "outcome": "refused",
+   "undo": null,
+   "ms": 0,
+   "message": "Invalid arguments: arguments.s is not a known argument. arguments.many is not a known argument. arguments.deep is not a known argument."
+  },
+  {
+   "time": "2026-10-16T00:00:00.210Z",
+   "client": "script runner",
+   "tool": "plain",
+   "group": "read",
+   "args": {},
+   "outcome": "ok",
+   "undo": null,
+   "ms": 0
+  }
+ ],
+ "schema": [
+  {
+   "schema": {
+    "type": "number"
+   },
+   "value": 1.5,
+   "problems": [],
+   "after": 1.5
+  },
+  {
+   "schema": {
+    "type": "integer"
+   },
+   "value": 1.5,
+   "problems": [
+    "arguments must be integer."
+   ],
+   "after": 1.5
+  },
+  {
+   "schema": {
+    "type": "integer"
+   },
+   "value": 0,
+   "problems": [],
+   "after": 0
+  },
+  {
+   "schema": {
+    "type": "boolean"
+   },
+   "value": "true",
+   "problems": [
+    "arguments must be boolean."
+   ],
+   "after": "true"
+  },
+  {
+   "schema": {
+    "type": "object"
+   },
+   "value": [
+    1
+   ],
+   "problems": [
+    "arguments must be object."
+   ],
+   "after": [
+    1
+   ]
+  },
+  {
+   "schema": {
+    "type": "array"
+   },
+   "value": {},
+   "problems": [
+    "arguments must be array."
+   ],
+   "after": {}
+  },
+  {
+   "schema": {
+    "type": "null"
+   },
+   "value": null,
+   "problems": [],
+   "after": null
+  },
+  {
+   "schema": {
+    "type": [
+     "integer",
+     "string"
+    ]
+   },
+   "value": true,
+   "problems": [
+    "arguments must be integer or string."
+   ],
+   "after": true
+  },
+  {
+   "schema": {
+    "minimum": 3
+   },
+   "value": 2,
+   "problems": [
+    "arguments must be at least 3."
+   ],
+   "after": 2
+  },
+  {
+   "schema": {
+    "maxLength": 2
+   },
+   "value": "åäö",
+   "problems": [
+    "arguments must have at most 2 characters."
+   ],
+   "after": "åäö"
+  },
+  {
+   "schema": {
+    "maxLength": 2
+   },
+   "value": "😀",
+   "problems": [],
+   "after": "😀"
+  },
+  {
+   "schema": {
+    "minLength": 2
+   },
+   "value": "😀",
+   "problems": [],
+   "after": "😀"
+  },
+  {
+   "schema": {
+    "pattern": "^[A-Za-z0-9]{3,80}$"
+   },
+   "value": "abc",
+   "problems": [],
+   "after": "abc"
+  },
+  {
+   "schema": {
+    "pattern": "^[A-Za-z0-9]{3,80}$"
+   },
+   "value": "ab",
+   "problems": [
+    "arguments is not in the expected form."
+   ],
+   "after": "ab"
+  },
+  {
+   "schema": {
+    "pattern": "^[A-Za-z0-9]{3,80}$"
+   },
+   "value": "abcé",
+   "problems": [
+    "arguments is not in the expected form."
+   ],
+   "after": "abcé"
+  },
+  {
+   "schema": {
+    "enum": [
+     1,
+     "1"
+    ]
+   },
+   "value": 1,
+   "problems": [],
+   "after": 1
+  },
+  {
+   "schema": {
+    "enum": [
+     [
+      1
+     ]
+    ]
+   },
+   "value": [
+    1
+   ],
+   "problems": [
+    "arguments must be one of [1]."
+   ],
+   "after": [
+    1
+   ]
+  },
+  {
+   "schema": {
+    "const": "x"
+   },
+   "value": "x",
+   "problems": [],
+   "after": "x"
+  },
+  {
+   "schema": {
+    "const": {
+     "a": 1
+    }
+   },
+   "value": {
+    "a": 1
+   },
+   "problems": [
+    "arguments must be {\"a\":1}."
+   ],
+   "after": {
+    "a": 1
+   }
+  },
+  {
+   "schema": {
+    "oneOf": [
+     {
+      "type": "string"
+     },
+     {
+      "type": "number"
+     }
+    ]
+   },
+   "value": true,
+   "problems": [
+    "arguments does not match any of the allowed shapes."
+   ],
+   "after": true
+  },
+  {
+   "schema": {
+    "properties": {
+     "a": {
+      "default": [
+       1
+      ]
+     }
+    }
+   },
+   "value": {},
+   "problems": [],
+   "after": {
+    "a": [
+     1
+    ]
+   }
+  },
+  {
+   "schema": {
+    "required": [
+     "a",
+     "b"
+    ]
+   },
+   "value": {
+    "b": 1
+   },
+   "problems": [
+    "arguments.a is required."
+   ],
+   "after": {
+    "b": 1
+   }
+  },
+  {
+   "schema": {
+    "items": {
+     "maximum": 1
+    }
+   },
+   "value": [
+    0,
+    2,
+    3
+   ],
+   "problems": [
+    "arguments[1] must be at most 1.",
+    "arguments[2] must be at most 1."
+   ],
+   "after": [
+    0,
+    2,
+    3
+   ]
+  }
+ ]
+}
