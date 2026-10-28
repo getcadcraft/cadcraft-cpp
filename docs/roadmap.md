@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done.
+Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done; W4: M8.4 done.
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -69,7 +69,7 @@ where the JS is exact) and a golden replayed by test_partcraft.
 | M8.1 | lib/shapes (sections, parts, items) in libs/shapes; the harness and `run_script` — **done 2026-10-21: 46 596 / 46 596 calls, exact** |
 | M8.2 | expr / params ops on libs/cad's ports, configs.js, bom.js, threads.js, gdt.js, font.js, sketch-spline.js, form.js's reader — **done 2026-10-21: 169 808 / 169 808 calls (1e-9; 9 one-ulp log/exp/pow apart when exact)** |
 | M8.3 | the sketch (sketch.js, solver.js) — **done 2026-10-27: 68 479 / 68 479 calls (1e-9)**; sketch-intersect.js and sketch-tools.js with the sketcher (M8.7) |
-| M8.4 | the part document (part.js and the readers of design-features, bodies, surface, sheet metal, rib, threads), params-part.js, params-uses.js, refgeom.js, pcscript (script.js) |
+| M8.4 | the part document (part.js and the readers of design-features, bodies, surface, sheet metal, rib, threads), params-part.js — **done 2026-10-27: 53 191 / 53 191 calls (1e-9), file text byte for byte**; params-uses.js, refgeom.js and pcscript (script.js) with M8.5 |
 | M8.5 | the mesh kernel (kernel.js, meshfaces.js, faces.js, threads) on W2's SolidOps; exports (STL, 3MF, STEP from the mesh, IFC) |
 | M8.6 | assemblies, BOM, drawings (drawing.js, PDF), measure, section views |
 | M8.7 | the app: libs/ui-imgui panels (history, sketcher, parameters, configurations), the 3D view through W2's renderer |
