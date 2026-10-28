@@ -16,6 +16,7 @@ cc_fuzz(prop_value SOURCES fuzz_prop_value.cpp DEPS cc::cmd cc::base cc::i18n CO
 cc_fuzz(lisp SOURCES fuzz_lisp.cpp DEPS cc::lisp CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/lisp)
 cc_fuzz(cad_dxf SOURCES fuzz_cad_dxf.cpp DEPS cc::cad cc::io-dxf cc::base cc::i18n CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/dxf)
 cc_fuzz(solid SOURCES fuzz_solid.cpp DEPS cc::solid cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/solid)
+cc_fuzz(addons SOURCES fuzz_addons.cpp DEPS cc::addons CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/addons)
 cc_fuzz(control SOURCES fuzz_control.cpp DEPS cc::control CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/control)
 cc_fuzz(mcp SOURCES fuzz_mcp.cpp DEPS cc::mcp CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/mcp)
 cc_fuzz(live_msgpack SOURCES fuzz_live_msgpack.cpp DEPS cc::live CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/live_msgpack)

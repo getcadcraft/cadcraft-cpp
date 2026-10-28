@@ -108,3 +108,8 @@ model, bytes as {"$base64": …}, or its error {code, message}). Synthetic bytes
 `js-0.5-mcp-dispatcher.json` — CadCraft 0.5's MCP dispatcher (host.js "mcp-core") answering a script of JSON-RPC
 messages with a few test tools on a fixed clock: every answer, every activity-log entry and checkSchema's verdicts.
 Made with `node tools/gen/mcp-dispatcher.mjs`; the test `mcp.*` registers the same tools and replays the script.
+`js-0.5-addon-trust.json` — CadCraft 0.5's addons/trust.js on test packages signed with a test key (seed 0x07 × 32):
+each package as served, readPackageJson's answer, the digest text, the verdict, canonical(). `node tools/gen/addon-trust.mjs`.
+`js-0.5-addon-loader.json` — CadCraft 0.5's addons.js: checkManifest cases for four app/API pairs, apiParts,
+cleanAddonData, and a lifecycle run of scripted bundled add-ons (list(), what the modules did, storage after each step).
+`node tools/gen/addon-loader.mjs`; the test `addons.*` replays both.

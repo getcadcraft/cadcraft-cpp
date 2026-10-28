@@ -50,7 +50,7 @@ fork 0.5 is released; when 0.9 is released, fork 0.7.** A fork release `0.N` mea
 | W3 | cc-ifc + BimCraft | 54 k + lib/ifc 6 k | libs/io-ifc, libs/bimcraft | IFC model JSON on the corpus, BimCraft documents |
 | W4 | PartCraft | 52 k | libs/partcraft | documents, exports |
 | W5 | CivilCraft, DetailCraft, MarkupCraft, TakeoffCraft | 46 k | one library each | each app's documents and exports |
-| W6 | Studio (the shell: assets/js, app switching, control channel and MCP per control.rs) + cc-skp | 10 k + lib/skp 2.5 k | libs/live, libs/shell, libs/io-skp | MCP tool shapes (host.js / AGENTS-SPEC.md), Live vectors, SKP models (beat OpenSKP's time) — **M13.1 done 2026-10-21** (libs/live: MessagePack, envelope, session decisions; vectors.json whole); **M14.1 done 2026-10-21** (libs/io-skp: parity 27/27, 3.6–25× the JS, the 5.25 MB file in 153 ms against OpenSKP's 630 ms); **M14.2 done 2026-10-28** (fuzz follow-up: a small entry claiming a big size no longer gets that buffer); **M13.2 done 2026-10-28** (Live's secure channel on libsodium, the crypto vectors byte for byte); **M13.3 done 2026-10-28** (libs/mcp: the dispatcher and `cadcraft-cli mcp`, 40/40 answers of host.js mcp-core); **M13.4 done 2026-10-28** (libs/control per control.rs: check-server.mjs 16/16); **M13.5 done 2026-10-28** (libs/autosave: autosave and recovery) |
+| W6 | Studio (the shell: assets/js, app switching, control channel and MCP per control.rs) + cc-skp | 10 k + lib/skp 2.5 k | libs/live, libs/shell, libs/io-skp | MCP tool shapes (host.js / AGENTS-SPEC.md), Live vectors, SKP models (beat OpenSKP's time) — **M13.1 done 2026-10-21** (libs/live: MessagePack, envelope, session decisions; vectors.json whole); **M14.1 done 2026-10-21** (libs/io-skp: parity 27/27, 3.6–25× the JS, the 5.25 MB file in 153 ms against OpenSKP's 630 ms); **M14.2 done 2026-10-28** (fuzz follow-up: a small entry claiming a big size no longer gets that buffer); **M13.2 done 2026-10-28** (Live's secure channel on libsodium, the crypto vectors byte for byte); **M13.3 done 2026-10-28** (libs/mcp: the dispatcher and `cadcraft-cli mcp`, 40/40 answers of host.js mcp-core); **M13.4 done 2026-10-28** (libs/control per control.rs: check-server.mjs 16/16); **M13.5 done 2026-10-28** (libs/autosave: autosave and recovery); **M13.6 done 2026-10-28** (libs/addons: the add-on host for built-in modules, package trust; 0.5's loader 443/443 and trust.js 102/102) |
 
 Gate cadence (owner, 2026-10-28): the full gate runs once per stack of a stream's commits, at its tip, and again on every
 integration batch before a push; each commit builds, is tidy-clean and passes its own tests and parity (AGENTS.md section 15).
@@ -58,6 +58,13 @@ integration batch before a push; each commit builds, is tidy-clean and passes it
 Order inside each stream: the JS tests and goldens first, then the engine, then the UI. Code that several apps share
 in 0.5 (the same file in several app folders) is ported once, by the first stream that needs it, into a shared library
 the others link. M5.8h2 (a cloud's coordinate system) still waits for the owner's decision on the EPSG catalog.
+
+**Add-ons (owner, 2026-10-22: option c).** The four add-ons CadCraft bundles (electrical, hvac, piping, apparel) are
+ported to C++ as built-in modules (W1's area, later) that plug into the add-on host, `libs/addons` (W6, M13.6: 0.5's
+addons.js — manifest checks, on/off per app, strings, storage, clean-up — for modules compiled into the app). The
+data-only kinds are supported natively: menu styles (ADDONS-SPEC § 14) through the shell's input engine, and trade
+packs (§ 13) read as untrusted data by TakeoffCraft. Installed packages with code (JavaScript) are listed and refused,
+never run (docs/gaps.md); a sandboxed JS engine may come later if the owner wants third-party packages.
 
 ### W4 plan: PartCraft (M8)
 

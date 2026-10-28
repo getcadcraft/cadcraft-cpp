@@ -86,6 +86,7 @@ add_subdirectory(libs/live)       # L2
 add_subdirectory(libs/mcp)        # L2
 add_subdirectory(libs/control)    # L2
 add_subdirectory(libs/autosave)   # L2
+add_subdirectory(libs/addons)     # L2
 add_subdirectory(libs/appkit)     # L2
 if(CC_BUILD_RENDER)
   add_subdirectory(libs/text)     # L2

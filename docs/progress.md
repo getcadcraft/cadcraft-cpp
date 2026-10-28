@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery); M13.6 (the add-on host, decision c).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -610,6 +610,19 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   folder cannot be used, so the app keeps working); the Web Lock that marks a running session becomes a lock file held
   by the process (a crashed app's copies become recoverable; two windows never offer each other's). 87 assertions on
   the JS's cases (timing, max-wait, clean, close, rename, orphans, pruning, broken storage).
+- M13.6 (2026-10-28, W6): the add-on host, `libs/addons` (L2), for the owner's decision of 2026-10-22 (option c,
+  recorded in roadmap.md): 0.5's addons.js for add-ons compiled into the app. `Builtin` (manifest as shipped, lang files,
+  compiled help, a factory for its `Module`), the same checks (`check_manifest`: id, name, semver, apps, API major and
+  minor, SPDX, entry, permissions, default-off), the lifecycle (activate, a returned clean-up, deactivate, every
+  clean-up newest first, failures switched off with their reason and the shell told once, `reloadNeeded`), on/off in
+  0.5's storage keys (`cc-addons:<app>`, kept as JSON in 0.5's key order), its strings (en, the language, the locale;
+  plural forms) and storage (`cc-addon:<app>:<id>:<key>`), `clean_addon_data` for add-on data on records. Installed
+  packages are listed and refused as "code" (docs/gaps.md #31). trust.cpp: addons/trust.js (package digest, Ed25519 on
+  libsodium; the web build has a portable SHA-256, checked equal to libsodium's). Goldens from the frozen JS:
+  tools/gen/addon-loader.mjs (292 manifest cases × apps, apiParts, cleanAddonData, a 14-step lifecycle with scripted
+  modules: list(), what they did, storage) and tools/gen/addon-trust.mjs (signed test packages, tampering): 533
+  assertions. Fuzz target addons. Trade packs wait for W5's TakeoffCraft model (#32); menu styles come with the input
+  engine.
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 
