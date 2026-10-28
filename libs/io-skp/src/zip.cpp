@@ -45,8 +45,11 @@ Bytes inflate_raw(std::span<const std::uint8_t> data, std::uint64_t cap, const i
   }
   const ScopeExit guard([&z] { inflateEnd(&z); });
   Bytes out;
-  // the directory's size is the answer of a sound entry: one buffer, and one byte more to see a lie
-  out.resize(static_cast<std::size_t>(cap + 1));
+  // The directory's size is the answer of a sound entry: one buffer, and one byte more to see a lie. Deflate gives at
+  // most 1032 bytes per input byte, so a small entry that claims a big size is not given that size up front (the
+  // fuzzer's 2 kB files that claimed hundreds of MB); the buffer grows if the stream does give more.
+  const std::uint64_t most = (static_cast<std::uint64_t>(data.size()) * 1032U) + 1024U;
+  out.resize(static_cast<std::size_t>(std::min(cap + 1, most)));
   std::size_t in_at = 0;
   std::size_t out_at = 0;
   for (;;) {

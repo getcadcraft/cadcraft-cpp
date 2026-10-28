@@ -50,7 +50,7 @@ fork 0.5 is released; when 0.9 is released, fork 0.7.** A fork release `0.N` mea
 | W3 | cc-ifc + BimCraft | 54 k + lib/ifc 6 k | libs/io-ifc, libs/bimcraft | IFC model JSON on the corpus, BimCraft documents |
 | W4 | PartCraft | 52 k | libs/partcraft | documents, exports |
 | W5 | CivilCraft, DetailCraft, MarkupCraft, TakeoffCraft | 46 k | one library each | each app's documents and exports |
-| W6 | Studio (the shell: assets/js, app switching, control channel and MCP per control.rs) + cc-skp | 10 k + lib/skp 2.5 k | libs/live, libs/shell, libs/io-skp | MCP tool shapes (host.js / AGENTS-SPEC.md), Live vectors, SKP models (beat OpenSKP's time) — **M13.1 done 2026-10-21** (libs/live: MessagePack, envelope, session decisions; vectors.json whole); **M14.1 done 2026-10-21** (libs/io-skp: parity 27/27, 3.6–25× the JS, the 5.25 MB file in 153 ms against OpenSKP's 630 ms) |
+| W6 | Studio (the shell: assets/js, app switching, control channel and MCP per control.rs) + cc-skp | 10 k + lib/skp 2.5 k | libs/live, libs/shell, libs/io-skp | MCP tool shapes (host.js / AGENTS-SPEC.md), Live vectors, SKP models (beat OpenSKP's time) — **M13.1 done 2026-10-21** (libs/live: MessagePack, envelope, session decisions; vectors.json whole); **M14.1 done 2026-10-21** (libs/io-skp: parity 27/27, 3.6–25× the JS, the 5.25 MB file in 153 ms against OpenSKP's 630 ms); **M14.2 done 2026-10-28** (fuzz follow-up: a small entry claiming a big size no longer gets that buffer) |
 
 Order inside each stream: the JS tests and goldens first, then the engine, then the UI. Code that several apps share
 in 0.5 (the same file in several app folders) is ported once, by the first stream that needs it, into a shared library

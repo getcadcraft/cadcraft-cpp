@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -562,8 +562,14 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   under load ~130 on 32 threads from the other streams' gates): the 5.25 MB 2026 file 153 ms against the JS's 554 ms
   here (OpenSKP's C++ took 630 ms on it, CLAUDE.md § 15), the 2 MB SketchUp 6 file 11.1 ms against 275 ms (25×);
   3.6–25× the JS on the eight largest. Fuzz target skp (the hand-made files and the small corpus files as seeds, in
-  the build tree only): 15 min × 8 workers, 558 k inputs, then 10 min more on the final code, nothing found. `cadcraft-cli
+  the build tree only): 15 min × 8 workers, 558 k inputs, then about 6 min × 8 on the final code (stopped by the 4-worker rule), nothing found. `cadcraft-cli
   parity skp` / `bench skp`.
+- M14.2 (2026-10-28, W6): cc-skp fuzz follow-up. A 10 min × 4-worker run on M14.1 (4.59 M inputs, no crash) reported 6
+  slow units: 2 kB files whose model.dat claims hundreds of MB. zip.cpp gave the inflate buffer the claimed size up front
+  (460 MB for 2 kB, slow under ASan); now the first buffer is at most what deflate can give (1032 bytes per input
+  byte), growing if the stream does give more. The answers were already 0.5's ("unpacks to the wrong size", "does not
+  unpack"); now in 5 MB and no time. The 6 files are regression tests (io-skp) and corpus entries
+  (fuzz/corpus/skp/regress-big-claim-*). Parity still 27/27.
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 

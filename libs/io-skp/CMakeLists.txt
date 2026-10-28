@@ -8,5 +8,6 @@ cc_test(io-skp
   DEPS cc::io-skp)
 if(TARGET test_io-skp)
   target_include_directories(test_io-skp PRIVATE ${PROJECT_SOURCE_DIR}/tests/support)
-  target_compile_definitions(test_io-skp PRIVATE CC_SKP_FIXTURES="${PROJECT_SOURCE_DIR}/tests/golden/skp")
+  target_compile_definitions(test_io-skp PRIVATE CC_SKP_FIXTURES="${PROJECT_SOURCE_DIR}/tests/golden/skp"
+                                               CC_SKP_REGRESS="${PROJECT_SOURCE_DIR}/fuzz/corpus/skp")
 endif()

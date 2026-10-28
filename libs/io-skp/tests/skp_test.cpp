@@ -131,3 +131,20 @@ TEST_CASE("io-skp: every cut of the hand-made files is a model or a refusal") {
     }
   }
 }
+
+TEST_CASE("io-skp: small ZIP entries that claim a big size (fuzz slow units) are refused as 0.5 refuses them") {
+  // The fuzzer's files: 2 kB each, a model.dat that claims hundreds of MB. 0.5 refuses each at once; the C++ used to
+  // give the claimed size up front (460 MB for 2 kB). fuzz/corpus/skp/regress-big-claim-*.skp
+  const std::filesystem::path dir = CC_SKP_REGRESS;
+  const std::string_view wrong = "This SketchUp file is damaged: \"model.dat\" unpacks to the wrong size.";
+  const std::string_view no_unpack = "This SketchUp file is damaged: a compressed part does not unpack.";
+  const std::vector<std::string_view> want{wrong, no_unpack, wrong, wrong, no_unpack, wrong};
+  for (std::size_t i = 0; i < want.size(); ++i) {
+    const auto name = "regress-big-claim-" + std::to_string(i + 1) + ".skp";
+    INFO(name);
+    const auto got = cc::skp::read_skp(bytes_of(dir / name));
+    REQUIRE_FALSE(got.has_value());
+    CHECK(got.error().code == "damaged");
+    CHECK(got.error().message == want[i]);
+  }
+}
