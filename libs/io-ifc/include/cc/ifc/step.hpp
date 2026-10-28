@@ -21,6 +21,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "cc/base/error.hpp"
@@ -33,6 +34,7 @@ using Bytes = std::span<const std::byte>;
 inline constexpr std::size_t kMaxDepth = 1000;
 
 /// One parameter value.
+// NOLINTNEXTLINE(misc-no-recursion) — its copy recurses into items, at most kMaxDepth deep
 struct Raw {
   enum class Kind : std::uint8_t { null, derived, number, string, ref, enumeration, binary, typed, list };
   Kind kind = Kind::null;
@@ -72,7 +74,8 @@ struct StepIndex {
   std::vector<std::uint16_t> types;   // index into names (Uint16Array: wrapped); 0 = "" (complex)
   std::vector<std::string> names;     // upper-case keywords, names[0] = ""
   base::Value header;                 // {description, name, schema[], raw{}} as the JS (raw params as Values)
-  std::string schema;                 // header.schema[0] || ''
+  std::vector<std::pair<std::string, RawList>> header_raw;  // header.raw as raw values, in first-seen order
+  std::string schema;                                       // header.schema[0] || ''
   std::vector<ScanError> errors;
 };
 

@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -641,6 +641,17 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   aggregates on an explicit stack (the same cap, the same values, errors and offsets: kit ifc-step 118/118, the
   fuzzer's kept inputs the same as the JS through tools/parity/ifc-step.mjs). Regression test: 999 levels parse, write
   and free, 1,001 stop with V8's words; the suite passes under `ulimit -s 256` (256 KB).
+- M7.2b (2026-10-28): cc-ifc's model.js as `cc::ifc::IfcFile` (libs/io-ifc/src/model.cpp): open (schema from
+  FILE_SCHEMA or guessed as the JS guesses), lines by id (a dense slot table when ids are dense, as model.js's
+  Int32Array, else a map), types, `of_type` with subtypes, every type present in the JS Map's order, attributes by
+  name, `refs_to` and `inverse` indexes rebuilt after edits, `set` / `add` / `remove`, and `save` (the header kept as
+  read: `StepIndex::header_raw`; FILE_NAME's time stamp replaced; strings, reals and typed values written as the JS
+  writes them). Parsed lines are cached per record and the cache dropped past 250,000 entries, as the JS does. A line
+  that does not parse throws `ParseFailure` where the JS throws (docs/architecture.md, Errors). Parity:
+  `cadcraft-cli ifc-model` against tools/parity/ifc-model.mjs (the same facts from the frozen model.js, then the same
+  edits and a save with a fixed time stamp, compared by size and FNV-1a): 118 / 118 files the same (the 117 corpus
+  files up to 30 MB and the public fixture), exact. Test: io-ifc.model (the public fixture: lines, types, inverse
+  references, edits, the saved bytes).
 
 ## 2026-10-21 (workstream W4: PartCraft)
 

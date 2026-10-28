@@ -659,7 +659,8 @@ StepResult<RawList> parse_params_u8(U8 b, std::size_t start, std::size_t end) {
   return p.list();
 }
 
-StepResult<void> read_header(U8 b, std::size_t i, std::size_t end, base::Value& header) {
+StepResult<void> read_header(U8 b, std::size_t i, std::size_t end, base::Value& header,
+                             std::vector<std::pair<std::string, RawList>>& raw) {
   while (i < end) {
     i = skip(b, i, end);
     if (i >= end) {
@@ -696,6 +697,16 @@ StepResult<void> read_header(U8 b, std::size_t i, std::size_t end, base::Value& 
           header.set("name", v);
         }
         header.find("raw")->set(kw.name, std::move(v));
+        bool seen = false;
+        for (auto& entry : raw) {
+          if (entry.first == kw.name) {
+            entry.second = *params;
+            seen = true;
+          }
+        }
+        if (!seen) {
+          raw.emplace_back(kw.name, std::move(*params));
+        }
       }
     }
     i = static_cast<std::size_t>(*e) + 1;
@@ -761,7 +772,7 @@ StepResult<StepIndex> scan_step(Bytes bytes) {
       return std::unexpected(std::move(he.error()));
     }
     const auto from = static_cast<std::size_t>(*he + 1);
-    if (auto r = read_header(b, from, static_cast<std::size_t>(*data0), ix.header); !r) {
+    if (auto r = read_header(b, from, static_cast<std::size_t>(*data0), ix.header, ix.header_raw); !r) {
       return std::unexpected(std::move(r.error()));
     }
   }

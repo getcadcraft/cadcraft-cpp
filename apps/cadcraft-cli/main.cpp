@@ -31,11 +31,14 @@
 //                                                open a DWG as CadCraft does (import + document) and save it as a DWG
 //                                                of that version (dwg-save.js); prints the report, or with --model the
 //                                                writer model (tools/parity/dwg-save.mjs)
+//   cadcraft-cli ifc-model <file.ifc>           cc-ifc model.js (IfcFile): facts and edits, as
+//                                                tools/parity/ifc-model.mjs dumps them from the 0.5 JS
 //   cadcraft-cli version | help
 //
 // Exit codes: 0 ok, 1 the file was refused ({"$error":{code,message}} on stdout for parity/bench), 2 usage, 3 an
 // engine this build does not have yet.
 #include <algorithm>
+#include <bit>
 #include <charconv>
 #include <chrono>
 #include <cmath>
@@ -55,6 +58,7 @@
 #include <system_error>
 #include <vector>
 
+#include "cc/base/checked.hpp"
 #include "cc/base/file.hpp"
 #include "cc/base/js.hpp"
 #include "cc/base/json.hpp"
@@ -76,6 +80,7 @@
 #include "cc/image/png.hpp"
 #endif
 #include "cc/i18n/i18n.hpp"
+#include "cc/ifc/model.hpp"
 #include "cc/ifc/step.hpp"
 #include "cc/importer/importer.hpp"
 #include "cc/lisp/script.hpp"
@@ -116,6 +121,7 @@ void usage(std::FILE* out) {
       "  cloud <file> [--budget N]           a point cloud (LAS, LAZ, XYZ, PTS) as CadCraft reads it\n"
       "  manifold <cases.json>               SolidOps parity cases (tools/parity/manifold.mjs)\n"
       "  part <script.json>                  PartCraft / lib/shapes call scripts (tools/parity/part.mjs)\n"
+      "  ifc-model <file.ifc>                cc-ifc model.js facts and edits (tools/parity/ifc-model.mjs)\n"
       "  version                             print the version\n");
 }
 
@@ -167,6 +173,213 @@ int parity_ifc_step(std::span<const std::byte> bytes) {
     }
   }
   (void)std::fwrite(out.data(), 1, out.size(), stdout);
+  return 0;
+}
+
+/// `ifc-model <file>`: what tools/parity/ifc-model.mjs dumps from the 0.5 model.js (the same facts, the same edits).
+int cmd_ifc_model(const std::filesystem::path& file) {
+  using cc::base::Value;
+  using cc::ifc::Raw;
+  using cc::ifc::RawList;
+  auto bytes = cc::base::read_file(file, kMaxFile);
+  if (!bytes) {
+    print_error_json("io", bytes.error().message);
+    return 1;
+  }
+  auto opened = cc::ifc::IfcFile::open(std::move(*bytes));
+  if (!opened) {
+    std::println("{}", cc::base::to_json(cc::base::make_object(
+                           {{"open", cc::base::make_object({{"$error", opened.error().message}})}})));
+    return 0;
+  }
+  cc::ifc::IfcFile& f = **opened;
+  auto err = [](const std::string& m) { return cc::base::make_object({{"$error", m}}); };
+  auto types_value = [&] {
+    cc::base::Array a;
+    for (const auto& [t, n] : f.types_present()) {
+      a.emplace_back(cc::base::Array{t, n});
+    }
+    return a;
+  };
+  auto ids_value = [](const std::vector<cc::ifc::Id>& v, std::size_t n) {
+    cc::base::Array a;
+    for (std::size_t i = 0; i < v.size() && i < n; ++i) {
+      a.emplace_back(v[i]);
+    }
+    return a;
+  };
+  Value out = cc::base::make_object({{"schemaName", std::string(f.schema_name())},
+                                     {"guessed", f.schema_guessed()},
+                                     {"fileSchema", f.file_schema()},
+                                     {"maxId", f.max_id()},
+                                     {"count", f.count()}});
+  out.set("types", types_value());
+  const std::vector<cc::ifc::Id> ids = f.ids();
+  cc::base::Array first;
+  for (std::size_t i = 0; i < ids.size() && i < 300; ++i) {
+    const cc::ifc::Id id = ids[i];
+    const auto t = f.type(id);
+    const cc::ifc::Entity* e = t && !t->empty() ? f.schema().entity(*t) : nullptr;
+    Value third;
+    if (e != nullptr) {
+      third = Value::object();
+      for (const cc::ifc::Attr& a : e->attrs) {
+        try {
+          const cc::ifc::AttrValue v = f.attr(id, a.name);
+          third.set(a.name, v.undefined() || v->is_null() ? Value("$undefined") : cc::ifc::to_value(*v));
+        } catch (const cc::ifc::ParseFailure& x) {
+          third.set(a.name, err(x.error().message));
+        }
+      }
+    } else {
+      try {
+        const auto parts = f.complex(id);
+        if (parts) {
+          cc::base::Array pa;
+          for (const auto& q : *parts) {
+            pa.push_back(cc::base::make_object({{"type", q.type}, {"params", cc::ifc::to_value(q.params)}}));
+          }
+          third = std::move(pa);
+        } else {
+          third = nullptr;
+        }
+      } catch (const cc::ifc::ParseFailure& x) {
+        third = err(x.error().message);
+      }
+    }
+    first.emplace_back(cc::base::Array{id, t ? Value(std::string(*t)) : Value(nullptr), std::move(third)});
+  }
+  out.set("first", std::move(first));
+  try {
+    const auto p = f.of_type("IFCPRODUCT", true);
+    out.set("products", cc::base::Array{p.size(), ids_value(p, 50)});
+  } catch (const cc::ifc::ParseFailure& x) {
+    out.set("products", err(x.error().message));
+  }
+  try {
+    // JS Map order: the first relation's targets first, in the order they were met
+    std::vector<cc::ifc::Id> order;
+    const auto& m = f.inverse("IFCRELDEFINESBYPROPERTIES", "RelatedObjects");
+    for (const cc::ifc::Id r : f.of_type("IFCRELDEFINESBYPROPERTIES", true)) {
+      const cc::ifc::AttrValue v = f.attr(r, "RelatedObjects");
+      if (v.undefined()) {
+        continue;
+      }
+      auto add = [&](const Raw& x) {
+        if (x.kind == Raw::Kind::ref) {
+          const auto k = cc::base::clamp_cast<cc::ifc::Id>(x.num);
+          if (std::ranges::find(order, k) == order.end()) {
+            order.push_back(k);
+          }
+        }
+      };
+      if (v->kind == Raw::Kind::list) {
+        for (const Raw& x : v->items) {
+          add(x);
+        }
+      } else {
+        add(*v);
+      }
+    }
+    cc::base::Array firsts;
+    for (std::size_t i = 0; i < order.size() && i < 30; ++i) {
+      firsts.emplace_back(cc::base::Array{order[i], ids_value(m.at(order[i]), 1U << 30U)});
+    }
+    out.set("inverse", cc::base::Array{m.size(), std::move(firsts)});
+  } catch (const cc::ifc::ParseFailure& x) {
+    out.set("inverse", err(x.error().message));
+  }
+  try {
+    cc::base::Array refs;
+    for (std::size_t i = 0; i < ids.size() && i < 40; ++i) {
+      refs.emplace_back(ids_value(f.refs_to(ids[i]), 1U << 30U));
+    }
+    out.set("refs", std::move(refs));
+  } catch (const cc::ifc::ParseFailure& x) {
+    out.set("refs", err(x.error().message));
+  }
+  try {
+    auto str = [](std::string s) {
+      Raw r;
+      r.kind = Raw::Kind::string;
+      r.text = std::move(s);
+      return r;
+    };
+    auto num = [](double d) {
+      Raw r;
+      r.kind = Raw::Kind::number;
+      r.num = d;
+      return r;
+    };
+    auto list = [](RawList it) {
+      Raw r;
+      r.kind = Raw::Kind::list;
+      r.items = std::move(it);
+      return r;
+    };
+    auto enm = [](std::string s) {
+      Raw r;
+      r.kind = Raw::Kind::enumeration;
+      r.text = std::move(s);
+      return r;
+    };
+    auto typed = [](std::string n, Raw v) {
+      Raw r;
+      r.kind = Raw::Kind::typed;
+      r.text = std::move(n);
+      r.items.push_back(std::move(v));
+      return r;
+    };
+    Raw derived;
+    derived.kind = Raw::Kind::derived;
+    cc::base::Array r;
+    auto put = [&](const cc::base::Result<cc::ifc::Id>& x) {
+      if (x) {
+        r.emplace_back(*x);
+      } else {
+        r.push_back(err(x.error().message));
+      }
+    };
+    put(f.add("IFCWALL", {str("2O2Fr$t4X7Zf8NOew3FLOH"), Raw{}, str("New \xC3\xA9 wall \xF0\x9F\x98\x80"), derived,
+                          Raw{}, Raw{}, Raw{}, Raw{}, enm("STANDARD")}));
+    if (ids.size() > 1) {
+      r.emplace_back(f.remove(ids[1]));
+    }
+    if (ids.size() > 2) {
+      if (auto p = f.params(ids[2])) {
+        RawList q = *p;
+        for (Raw x : {num(1.5), num(2), num(-0.0), num(1e21), num(1.25e-7), list({num(1), list({num(2), num(3)})}),
+                      typed("IFCLENGTHMEASURE", num(3)), typed("IFCLABEL", str("it's"))}) {
+          q.push_back(std::move(x));
+        }
+        put(f.set(static_cast<double>(ids[2]), f.type(ids[2]).value_or(""), std::move(q)));
+      }
+    }
+    put(f.set(f.max_id() + 5, "ifcCartesianPoint", {list({num(0), num(0.5), num(1e-3)})}));
+    put(f.set(0, "IFCWALL", {}));
+    r.emplace_back(f.remove(999999999));
+    auto saved = f.save("2026-10-21T00:00:00");
+    if (!saved) {
+      throw cc::ifc::ParseFailure(cc::ifc::StepError{"Error", saved.error().message});
+    }
+    r.emplace_back(saved->size());
+    std::uint32_t h = 2166136261U;  // FNV-1a over the bytes (tools/parity/ifc-model.mjs computes the same)
+    for (const char c : *saved) {
+      h = (h ^ static_cast<unsigned char>(c)) * 16777619U;
+    }
+    r.emplace_back(h);
+    r.emplace_back(f.count());
+    cc::base::Array tp = types_value();
+    cc::base::Array last5(tp.size() > 5 ? tp.end() - 5 : tp.begin(), tp.end());
+    r.emplace_back(std::move(last5));
+    const auto walls = f.of_type("IFCWALL", true);
+    r.emplace_back(cc::base::Array(walls.size() > 3 ? walls.end() - 3 : walls.begin(), walls.end()));
+    r.emplace_back(f.max_id());
+    out.set("edits", std::move(r));
+  } catch (const cc::ifc::ParseFailure& x) {
+    out.set("edits", err(x.error().message));
+  }
+  std::println("{}", cc::base::to_json(out));
   return 0;
 }
 
@@ -1290,6 +1503,9 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "import" && args.size() == 3) {
     return cmd_import(std::filesystem::path(args[2]), args[0]);
+  }
+  if (cmd == "ifc-model" && args.size() == 3) {
+    return cmd_ifc_model(std::filesystem::path(args[2]));
   }
   if (cmd == "parity" && args.size() == 4) {
     return cmd_parity(args[2], std::filesystem::path(args[3]));
