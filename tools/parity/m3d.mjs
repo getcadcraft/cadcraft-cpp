@@ -199,6 +199,10 @@ let total = 0, same = 0;
 for (const file of files) {
   const scripts = JSON.parse(readFileSync(file, 'utf8')).scripts;
   const want = scripts.map(runJs);
+  if (args.includes('--emit-models')) {  // tools/parity/m3d-io.mjs: the model each script ends with
+    for (const w of want) console.log(JSON.stringify({ file: basename(file), name: w.name, model: w.steps[w.steps.length - 1].model }));
+    continue;
+  }
   if (args.includes('--js-only')) {  // what the 0.5 kernel does, step by step (writing scripts)
     for (const w of want) { console.log('# ' + w.name); for (const st of w.steps) console.log('  ' + st.op + ' → ' + JSON.stringify(st.err !== undefined ? { err: st.err } : st.r).slice(0, 300)); }
     continue;
@@ -221,5 +225,5 @@ for (const file of files) {
     if (detail) for (const x of d.slice(0, max)) console.log('    ' + JSON.stringify(x).slice(0, 400));
   });
 }
-console.log(`m3d: ${same}/${total} scripts the same as the 0.5 kernel`);
+if (!args.includes('--emit-models')) console.log(`m3d: ${same}/${total} scripts the same as the 0.5 kernel`);
 process.exitCode = same === total ? 0 : 1;

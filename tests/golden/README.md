@@ -113,3 +113,9 @@ each package as served, readPackageJson's answer, the digest text, the verdict, 
 `js-0.5-addon-loader.json` — CadCraft 0.5's addons.js: checkManifest cases for four app/API pairs, apiParts,
 cleanAddonData, and a lifecycle run of scripted bundled add-ons (list(), what the modules did, storage after each step).
 `node tools/gen/addon-loader.mjs`; the test `addons.*` replays both.
+
+`js-0.5-m3d-io.tar.gz` — CadCraft 0.5's io.js exports of the model each model script in `tests/m3d/` ends with (read back
+from its file form): per script, the size and CRC-32 of its GLB, STL, OBJ, OBJ with materials, MTL, DXF R12, Collada and
+IFC4 (fixed date 2026-10-16), and the CRC-32 of the cc-dwg model's canonical JSON (`m3d-io/<file name>`). Made with `node
+tools/parity/m3d-io.mjs tests/m3d/*.json --golden-out <dir>/m3d-io`, then the same `tar` line with `m3d-io`. The test
+`io-m3d.golden: …` replays them.

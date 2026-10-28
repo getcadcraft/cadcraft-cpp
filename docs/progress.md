@@ -844,3 +844,11 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   1 080 scripts, 0 differ; drive seeds 1–20, 360 calls; every ported generator at seeds 1–10: 31 919 calls in 900
   scripts, 0 differ (130 scripts wait for the files, GIS and 3D ops). Goldens regenerated (seed 1, 56 scripts); fuzz
   seeds from them; unit tests (grid volume between planes, deed calls and closure, the project's undo and file).
+- M6.3 (2026-10-28): io.js's exports in libs/io-m3d (L3, `cc::m3d::io`): GLB (glTF 2.0 binary, its JSON as
+  JSON.stringify writes it), OBJ (with and without materials) and MTL, binary STL in millimeters, DXF R12 and the
+  cc-dwg writer model through the neutral CAD scene (blocks, INSERTs, 3DFACE triangles with invisible inner and soft
+  edges, the ACI palette), Collada 1.4.1 and IFC4 (deterministic GlobalIds, storeys), every number written as the JS
+  writes it (toFixed, toPrecision, String) and every write in the JS's order. tools/parity/m3d-io.mjs exports the model
+  each model script ends with in both: tests/m3d 130 / 130 byte-identical in every format, and 300 more seeded models
+  300 / 300. `cadcraft-cli m3d-export`; golden tests/golden/js-0.5-m3d-io.tar.gz (size + CRC-32 per format) replayed
+  by `io-m3d.golden`. No new reader (the exports read nothing; models come through Model::load, fuzzed by `m3d`).

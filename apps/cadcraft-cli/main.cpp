@@ -125,6 +125,7 @@ void usage(std::FILE* out) {
       "  part <script.json>                  PartCraft / lib/shapes call scripts (tools/parity/part.mjs)\n"
       "  ifc-model <file.ifc>                cc-ifc model.js facts and edits (tools/parity/ifc-model.mjs)\n"
       "  m3d-script <scripts.json>           ModelCraft model scripts (tools/parity/m3d.mjs), one JSON line each\n"
+      "  m3d-export <scripts.json>           each script's model in every export format (tools/parity/m3d-io.mjs)\n"
       "  version                             print the version\n");
 }
 

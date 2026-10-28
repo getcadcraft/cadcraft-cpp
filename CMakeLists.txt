@@ -97,6 +97,7 @@ add_subdirectory(libs/io-dwg)     # L3
 add_subdirectory(libs/io-dxf)     # L3
 add_subdirectory(libs/io-ifc)     # L3
 add_subdirectory(libs/io-skp)     # L3
+add_subdirectory(libs/io-m3d)     # L3
 add_subdirectory(libs/doc)        # L3
 add_subdirectory(libs/partcraft)  # L3
 add_subdirectory(libs/civil)      # L3
