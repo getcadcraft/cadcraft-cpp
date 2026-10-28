@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -590,6 +590,17 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   own tools register in apps/cadcraft-cli/mcp_server.cpp in 0.5's order (W1, W3, W5 add theirs there). Golden: the
   frozen dispatcher answering a 40-message script on a fixed clock (tools/gen/mcp-dispatcher.mjs → tests/golden/
   js-0.5-mcp-dispatcher.json): 40/40 answers, 17/17 log lines, 23/23 schema cases. Fuzz target mcp (the script as seeds).
+- M13.4 (2026-10-28, W6): Studio's control channel and MCP over HTTP, `libs/control` (L2): desktop-shell control.rs
+  (d132555) rule for rule — 127.0.0.1 only, port 47615 or the next free one up to +20, a 32-byte Bearer token (base64url,
+  compared in constant time, never in a URL; 401 + WWW-Authenticate), Host must be 127.0.0.1:<port> / localhost:<port>
+  (403), any Origin 403, POST /mcp with Mcp-Session-Id (initialize issues it; missing 400, unknown 404; DELETE 204; GET
+  405; notifications 202), POST /control, JSON only (415), 4 MB (413), query strings 400, error -32002 ends the session,
+  32 sessions — on a small HTTP/1.1 reader of our own (Content-Length or chunked) and a thread per connection. On top of
+  control.rs: a refused request closes its connection, a request that is not HTTP is closed without an answer, 16
+  connections, 30 s idle, 64 KB heads. 0.5's tools/mcp/test/check-server.mjs: 16 passed, 0 failed (against a test
+  harness on this library); control_test 63 assertions; fuzz target control (HTTP seeds). Shared core, additive:
+  `cc::base::os_random` (libs/base random.cpp: getrandom / arc4random_buf / BCryptGenRandom / getentropy), with a test.
+  The locks are named in architecture.md (control.sessions → control.token; control.threads).
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 

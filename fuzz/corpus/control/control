@@ -1,0 +1,5 @@
+POST /control HTTP/1.1
+Host: localhost:47615
+Content-Length: 46
+
+{"jsonrpc":"2.0","id":9,"method":"tools.list"}
