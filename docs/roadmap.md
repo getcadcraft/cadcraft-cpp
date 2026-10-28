@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done; W4: M8.4 done; W4: M8.5 done; the rest of M8 renumbered; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); M9.2 done (CivilCraft's engine and project).
+Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done; W4: M8.4 done; W4: M8.5 done; the rest of M8 renumbered; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); M9.2 done (CivilCraft's engine and project); W4: M8.6 split (faces and named faces done; the kernel is M8.7).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -78,10 +78,11 @@ where the JS is exact) and a golden replayed by test_partcraft.
 | M8.3 | the sketch (sketch.js, solver.js) — **done 2026-10-27: 68 479 / 68 479 calls (1e-9)**; sketch-intersect.js and sketch-tools.js with the sketcher (M8.9) |
 | M8.4 | the part document (part.js and the readers of design-features, bodies, surface, sheet metal, rib, threads), params-part.js — **done 2026-10-27: 53 191 / 53 191 calls (1e-9), file text byte for byte**; params-uses.js and pcscript (script.js) with M8.6 |
 | M8.5 | vec.js and refgeom.js (the kernel's frames, matrices and reference geometry) — **done 2026-10-27: 17 845 / 17 845 calls exact** |
-| M8.6 | the mesh kernel (kernel.js, meshfaces.js, faces.js, the thread tools) on libs/solid |
-| M8.7 | exports (STL, 3MF, STEP from the mesh, IFC) |
-| M8.8 | assemblies, BOM, drawings (drawing.js, PDF), measure, section views |
-| M8.9 | the app: libs/ui-imgui panels (history, sketcher, parameters, configurations), the 3D view through W2's renderer |
+| M8.6 | faces.js and meshfaces.js (planar faces, boundary loops, the mesh kernel's named faces and edges) — **done 2026-10-28: gen-facesmall 1 080 / 1 080 calls exact; gen-kmesh needs M8.7** |
+| M8.7 | the mesh kernel (kernel.js, the thread tools, regionsAt) on libs/solid — WIP: first draft not yet built or checked |
+| M8.8 | exports (STL, 3MF, STEP from the mesh, IFC) |
+| M8.9 | assemblies, BOM, drawings (drawing.js, PDF), measure, section views |
+| M8.10 | the app: libs/ui-imgui panels (history, sketcher, parameters, configurations), the 3D view through W2's renderer |
 | later | simulation, CAM, flow, CraftScript (cs-*), the exact kernel (owner decision, docs/gaps.md #27) |
 ### W5 plan (2026-10-21): CivilCraft, then DetailCraft, MarkupCraft, TakeoffCraft
 

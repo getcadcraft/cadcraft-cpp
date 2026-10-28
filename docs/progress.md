@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery); M13.6 (the add-on host, decision c); M13.7 (the Live session server).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery); M13.6 (the add-on host, decision c); M13.7 (the Live session server); M8.6 (faces.js, meshfaces.js).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -617,7 +617,7 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   clean-up newest first, failures switched off with their reason and the shell told once, `reloadNeeded`), on/off in
   0.5's storage keys (`cc-addons:<app>`, kept as JSON in 0.5's key order), its strings (en, the language, the locale;
   plural forms) and storage (`cc-addon:<app>:<id>:<key>`), `clean_addon_data` for add-on data on records. Installed
-  packages are listed and refused as "code" (docs/gaps.md #32). trust.cpp: addons/trust.js (package digest, Ed25519 on
+  packages are listed and refused as "code" (docs/gaps.md #31). trust.cpp: addons/trust.js (package digest, Ed25519 on
   libsodium; the web build has a portable SHA-256, checked equal to libsodium's). Goldens from the frozen JS:
   tools/gen/addon-loader.mjs (292 manifest cases × apps, apiParts, cleanAddonData, a 14-step lifecycle with scripted
   modules: list(), what they did, storage) and tools/gen/addon-trust.mjs (signed test packages, tampering): 533
@@ -852,3 +852,9 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   each model script ends with in both: tests/m3d 130 / 130 byte-identical in every format, and 300 more seeded models
   300 / 300. `cadcraft-cli m3d-export`; golden tests/golden/js-0.5-m3d-io.tar.gz (size + CRC-32 per format) replayed
   by `io-m3d.golden`. No new reader (the exports read nothing; models come through Model::load, fuzzed by `m3d`).
+- M8.6 (2026-10-28): faces.js (coplanar triangle groups, B-rep face groups, boundary loops, loops in the face's plane,
+  collinear points dropped) and meshfaces.js (the surface records, moveSurfs, namedFaces: each triangle matched to a
+  surface of the tool that made it, faces by union-find, edges chained per face pair and classed line / circle / curve,
+  with the JS's Map orders and its double edge keys) in libs/partcraft; Array#sort through libs/appkit's js_sort
+  (a small additive dependency on W5's L2 library). Parity gen-facesmall: 1 080 / 1 080 calls, seeds 1–30, exact; the
+  kernel-made meshes (gen-kmesh) wait for the kernel (M8.7).

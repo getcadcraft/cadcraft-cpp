@@ -46,5 +46,6 @@ void add_sketch(Table& t, const i18n::Catalog& words);
 void add_pp(Table& t, const i18n::Catalog& words);
 void add_part(Table& t, const i18n::Catalog& words);
 void add_ref(Table& t, const i18n::Catalog& words);
+void add_faces(Table& t);
 
 }  // namespace cc::partcraft::ops

@@ -2,8 +2,8 @@ cc_library(partcraft LAYER 3
   SOURCES src/script.cpp src/ops_shapes.cpp src/ops_params.cpp src/ops_modules.cpp src/configs.cpp src/bom.cpp
           src/threads.cpp src/gdt.cpp src/font.cpp src/spline.cpp src/form.cpp src/sketch.cpp src/sketch_eq.cpp
           src/solver.cpp src/params_part.cpp src/ops_sketch.cpp src/ops_pp.cpp src/part.cpp src/ops_part.cpp
-          src/refgeom.cpp src/ops_ref.cpp
-  DEPS cc::base cc::i18n cc::cad cc::shapes)
+          src/refgeom.cpp src/ops_ref.cpp src/faces.cpp src/meshfaces.cpp src/ops_faces.cpp
+  DEPS cc::base cc::i18n cc::cad cc::shapes cc::appkit)
 target_include_directories(cc_partcraft PRIVATE src)
 
 cc_test(partcraft
