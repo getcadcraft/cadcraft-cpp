@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery); M13.6 (the add-on host, decision c).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery); M13.6 (the add-on host, decision c); M13.7 (the Live session server).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -617,12 +617,23 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   clean-up newest first, failures switched off with their reason and the shell told once, `reloadNeeded`), on/off in
   0.5's storage keys (`cc-addons:<app>`, kept as JSON in 0.5's key order), its strings (en, the language, the locale;
   plural forms) and storage (`cc-addon:<app>:<id>:<key>`), `clean_addon_data` for add-on data on records. Installed
-  packages are listed and refused as "code" (docs/gaps.md #31). trust.cpp: addons/trust.js (package digest, Ed25519 on
+  packages are listed and refused as "code" (docs/gaps.md #32). trust.cpp: addons/trust.js (package digest, Ed25519 on
   libsodium; the web build has a portable SHA-256, checked equal to libsodium's). Goldens from the frozen JS:
   tools/gen/addon-loader.mjs (292 manifest cases × apps, apiParts, cleanAddonData, a 14-step lifecycle with scripted
   modules: list(), what they did, storage) and tools/gen/addon-trust.mjs (signed test packages, tampering): 533
   assertions. Fuzz target addons. Trade packs wait for W5's TakeoffCraft model (#32); menu styles come with the input
   engine.
+- M13.7 (2026-10-28, W6): Studio Live's session server, `libs/live` server.cpp: desktop-shell src-tauri/src/live/session.rs
+  (d132555) ported as a pure state machine (no sockets, no clock of its own, no threads: the transport feeds it frames
+  and the time and carries out its Out list — send, close, secure with these keys, rekey). The PAKE against the invite
+  secrets (short codes, link keys, rejoin tickets, assistants' keys), wrong tries and code rotation; hello → waiting →
+  approval (a rejoin skips it); every edit a seq or a refusal through SessionCore (M13.1), rate-limited, through the
+  replica when there is one; holds (30 s), locks, presence (16 ms), pings, flood control (warn over 200 queued, removed
+  over 1000), 20 people, a log of 10 000 commits; catch-up from the log, the same file or a snapshot (256 KB chunks,
+  `revs` first); saved, end, host handoff (export_state / import_state, `moved`), assistants as their own clients.
+  One difference from the Rust: the presence map's client ids are written as strings (a JS client reads them so). The
+  11 scenarios of tools/live-test/vectors.json run through the whole server; the sealed join; flood control, the host
+  leaving and a code rotating after wrong tries (279 assertions). Fuzz target live_server.
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 

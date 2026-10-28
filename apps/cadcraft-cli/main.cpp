@@ -1519,6 +1519,7 @@ int run(const std::vector<std::string_view>& args) {
   }
   if (cmd == "ifc-model" && args.size() == 3) {
     return cmd_ifc_model(std::filesystem::path(args[2]));
+  }
   if (cmd == "mcp") {
     std::vector<std::string> rest;
     for (std::size_t i = 2; i < args.size(); ++i) {

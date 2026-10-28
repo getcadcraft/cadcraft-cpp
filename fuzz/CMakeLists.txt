@@ -22,6 +22,7 @@ cc_fuzz(mcp SOURCES fuzz_mcp.cpp DEPS cc::mcp CORPUS ${CMAKE_CURRENT_SOURCE_DIR}
 cc_fuzz(live_msgpack SOURCES fuzz_live_msgpack.cpp DEPS cc::live CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/live_msgpack)
 if(TARGET unofficial-sodium::sodium)
   cc_fuzz(live_frame SOURCES fuzz_live_frame.cpp DEPS cc::live CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/live_frame)
+  cc_fuzz(live_server SOURCES fuzz_live_server.cpp DEPS cc::live CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/live_server)
 endif()
 cc_fuzz(ifc_step SOURCES fuzz_ifc_step.cpp DEPS cc::io-ifc CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/ifc_step)
 cc_fuzz(part_script SOURCES fuzz_part_script.cpp DEPS cc::partcraft cc::base CORPUS ${CMAKE_CURRENT_SOURCE_DIR}/corpus/part_script)
