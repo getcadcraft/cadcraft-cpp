@@ -580,3 +580,7 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader).
   fuzz_cmd_script sets 20,000 (0.5's own ARRAY cap). The CI artifact was not kept, so the regression input is a
   synthetic doubling script (fuzz/corpus/cmd_script/regress-mirror-doubling.json: 12 s of CPU under ASan before, 5.5 s
   after) and a test. cmd_script then ran 10 minutes × 4 workers clean.
+- SEC.1 (2026-10-27): gate.osv failed on main from the nightly of 2026-10-23 on: brotli 1.2.0, CVE-2026-111497 (an
+  out-of-bounds write in the decoder on a crafted stream, published 2026-10-22; fixed in 1.2.1). Brotli came in only
+  through FreeType's `brotli` feature, which decodes WOFF2 fonts; the fork's FreeType loads its own bundled OFL fonts
+  only, never a document's or a WOFF2, so the feature is dropped instead of patching a port: brotli is no longer built.

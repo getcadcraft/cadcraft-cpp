@@ -32,7 +32,7 @@
             { "name": "metal", "platform": "osx" }
           ]
         },
-        { "name": "freetype", "default-features": false, "features": ["brotli", "zlib"] },
+        { "name": "freetype", "default-features": false, "features": ["zlib"] },
         "glm"
       ]
     }
