@@ -482,3 +482,9 @@ This section wins over sections 1–14.
 - **Copy:** do not market the fork as "native" or "no browser engine" on the site, in the apps or in posts. Call it a test version of CadCraft.
 - **Tablets:** 0.5 Studio runs on Android and iPad; the fork's roadmap says whether and how it covers them.
 - **Large coordinates** (section 12) are a requirement: CivilCraft and the GIS layers work in projected survey coordinates.
+- **Gate cadence (owner, 2026-10-28):** with parallel workstreams, the full `cmake --workflow --preset ci` runs once per
+  stack of commits at its tip, not on every commit; every commit still builds, is clang-tidy clean on the files it
+  changes and passes the unit tests and parity scripts of what it changed. The integrator runs the full gate again on
+  every integration batch before anything is pushed to main.
+- **Release plan (owner, 2026-10-21):** the fork releases two versions behind CadCraft (CadCraft 0.7 → fork 0.5,
+  0.9 → 0.7), at parity with the frozen JS of that version (docs/roadmap.md, Release plan).
