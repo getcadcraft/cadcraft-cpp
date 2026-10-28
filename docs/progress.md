@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project); M13.2 (Studio Live's secure channel, libsodium); M13.3 (the MCP dispatcher, cadcraft-cli mcp); M13.4 (the control channel, control.rs); M13.5 (autosave and recovery).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -601,6 +601,15 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   harness on this library); control_test 63 assertions; fuzz target control (HTTP seeds). Shared core, additive:
   `cc::base::os_random` (libs/base random.cpp: getrandom / arc4random_buf / BCryptGenRandom / getentropy), with a test.
   The locks are named in architecture.md (control.sessions → control.token; control.threads).
+- M13.5 (2026-10-28, W6): autosave and recovery, `libs/autosave` (L2): the shell's app-autosave.js for every app — a
+  document says it changed; a copy is written 2 s after the edits stop and at least every 30 s while they go on;
+  saving (or undoing back to the saved state) drops it; renames follow; at start the copies of sessions that are not
+  running are offered ("Recover your work?") and those older than 30 days or past the newest 20 per app are removed.
+  The JS's timers become `tick(now)` from the app's loop (deterministic); IndexedDB becomes a Store (`DirStore`: one
+  folder, atomic writes, the index as 0.5's records, format 1, keys `<app>:<session>:<doc>`; `MemoryStore` when the
+  folder cannot be used, so the app keeps working); the Web Lock that marks a running session becomes a lock file held
+  by the process (a crashed app's copies become recoverable; two windows never offer each other's). 87 assertions on
+  the JS's cases (timing, max-wait, clean, close, rename, orphans, pruning, broken storage).
 
 ## 2026-10-21 (W3: cc-ifc + BimCraft, worktree w3-bimcraft)
 
