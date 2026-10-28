@@ -46,7 +46,7 @@ Last updated 2026-10-21 · Change: libs/solid (SolidOps on Manifold 3.5.4, M6.1)
 | gate.osv | `tools/osv.cmake` — osv-scanner cannot read vcpkg (its SBOM purls are `pkg:vcpkg`, which OSV does not index), so the script asks api.osv.dev, the same database, by each port's upstream repository and tag (ecosystem GIT); a hit fails unless waived in docs/security-waivers.md |
 | gate.identity | `tools/identity.cmake` — every commit by CadCraft, no assistant attribution |
 | gate.asan, gate.tsan, gate.wasm, gate.fuzz (heavy) | `cmake --workflow --preset <p>` |
-| gate.fuzz-smoke (heavy) | `tools/fuzz_smoke.cmake` — each libFuzzer target 30 s on a copy of its corpus |
+| gate.fuzz-smoke (heavy) | `tools/fuzz_smoke.cmake` — each libFuzzer target 30 s on a copy of its corpus, `CC_FUZZ_JOBS` targets at a time (default half the cores, at most 8; CI 4), every failure reported; CI uploads the inputs that crashed or hung as the run's `fuzz-findings-<run>` artifact |
 
 CI (`.github/workflows/ci.yml`) runs the same pieces as parallel jobs, plus GCC and MSVC builds.
 

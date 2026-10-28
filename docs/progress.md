@@ -676,3 +676,8 @@ Last updated 2026-10-21 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   10 000- and a 100 000-point surface with breaklines (contours, bands, outline) 0 differ. Timings (in-process, best
   of 3): 10k points + 20 breaklines + contours + 2 000 elevations 469 ms JS / 94 ms C++ (5.0×); 100k + 100 breaklines
   1 884 / 626 ms (3.0×). Goldens tests/golden/js-0.5-civil.tar.gz (seed 1); fuzz targets civil_points and civil_script.
+- CI.3 (2026-10-27): the fuzz smoke ran its targets one after another: 505 of a gate's ~800 test seconds with 23
+  targets, and over 3 hours for the nightly's 600 s each. tools/fuzz_smoke.cmake now runs `CC_FUZZ_JOBS` targets side by
+  side (default half the logical cores, at most 8; CI sets 4), one process each, and reports every failing target, not
+  only the first. CI uploads the crashing and hanging inputs (fuzz-findings-<run>, kept 30 days) when the fuzz job fails:
+  twice a nightly's input was lost and had to be found again.

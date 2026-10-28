@@ -88,8 +88,17 @@ jobs:
         run: |
           mkdir -p .vcpkg-cache
           if [ "${{ github.event_name }}" = "schedule" ]; then export CC_FUZZ_SECONDS=600; fi
+          export CC_FUZZ_JOBS=4
           cmake --workflow --preset fuzz
           cmake -DSRC="$PWD" -DFUZZ_BUILD="$PWD/build/fuzz" -P tools/fuzz_smoke.cmake
+      - name: Fuzz findings (inputs that crashed or hung)
+        if: failure() && matrix.job == 'fuzz'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-findings-${{ github.run_id }}
+          path: build/fuzz/smoke/*/artifacts/
+          if-no-files-found: ignore
+          retention-days: 30
 
   msvc:
     runs-on: windows-2022
