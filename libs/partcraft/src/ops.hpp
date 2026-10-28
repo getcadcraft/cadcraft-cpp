@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include "cc/base/value.hpp"
+#include "cc/i18n/i18n.hpp"
 
 namespace cc::partcraft::ops {
 
@@ -39,5 +40,7 @@ struct JsError : std::runtime_error {
 }
 
 void add_shapes(Table& t);
+void add_params(Table& t, const i18n::Catalog& words);
+void add_modules(Table& t, const i18n::Catalog& words);
 
 }  // namespace cc::partcraft::ops

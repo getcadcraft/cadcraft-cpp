@@ -9,18 +9,18 @@
 namespace cc::partcraft {
 namespace {
 
-const ops::Table& table() {
-  static const ops::Table t = [] {
-    ops::Table x;
-    ops::add_shapes(x);
-    return x;
-  }();
-  return t;
+ops::Table table(const i18n::Catalog& words) {
+  ops::Table x;
+  ops::add_shapes(x);
+  ops::add_params(x, words);
+  ops::add_modules(x, words);
+  return x;
 }
 
 }  // namespace
 
-base::Value run_script(const base::Value& script) {
+base::Value run_script(const base::Value& script, const i18n::Catalog& words) {
+  const ops::Table ops_table = table(words);
   base::Array out;
   const base::Value calls = script.is_object() ? script.get("calls") : base::Value{};
   if (!calls.is_array()) {
@@ -29,8 +29,8 @@ base::Value run_script(const base::Value& script) {
   for (const base::Value& c : calls.as_array()) {
     const base::Value op = c.is_object() ? c.get("op") : base::Value{};
     const std::string name = op.is_string() ? op.as_string() : base::js_string(op);
-    const auto it = table().find(name);
-    if (it == table().end()) {
+    const auto it = ops_table.find(name);
+    if (it == ops_table.end()) {
       out.push_back(base::make_object({{"err", "unknown op " + name}}));
       continue;
     }

@@ -1,0 +1,1 @@
+{"calls":[{"op":"expr.compute","args":["w*2 + sin(30)",{"w":3}]},{"op":"expr.solveFor","args":["w / 2 + 3",{"w":4},"w",10]},{"op":"params.evaluateVars","args":[{"vars":[{"name":"w","expr":"10"},{"name":"h","expr":"w*2"}],"links":[]},{"w":3}]},{"op":"params.readDesignTable","args":["name,w\nA,5\nB,2in",{"vars":[{"name":"w","expr":"1"}],"links":[]}]}]}

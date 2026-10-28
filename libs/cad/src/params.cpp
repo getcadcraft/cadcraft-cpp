@@ -425,8 +425,6 @@ Applied apply_params(const Params& p, const Adapter& a, const i18n::Catalog& wor
   return out;
 }
 
-namespace {
-
 /// drivingBehind(p, src): the driving variables an expression ends up depending on
 std::vector<std::string> driving_behind(const Params& p, std::string_view src, const i18n::Catalog& words) {
   const expr::Parsed r = expr::parse(src, std::nullopt, words);
@@ -462,6 +460,8 @@ std::vector<std::string> driving_behind(const Params& p, std::string_view src, c
   }
   return out;
 }
+
+namespace {
 
 /// nice(x): the roundest number near x that still solves it
 double nice(double x, const std::function<double(double)>& f, const std::function<bool(double)>& close) {
@@ -759,6 +759,138 @@ bool remove_link(Params& p, std::string_view key) {
   }
   p.links.erase(it);
   return true;
+}
+
+namespace {
+
+/// params.js splitCsv: , ; or tab separates; "…" quotes, "" a quote inside.
+std::vector<std::string> split_csv(std::string_view line) {
+  std::vector<std::string> out;
+  std::string cur;
+  bool q = false;
+  for (std::size_t i = 0; i < line.size(); ++i) {
+    const char c = line[i];
+    if (q) {
+      if (c == '"' && i + 1 < line.size() && line[i + 1] == '"') {
+        cur += '"';
+        ++i;
+      } else if (c == '"') {
+        q = false;
+      } else {
+        cur += c;
+      }
+    } else if (c == '"') {
+      q = true;
+    } else if (c == ',' || c == ';' || c == '\t') {
+      out.push_back(std::move(cur));
+      cur.clear();
+    } else {
+      cur += c;
+    }
+  }
+  out.push_back(std::move(cur));
+  return out;
+}
+
+bool config_header(std::string_view h) {
+  const std::string l = base::js_to_lower(h);
+  return l == "name" || l == "config" || l == "configuration";
+}
+
+}  // namespace
+
+DesignTable read_design_table(std::string_view csv, const Params& p, const i18n::Catalog& words) {
+  DesignTable out;
+  constexpr std::string_view kBom = "\xEF\xBB\xBF";
+  if (csv.starts_with(kBom)) {
+    csv.remove_prefix(kBom.size());
+  }
+  std::vector<std::string_view> lines;
+  while (true) {
+    const std::size_t nl = csv.find('\n');
+    std::string_view line = csv.substr(0, nl);
+    if (nl != std::string_view::npos && line.ends_with('\r')) {
+      line.remove_suffix(1);
+    }
+    if (!base::js_trim(line).empty()) {
+      lines.push_back(line);
+    }
+    if (nl == std::string_view::npos) {
+      break;
+    }
+    csv.remove_prefix(nl + 1);
+  }
+  if (lines.size() < 2) {
+    out.error = words.t("param.design_table_needs_header");
+    return out;
+  }
+  if (lines.size() > 10001) {
+    out.error = words.t("param.design_table_has_10");
+    return out;
+  }
+  std::vector<std::vector<std::string>> cells;
+  cells.reserve(lines.size());
+  for (const std::string_view l : lines) {
+    cells.push_back(split_csv(l));
+  }
+  std::vector<std::string> head;
+  for (const std::string& h : cells[0]) {
+    head.emplace_back(base::js_trim(h));
+  }
+  const bool named = config_header(head[0]);
+  const std::vector<std::string> cols(head.begin() + (named ? 1 : 0), head.end());
+  for (const std::string& c : cols) {
+    if (var_by_name(p, c) == nullptr) {
+      out.error = words.t("param.design_table_has_column", {{"c", text(Value(c), 40)}});
+      return out;
+    }
+  }
+  for (std::size_t r = 1; r < cells.size(); ++r) {
+    const std::vector<std::string>& row = cells[r];
+    const std::string rn = std::to_string(r);
+    DesignRow dr;
+    if (named) {
+      dr.name = std::string(base::js_trim(text(Value(row[0]), 60)));
+    }
+    if (dr.name.empty()) {
+      dr.name = words.t("param.row", {{"r", rn}});
+    }
+    for (std::size_t j = 0; j < cols.size(); ++j) {
+      const std::size_t at = j + (named ? 1 : 0);
+      const std::string cell(at < row.size() ? base::js_trim(row[at]) : std::string_view{});
+      if (cell.empty()) {
+        continue;
+      }
+      const auto v = expr::literal(cell, words);
+      if (!v) {
+        out.thrown =
+            words.t("param.design_table_row_not", {{"r", rn}, {"c", cols[j]}, {"cell", text(Value(cell), 30)}});
+        return out;
+      }
+      const auto it = std::ranges::find_if(dr.overrides, [&](const auto& kv) { return kv.first == cols[j]; });
+      if (it != dr.overrides.end()) {
+        it->second = *v;
+      } else {
+        dr.overrides.emplace_back(cols[j], *v);
+      }
+    }
+    out.rows.push_back(std::move(dr));
+  }
+  out.ok = true;
+  out.columns = cols;
+  return out;
+}
+
+std::optional<std::string> apply_overrides(Params& p, const std::vector<std::pair<std::string, double>>& overrides,
+                                           const i18n::Catalog& words) {
+  for (const auto& [n, v] : overrides) {
+    Var* w = var_by_name(p, n);
+    if (w == nullptr) {
+      return words.t("param.there_no_parameter_called_3", {{"n", n}});
+    }
+    w->expr = expr::format_number(v);
+  }
+  return std::nullopt;
 }
 
 }  // namespace cc::cad::params

@@ -1344,7 +1344,7 @@ int cmd_cloud(const std::filesystem::path& file, double budget, std::string_view
   return write();
 }
 
-int cmd_part(const std::filesystem::path& file) {
+int cmd_part(const std::filesystem::path& file, std::string_view argv0) {
   const auto text = cc::base::read_file(file, std::uint64_t{1} << 30U);
   if (!text) {
     print_error_json("io", text.error().message);
@@ -1355,7 +1355,17 @@ int cmd_part(const std::filesystem::path& file) {
     print_error_json("invalid", script.error().message);
     return 1;
   }
-  std::string js = cc::base::to_json(cc::partcraft::run_script(*script));
+  const auto lang = cc::base::read_file(assets_dir(argv0) / "lang/partcraft/en.json", std::uint64_t{1} << 26U);
+  if (!lang) {
+    print_error_json("io", "the language file is missing: " + lang.error().message);
+    return 1;
+  }
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  if (!words) {
+    print_error_json("invalid", words.error().message);
+    return 1;
+  }
+  std::string js = cc::base::to_json(cc::partcraft::run_script(*script, *words));
   js += '\n';
   (void)std::fwrite(js.data(), 1, js.size(), stdout);
   return 0;
@@ -1491,7 +1501,7 @@ int run(const std::vector<std::string_view>& args) {
     return cmd_cloud(std::filesystem::path(args[2]), budget, args[0]);
   }
   if (cmd == "part" && args.size() == 3) {
-    return cmd_part(args[2]);
+    return cmd_part(args[2], args[0]);
   }
   if (cmd == "script" && args.size() == 3) {
     return cmd_script(std::filesystem::path(args[2]), args[0]);

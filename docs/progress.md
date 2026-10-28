@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -727,3 +727,17 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   250,000 placements; the fuzz budget stops a script past 4,000 elements or at a NaN point); regression tests and
   fuzz/corpus/m3d/regress-*; then 10.5 minutes × 4 workers clean. `cadcraft-cli m3d-script` writes NaN as null, as
   JSON.stringify does (a NaN case is checked: 131 / 131).
+- M8.2 (2026-10-21): PartCraft's core modules in libs/partcraft: configs.js (configurations), bom.js (part properties,
+  materials, the bill of materials and its CSV), threads.js (tables, profiles, the helical cross-section, callouts),
+  gdt.js (GD&T and surface-finish annotations: reader, check, description, geometry), font.js (Helvetica widths;
+  the NFD base letters generated from Node's ICU by tools/gen/nfd-base.mjs), sketch-spline.js (cubic B-splines: fit
+  and control splines, tessellation, area, arc length, closest point, knots, segments, offsets) and form.js's cage
+  reader and box; the expr.* and params.* ops on libs/cad's ports, which gained solveFor, drivingBehind (public),
+  readDesignTable and applyOverrides (additive). run_script now takes PartCraft's catalog
+  (assets/lang/partcraft/en.json and es-MX.json, from the frozen build). Parity, gen-core generators and shapes:
+  169 808 / 169 808 calls at the harness's 1e-9, seeds 1–30; exact (zero tolerance) all but 9, each one ulp of Math.log /
+  Math.exp / ** (C library's, docs/gaps.md #12). Golden refreshed (seed 1 of every generator, 20 188 calls). 0.5's own
+  tests on the frozen app: test-partcraft.mjs 1835 passed, 20 failed (CPython-wasm and two script cases need files
+  not copied), 23 skipped (second readers not installed). Fuzz part_script now reaches every op: the first run found a NaN degree cast
+  to int (UBSan; regression input fuzz/corpus/part_script/regress-81ba692b4ccf.json and libs/partcraft script_test),
+  then 10.5 minutes × 4 workers, 11.4 M inputs, clean.

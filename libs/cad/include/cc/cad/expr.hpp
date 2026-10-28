@@ -66,4 +66,14 @@ struct Result {
 /// renameIn(src, from, to): whole names only, never a unit after a number
 [[nodiscard]] std::string rename_in(std::string_view src, std::string_view from, std::string_view to);
 
+struct Solved {
+  bool ok = false;
+  double value = 0;
+  std::string error;
+};
+/// expr.js solveFor(ast, values, name, target, {tol}): the value of `name` that makes the expression give `target`,
+/// the other values held (secant from the current value, then a bracket outward and bisection).
+[[nodiscard]] Solved solve_for(const Ast& ast, std::map<std::string, double> values, const std::string& name,
+                               double target, const i18n::Catalog& words, double tol = 1e-9);
+
 }  // namespace cc::cad::expr

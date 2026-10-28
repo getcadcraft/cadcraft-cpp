@@ -767,4 +767,89 @@ std::string rename_in(std::string_view src, std::string_view from, std::string_v
   return out;
 }
 
+namespace {
+
+double sign_of(double x) {
+  if (std::isnan(x)) {
+    return x;
+  }
+  if (x == 0) {
+    return x;
+  }
+  return x > 0 ? 1 : -1;
+}
+/// Math.sign(a) === Math.sign(b) (NaN never equals)
+bool same_sign(double a, double b) {
+  return sign_of(a) == sign_of(b);
+}
+double polish(double x) {
+  const double r = base::js_number(base::js_to_exponential(x, 12));
+  return std::abs(r - x) <= 1e-12 * std::max(1.0, std::abs(x)) ? r : x;
+}
+
+}  // namespace
+
+Solved solve_for(const Ast& ast, std::map<std::string, double> values, const std::string& name, double target,
+                 const i18n::Catalog& words, double tol) {
+  const auto it = values.find(name);
+  const double x0 = it != values.end() && std::isfinite(it->second) ? it->second : 1;
+  const auto f = [&](double x) {
+    values[name] = x;
+    const Result r = evaluate(ast, values, words);
+    return r.ok ? r.value - target : std::numeric_limits<double>::quiet_NaN();
+  };
+  const double scale = std::max({1.0, std::abs(target), std::abs(x0)});
+  const auto close = [&](double y) { return std::isfinite(y) && std::abs(y) <= tol * scale; };
+  double a = x0;
+  double fa = f(a);
+  if (close(fa)) {
+    return {.ok = true, .value = a, .error = {}};
+  }
+  double b = x0 == 0 ? 1e-3 : x0 * (1 + 1e-4);
+  double fb = f(b);
+  for (int k = 0; k < 60 && std::isfinite(fa) && std::isfinite(fb) && fb != fa; k++) {
+    const double c = b - fb * (b - a) / (fb - fa);
+    const double fc = f(c);
+    if (close(fc)) {
+      return {.ok = true, .value = polish(c), .error = {}};
+    }
+    a = b;
+    fa = fb;
+    b = c;
+    fb = fc;
+  }
+  const double g0 = f(x0);
+  double step = std::max(1e-6, std::abs(x0) * 1e-3);
+  while (step < 1e9) {
+    for (const double s : {x0 + step, x0 - step}) {
+      const double gs = f(s);
+      if (close(gs)) {
+        return {.ok = true, .value = polish(s), .error = {}};
+      }
+      if (std::isfinite(g0) && std::isfinite(gs) && !same_sign(gs, g0)) {
+        double lo = x0;
+        double hi = s;
+        double glo = g0;
+        for (int k = 0; k < 200; k++) {
+          const double mid = (lo + hi) / 2;
+          const double gm = f(mid);
+          if (close(gm) || std::abs(hi - lo) <= 1e-15 * std::max(1.0, std::abs(mid))) {
+            return {.ok = true, .value = polish(mid), .error = {}};
+          }
+          if (same_sign(gm, glo)) {
+            lo = mid;
+            glo = gm;
+          } else {
+            hi = mid;
+          }
+        }
+      }
+    }
+    step *= 2;
+  }
+  return {.ok = false,
+          .value = 0,
+          .error = words.t("expr.no_value_gives", {{"name", name}, {"target", format_number(target)}})};
+}
+
 }  // namespace cc::cad::expr

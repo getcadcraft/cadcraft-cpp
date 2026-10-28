@@ -6,10 +6,12 @@
 #pragma once
 
 #include "cc/base/value.hpp"
+#include "cc/i18n/i18n.hpp"
 
 namespace cc::partcraft {
 
 /// Runs every call of `script` in order; never throws (a call that throws gives {err: what()}).
-[[nodiscard]] base::Value run_script(const base::Value& script);
+/// `words`: PartCraft's catalog (assets/lang/partcraft/en.json for the parity runs).
+[[nodiscard]] base::Value run_script(const base::Value& script, const i18n::Catalog& words);
 
 }  // namespace cc::partcraft

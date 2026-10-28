@@ -9,6 +9,7 @@
 
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
+#include "cc/i18n/i18n.hpp"
 #include "cc/partcraft/script.hpp"
 
 extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size) {
@@ -22,6 +23,7 @@ extern "C" int LLVMFuzzerTestOneInput(const std::uint8_t* data, std::size_t size
   if (!script) {
     return 0;
   }
-  (void)cc::partcraft::run_script(*script);
+  static const cc::i18n::Catalog kWords;  // no catalog: the words are their keys
+  (void)cc::partcraft::run_script(*script, kWords);
   return 0;
 }

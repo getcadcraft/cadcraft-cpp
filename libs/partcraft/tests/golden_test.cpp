@@ -13,6 +13,7 @@
 #include "cc/base/file.hpp"
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
+#include "cc/i18n/i18n.hpp"
 #include "cc/partcraft/script.hpp"
 
 namespace fs = std::filesystem;
@@ -35,13 +36,17 @@ TEST_CASE("golden: the part call scripts answer what CadCraft 0.5's modules answ
   if (!fs::exists(dir)) {
     SKIP("references missing (tests/golden/js-0.5-part.tar.gz)");
   }
+  const auto lang = cc::base::read_file(fs::path(CC_ASSETS_DIR) / "lang/partcraft/en.json", std::uint64_t{1} << 26U);
+  REQUIRE(lang.has_value());
+  auto words = cc::i18n::Catalog::parse("en", cc::base::as_text(*lang));
+  REQUIRE(words.has_value());
   std::size_t calls = 0;
   for (const auto& entry : fs::directory_iterator(dir)) {
     const Value list = read_json(entry.path());
     for (const Value& item : list.as_array()) {
       const Value want = item.get("js");
       // our answer through JSON, so NaN and ±Infinity take the canonical "$NaN" / "$Inf" form as the reference does
-      auto got = cc::base::parse_json(cc::base::to_json(cc::partcraft::run_script(item.get("script"))));
+      auto got = cc::base::parse_json(cc::base::to_json(cc::partcraft::run_script(item.get("script"), *words)));
       REQUIRE(got.has_value());
       std::vector<std::string> diffs;
       cc::test::compare(want, *got, entry.path().filename().string(), diffs);

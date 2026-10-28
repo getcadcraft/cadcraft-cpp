@@ -119,5 +119,26 @@ struct Uses {
 /// removeVar(p, name, { inline })
 [[nodiscard]] Edit remove_var(Params& p, std::string_view name, bool inline_value, const i18n::Catalog& words);
 bool remove_link(Params& p, std::string_view key);
+/// drivingBehind(p, src): the driving variables an expression ends up depending on (through driven ones)
+[[nodiscard]] std::vector<std::string> driving_behind(const Params& p, std::string_view src,
+                                                      const i18n::Catalog& words);
+
+struct DesignRow {
+  std::string name;
+  std::vector<std::pair<std::string, double>> overrides;
+};
+struct DesignTable {
+  bool ok = false;
+  std::string error;   // { ok: false, error }
+  std::string thrown;  // what the JS throws (a cell that is not a number)
+  std::vector<DesignRow> rows;
+  std::vector<std::string> columns;
+};
+/// readDesignTable(csv, p): a CSV design table (first row the header; a first column may name the configuration)
+[[nodiscard]] DesignTable read_design_table(std::string_view csv, const Params& p, const i18n::Catalog& words);
+/// applyOverrides(p, overrides): each variable's expr becomes its number; the error the JS throws for an unknown one
+[[nodiscard]] std::optional<std::string> apply_overrides(Params& p,
+                                                         const std::vector<std::pair<std::string, double>>& overrides,
+                                                         const i18n::Catalog& words);
 
 }  // namespace cc::cad::params
