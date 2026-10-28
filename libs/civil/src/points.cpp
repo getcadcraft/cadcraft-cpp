@@ -497,4 +497,42 @@ std::vector<std::size_t> lasso_points(const std::vector<SurveyPoint>& points, co
   return appkit::lasso_select(items, pts, mode);
 }
 
+namespace {
+base::Value hdr_list(const std::vector<std::string>& v) {
+  base::Array a;
+  for (const auto& x : v) {
+    a.emplace_back(x);
+  }
+  return a;
+}
+}  // namespace
+
+base::Value points_value(const ParsedPoints& r) {
+  base::Array pts;
+  for (const SurveyPoint& p : r.points) {
+    pts.push_back(base::make_object(
+        {{"n", p.n}, {"x", p.x}, {"y", p.y}, {"z", p.z ? base::Value(*p.z) : base::Value(nullptr)}, {"d", p.d}}));
+  }
+  base::Array bad;
+  for (const BadRow& b : r.bad) {
+    bad.push_back(base::make_object({{"line", b.line}, {"text", b.text}, {"why", b.why}}));
+  }
+  base::Value hdr = nullptr;
+  if (r.header) {
+    hdr = hdr_list(*r.header);
+  }
+  base::Value o = base::make_object({{"points", std::move(pts)},
+                                     {"format", r.format ? base::Value(*r.format) : base::Value(nullptr)},
+                                     {"formatFrom", r.format_from},
+                                     {"delimiter", r.delimiter ? base::Value(*r.delimiter) : base::Value(nullptr)},
+                                     {"header", hdr},
+                                     {"bad", std::move(bad)},
+                                     {"badCount", r.bad_count},
+                                     {"duplicates", r.duplicates}});
+  if (r.latlon) {
+    o.set("latlon", true);
+  }
+  return o;
+}
+
 }  // namespace cc::civil

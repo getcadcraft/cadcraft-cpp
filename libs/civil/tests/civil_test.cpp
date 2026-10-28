@@ -14,8 +14,11 @@
 #include "cc/base/json.hpp"
 #include "cc/base/reader.hpp"
 #include "cc/civil/alignment.hpp"
+#include "cc/civil/deeds.hpp"
+#include "cc/civil/design.hpp"
 #include "cc/civil/points.hpp"
 #include "cc/civil/predicates.hpp"
+#include "cc/civil/project.hpp"
 #include "cc/civil/script.hpp"
 #include "cc/civil/tin.hpp"
 #include "cc/civil/units.hpp"
@@ -153,4 +156,48 @@ TEST_CASE("alignment: a zero polyline step stops at its cap (fuzz slow units, re
   REQUIRE(al->ok());
   const auto pl = al->polyline(0, std::numbers::pi / 360);
   CHECK(static_cast<double>(pl.size()) <= kMaxPolylinePieces + 3);
+}
+
+TEST_CASE("grading: a grid volume between two planes is exact on whole cells") {
+  BuildInput a;
+  BuildInput b;
+  for (int i = 0; i <= 10; ++i) {
+    for (int j = 0; j <= 10; ++j) {
+      a.points.push_back({i * 10.0, j * 10.0, 100.0});
+      b.points.push_back({i * 10.0, j * 10.0, 102.0});
+    }
+  }
+  const Built ga = build_surface(a, words());
+  const Built gb = build_surface(b, words());
+  REQUIRE(ga.surface);
+  REQUIRE(gb.surface);
+  const GridVolume v = grid_volume(*ga.surface, *gb.surface, cc::base::make_object({{"cell", 5}}));
+  CHECK(std::abs(v.fill - 2.0 * 100 * 100) < 1e-6);
+  CHECK(v.cut == 0);
+}
+
+TEST_CASE("bearings, deed calls and a closed traverse") {
+  const auto b = parse_bearing(Value("N 45°30'15\" E"));
+  REQUIRE(b);
+  CHECK(std::abs(b.value_or(0) - (90 - (45 + 30 / 60.0 + 15 / 3600.0)) * std::numbers::pi / 180) < 1e-12);
+  CHECK_FALSE(parse_bearing(Value("N 91 E")));
+  const Value calls =
+      parse_calls(Value("thence N 0 E 100.00 feet\nS 90 E 100\nS 0 E 100\nN 90 W 100\nC R 0 L 5 left"), words());
+  CHECK(calls.get("calls").as_array().size() == 4);
+  CHECK(calls.get("errors").as_array().size() == 1);
+  const Value run = run_calls(cc::base::pt2(0, 0), calls.get("calls"));
+  CHECK(run.get("misclosure").get("dist").as_number() < 1e-9);
+}
+
+TEST_CASE("the project: a change is one undo step and the file reads back") {
+  Project p(words());
+  CHECK(p.change("Name", [](Value& s) { s.set("name", "Site"); }));
+  CHECK_FALSE(p.change("Same", [](Value& s) { s.set("name", "Site"); }));
+  CHECK(p.undo().value_or("") == "Name");
+  CHECK(p.state.get("name").as_string() != "Site");
+  CHECK(p.redo().value_or("") == "Name");
+  const auto L = Project::from_json(p.to_json(), words());
+  REQUIRE(L.project);
+  CHECK(L.project->state.get("name").as_string() == "Site");
+  CHECK(Project::from_json(cc::base::make_object({{"format", "nope"}}), words()).error.has_value());
 }

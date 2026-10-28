@@ -58,7 +58,9 @@ Value element_value(const Element& e) {
                       {"dirOut", e.dir_out}});
 }
 
-Value al_view(const Alignment& a) {
+}  // namespace
+
+Value al_view_of(const Alignment& a) {
   Array els;
   for (const Element& e : a.elements) {
     els.push_back(element_value(e));
@@ -77,7 +79,7 @@ Value al_view(const Alignment& a) {
                       {"ok", a.ok()}});
 }
 
-Value prof_view(const Profile& p) {
+Value prof_view_of(const Profile& p) {
   Array grades;
   for (const Grade& g : p.grades) {
     grades.push_back(make_object({{"from", g.from}, {"to", g.to}, {"g", g.g}}));
@@ -111,6 +113,8 @@ Value prof_view(const Profile& p) {
                       {"ok", p.ok()}});
 }
 
+namespace {
+
 std::vector<Pi> to_pis(const Value& v) {
   std::vector<Pi> out;
   for (const Value& p : arr(v)) {
@@ -132,7 +136,7 @@ void add_alignment_ops(std::map<std::string, ScriptOp, std::less<>>& m) {
     const Value start = field(in, "start");
     auto al = build_alignment(to_pis(field(in, "pis")), start.is_undefined() ? 0 : num(start), *c.words);
     c.keep(al);
-    return al_view(*al);
+    return al_view_of(*al);
   };
   m["al.pointAt"] = [](const Array& a, ScriptCtx& c) -> Value {
     const auto p = self_as<Alignment>(c).point_at(num(arg(a, 0)));
@@ -186,7 +190,7 @@ void add_alignment_ops(std::map<std::string, ScriptOp, std::less<>>& m) {
   m["profile.build"] = [](const Array& a, ScriptCtx& c) -> Value {
     auto p = build_profile(arg(a, 0), *c.words);
     c.keep(p);
-    return prof_view(*p);
+    return prof_view_of(*p);
   };
   m["prof.elevationAt"] = [](const Array& a, ScriptCtx& c) -> Value {
     return opt_value(self_as<Profile>(c).elevation_at(num(arg(a, 0))));

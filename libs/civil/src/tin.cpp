@@ -1195,6 +1195,40 @@ const Surface::Grid& Surface::grid() const {
   return *grid_;
 }
 
+Surface::GridView Surface::grid_view() const {
+  const Grid& g = grid();
+  return {g.bminx, g.bminy, g.bmaxx, g.bmaxy, g.nx, g.ny, g.cw, g.ch, g.start, g.items};
+}
+
+BuildInput build_input_from(const base::Value& points, const base::Value& breaklines) {
+  BuildInput in;
+  auto num = [](const base::Value& v) { return base::js_to_number(v); };
+  auto get = [](const base::Value& o, std::string_view k) { return o.is_object() ? o.get(k) : base::Value(); };
+  if (points.is_array()) {
+    for (const base::Value& p : points.as_array()) {
+      TinPoint t{num(get(p, "x")), num(get(p, "y")), std::nullopt};
+      const base::Value z = get(p, "z");
+      if (z.is_number() && std::isfinite(z.as_number())) {
+        t.z = z.as_number();
+      }
+      in.points.push_back(t);
+    }
+  }
+  if (breaklines.is_array()) {
+    for (const base::Value& b : breaklines.as_array()) {
+      Breakline bl;
+      const base::Value pts = get(b, "pts");
+      if (pts.is_array()) {
+        for (const base::Value& p : pts.as_array()) {
+          bl.pts.push_back({num(get(p, "x")), num(get(p, "y")), num(get(p, "z"))});
+        }
+      }
+      in.breaklines.push_back(std::move(bl));
+    }
+  }
+  return in;
+}
+
 std::optional<Located> Surface::locate(double lx, double ly, double tol) const {
   const Grid& g = grid();
   if (lx < g.bminx - tol || lx > g.bmaxx + tol || ly < g.bminy - tol || ly > g.bmaxy + tol) {

@@ -10,10 +10,12 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "cc/base/value.hpp"
 #include "cc/i18n/i18n.hpp"
 
 namespace cc::civil {
@@ -92,6 +94,15 @@ class Surface {
   [[nodiscard]] std::vector<std::array<double, 9>> triangles() const;
   [[nodiscard]] std::vector<std::int32_t> edges() const;
   [[nodiscard]] std::vector<std::vector<P2>> outline() const;
+  /// The lookup grid (sections.js walks it): bounds in local coordinates, cells, the triangles of cell k at
+  /// items[start[k] … start[k + 1]).
+  struct GridView {
+    double min_x, min_y, max_x, max_y;
+    std::size_t nx, ny;
+    double cw, ch;
+    std::span<const std::int32_t> start, items;
+  };
+  [[nodiscard]] GridView grid_view() const;
   struct Faces {
     std::vector<P3> pts;
     std::vector<std::array<std::int32_t, 3>> faces;
@@ -129,6 +140,10 @@ struct Built {
 
 /// buildSurface({ points, breaklines, boundary, maxEdge })
 [[nodiscard]] Built build_surface(const BuildInput& in, const i18n::Catalog& words);
+
+/// buildSurface's input from JSON: points [{x, y, z}] (z a finite number or the point is skipped) and breaklines
+/// [{pts: [{x, y, z}]}], read with Number() as the JS's arithmetic reads them.
+[[nodiscard]] BuildInput build_input_from(const base::Value& points, const base::Value& breaklines);
 
 /// surfaceFromFaces({ pts, faces }): a face is kept when its three ids are whole numbers of present points.
 struct FaceInput {

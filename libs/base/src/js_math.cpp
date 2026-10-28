@@ -695,4 +695,123 @@ double js_hypot(std::span<const double> v) noexcept {
   return std::sqrt(sum) * max;
 }
 
+// ---- asin, acos, pow (fdlibm e_asin.c, e_acos.c, e_pow.c, as V8's ieee754.cc has them)
+
+namespace {
+
+double set_low_word_zero(double d) noexcept {
+  return std::bit_cast<double>(std::bit_cast<std::uint64_t>(d) & 0xFFFFFFFF00000000ULL);
+}
+
+constexpr double kPS0 = 1.66666666666666657415e-01;    /* 0x3FC55555, 0x55555555 */
+constexpr double kPS1 = -3.25565818622400915405e-01;   /* 0xBFD4D612, 0x03EB6F7D */
+constexpr double kPS2 = 2.01212532134862925881e-01;    /* 0x3FC9C155, 0x0E884455 */
+constexpr double kPS3 = -4.00555345006794114027e-02;   /* 0xBFA48228, 0xB5688F3B */
+constexpr double kPS4 = 7.91534994289814532176e-04;    /* 0x3F49EFE0, 0x7501B288 */
+constexpr double kPS5 = 3.47933107596021167570e-05;    /* 0x3F023DE1, 0x0DFDF709 */
+constexpr double kQS1 = -2.40339491173441421878e+00;   /* 0xC0033A27, 0x1C8A2D4B */
+constexpr double kQS2 = 2.02094576023350569471e+00;    /* 0x40002AE5, 0x9C598AC8 */
+constexpr double kQS3 = -6.88283971605453293030e-01;   /* 0xBFE6066C, 0x1B8D0159 */
+constexpr double kQS4 = 7.70381505559019352791e-02;    /* 0x3FB3B8C5, 0xB12E9282 */
+constexpr double kPio2Hi = 1.57079632679489655800e+00; /* 0x3FF921FB, 0x54442D18 */
+constexpr double kPio2Lo = 6.12323399573676603587e-17; /* 0x3C91A626, 0x33145C07 */
+constexpr double kPio4Hi = 7.85398163397448278999e-01; /* 0x3FE921FB, 0x54442D18 */
+constexpr double kPiAcos = std::numbers::pi;           /* 3.14159265358979311600e+00, 0x400921FB, 0x54442D18 */
+
+double rat_pq(double z) noexcept {
+  const double p = z * (kPS0 + z * (kPS1 + z * (kPS2 + z * (kPS3 + z * (kPS4 + z * kPS5)))));
+  const double q = 1.0 + z * (kQS1 + z * (kQS2 + z * (kQS3 + z * kQS4)));
+  return p / q;
+}
+
+}  // namespace
+
+double js_asin(double x) noexcept {
+  const std::int32_t hx = high_word(x);
+  const std::int32_t ix = hx & 0x7FFFFFFF;
+  if (ix >= 0x3FF00000) {
+    if ((static_cast<std::uint32_t>(ix - 0x3FF00000) | low_word(x)) == 0) {
+      return x * kPio2Hi + x * kPio2Lo;
+    }
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  if (ix < 0x3FE00000) {
+    if (ix < 0x3E400000) {
+      return x;  // (huge + x > one: always, with inexact)
+    }
+    const double t = x * x;
+    const double p = t * (kPS0 + t * (kPS1 + t * (kPS2 + t * (kPS3 + t * (kPS4 + t * kPS5)))));
+    const double q = 1.0 + t * (kQS1 + t * (kQS2 + t * (kQS3 + t * kQS4)));
+    return x + x * (p / q);
+  }
+  double w = 1.0 - std::abs(x);
+  double t = w * 0.5;
+  double p = t * (kPS0 + t * (kPS1 + t * (kPS2 + t * (kPS3 + t * (kPS4 + t * kPS5)))));
+  double q = 1.0 + t * (kQS1 + t * (kQS2 + t * (kQS3 + t * kQS4)));
+  const double s = std::sqrt(t);
+  if (ix >= 0x3FEF3333) {
+    w = p / q;
+    t = kPio2Hi - (2.0 * (s + s * w) - kPio2Lo);
+  } else {
+    w = set_low_word_zero(s);
+    const double c = (t - w * w) / (s + w);
+    const double r = p / q;
+    p = 2.0 * s * r - (kPio2Lo - 2.0 * c);
+    q = kPio4Hi - 2.0 * w;
+    t = kPio4Hi - (p - q);
+  }
+  return hx > 0 ? t : -t;
+}
+
+double js_acos(double x) noexcept {
+  const std::int32_t hx = high_word(x);
+  const std::int32_t ix = hx & 0x7FFFFFFF;
+  if (ix >= 0x3FF00000) {
+    if ((static_cast<std::uint32_t>(ix - 0x3FF00000) | low_word(x)) == 0) {
+      return hx > 0 ? 0.0 : kPiAcos + 2.0 * kPio2Lo;
+    }
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  if (ix < 0x3FE00000) {
+    if (ix <= 0x3C600000) {
+      return kPio2Hi + kPio2Lo;
+    }
+    const double r = rat_pq(x * x);
+    return kPio2Hi - (x - (kPio2Lo - x * r));
+  }
+  if (hx < 0) {
+    const double z = (1.0 + x) * 0.5;
+    const double s = std::sqrt(z);
+    const double r = rat_pq(z);
+    const double w = r * s - kPio2Lo;
+    return kPiAcos - 2.0 * (s + w);
+  }
+  const double z = (1.0 - x) * 0.5;
+  const double s = std::sqrt(z);
+  const double df = set_low_word_zero(s);
+  const double c = (z - df * df) / (s + df);
+  const double r = rat_pq(z);
+  const double w = r * s + c;
+  return 2.0 * (df + w);
+}
+
+double js_pow(double x, double y) noexcept {
+  // V8's Math.pow: x * x for 2, the square root for 0.5 (+0 for −0, +∞ for −∞), NaN for NaN or ±1 to ±∞; else the C
+  // library's pow (glibc's, correctly rounded to within 0.52 ulp: the same bits as Node on 3,000,000 inputs; another C
+  // library can differ in the last bit: docs/gaps.md)
+  if (y == 2) {
+    return x * x;
+  }
+  if (y == 0.5) {
+    if (x == -std::numeric_limits<double>::infinity()) {
+      return std::numeric_limits<double>::infinity();
+    }
+    return x == 0 ? 0.0 : std::sqrt(x);
+  }
+  if (std::isnan(y) || (std::isinf(y) && (x == 1 || x == -1))) {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  return std::pow(x, y);
+}
+
 }  // namespace cc::base

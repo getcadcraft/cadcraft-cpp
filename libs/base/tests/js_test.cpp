@@ -203,3 +203,22 @@ TEST_CASE("Math.tan to the last bit, as V8 computes it (values from Node; 3,000,
   }
   CHECK(std::isnan(cc::base::js_tan(std::numeric_limits<double>::infinity())));
 }
+
+TEST_CASE("Math.asin, Math.acos and Math.pow to the last bit, as V8 computes them (values from Node)") {
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_asin(0.3)) == 0x3fd380159e14f6ffULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_asin(-0.99)) == 0xbff6de3c6f33d51dULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_asin(0.7)) == 0x3fe8d00e692afd95ULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_acos(0.3)) == 0x3ff441f5ecbeef59ULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_acos(-0.6)) == 0x4001b6e192ebbe44ULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_acos(0.98)) == 0x3fc9a49276037887ULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_pow(1.7000000000000000, 3.2999999999999998)) ==
+        0x40170b0a6f6eccfaULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_pow(78.385591506958008, 0.50000000000000000)) ==
+        0x4021b5064f9fff6eULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_pow(-98.394989967346191, 2.0000000000000000)) ==
+        0x40c2e8c97a7e13e0ULL);
+  CHECK(std::bit_cast<std::uint64_t>(cc::base::js_pow(0.82755844437181947, 0.66666666666666663)) ==
+        0x3fec34dcbc390a57ULL);
+  CHECK(std::isnan(cc::base::js_pow(1, std::numeric_limits<double>::infinity())));
+  CHECK(cc::base::js_pow(-0.0, 0.5) == 0);
+}

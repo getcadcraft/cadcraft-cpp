@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include "cc/base/value.hpp"
 #include "cc/i18n/i18n.hpp"
 
 namespace cc::civil {
@@ -37,6 +38,8 @@ struct ParsedPoints {
 
 [[nodiscard]] ParsedPoints parse_points(std::string_view text, std::string_view format, std::string_view prefer,
                                         const i18n::Catalog& words);
+/// parsePoints' result as the JS's object
+[[nodiscard]] base::Value points_value(const ParsedPoints& r);
 [[nodiscard]] std::vector<std::string> split_row(std::string_view s, std::string_view delim);
 [[nodiscard]] std::string group_key(std::string_view desc);
 struct GroupCount {

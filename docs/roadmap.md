@@ -1,6 +1,6 @@
 # Roadmap
 
-Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done; W4: M8.4 done; W4: M8.5 done; the rest of M8 renumbered.
+Last updated 2026-10-28 · Change: M7.2b done (IFC model.js); M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); W4: M8.2 done; W4: M8.3 done; W4: M8.4 done; W4: M8.5 done; the rest of M8 renumbered; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; M5.8i1, the LISP core (W1); M7.2 done (IFC schema tables); W4 (PartCraft) plan, M8.1 done; M7 plan (W3: cc-ifc + BimCraft), M7.1 done; W5 plan (CivilCraft first) and M9.1 (the TIN); M9.2 done (CivilCraft's engine and project).
 
 The C++ fork of CadCraft. The reference is the CadCraft 0.5 JavaScript build; **speed decides**, and **parity on the
 corpus is the gate** (AGENTS.md section 15). Every milestone ends with a short report: what works, parity, timings,
@@ -89,11 +89,10 @@ shapes/sections.js.
 | Step | Ends with | Parity gate |
 |---|---|---|
 | M9.1 | libs/appkit (lasso-core.js, JS sort), libs/civil: units.js, points.js, robust predicates, Delaunator, tin.js, alignment.js, profile.js; `civilcraft-cli script`; tools/parity/civil.mjs (call scripts) | **done 2026-10-21**: seeds 1–60 exact (units, points, TIN 49 800 calls; alignments, profiles 26 520 calls); 10k / 100k-point surfaces exact; 3–5× the JS |
-| M9.2 | corridor.js, grading.js, sections.js, pipes.js, superelev.js, featureline.js | call scripts (gen-core, gen-civil) |
-| M9.3 | project.js (the project model, undo), clip.js, point-edit.js, desckeys.js, parcels.js, traverse.js, staking.js, hydro.js, masshaul.js, solve-why.js, drive.js | call scripts, the project file |
-| M9.4 | files: landxml.js, xml.js, dxf.js (R12), dwg-write.js (CivilCraft's DWG), plot.js (PDF), scene.js / site3d.js | file bytes = JS |
-| M9.5 | GIS: crs.js (behind an interface without the EPSG catalog: M5.8h2), raster.js, basemap.js, maplayers.js, geojson / kml / shapefile / dbf / gpkg / geotiff | call scripts; no tile fetches in tests |
-| M9.6 | the CivilCraft window (plan, profile, sections, 3D through W2's m3d) | screenshots against 0.5 |
+| M9.2 | the rest of the engine: corridor.js, grading.js, superelev.js, sections.js, pipes.js, hydro.js, featureline.js, desckeys.js, parcels.js, traverse.js, staking.js (rows, CSV), masshaul.js, solve-why.js, clip.js, point-edit.js, drive.js, project.js (the project, undo, derived results, the project file) | **done 2026-10-27**: seeds 1–30, 21 695 + 360 calls in 1 100 scripts exact (gen-civil, every module and the project); all ported generators seeds 1–10: 31 919 calls exact |
+| M9.3 | files: landxml.js, xml.js, dxf.js (R12), dwg-write.js (CivilCraft's DWG), plot.js (PDF), pp-sheets / section-sheets / staking sheets, scene.js / site3d.js, glb / obj exports | file bytes = JS |
+| M9.4 | GIS: crs.js (behind an interface without the EPSG catalog: M5.8h2), raster.js, basemap.js, maplayers.js, geojson / kml / shapefile / dbf / gpkg / geotiff | call scripts; no tile fetches in tests |
+| M9.5 | the CivilCraft window (plan, profile, sections, 3D through W2's m3d) | screenshots against 0.5 |
 | M10.x / M11.x / M12.x | DetailCraft, MarkupCraft, TakeoffCraft, in that order of shared code | each app's documents and exports |
 
 ## Re-plan after M3 (measured 2026-10-16, quiet machine)

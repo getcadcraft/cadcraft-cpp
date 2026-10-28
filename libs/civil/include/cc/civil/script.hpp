@@ -21,9 +21,14 @@ namespace cc::civil {
 class Surface;
 class Alignment;
 class Profile;
+struct SuperPlan;
+struct Flows;
+class Project;
 
 /// An object a script keeps between calls.
-using ScriptObject = std::variant<std::shared_ptr<Surface>, std::shared_ptr<Alignment>, std::shared_ptr<Profile>>;
+using ScriptObject = std::variant<std::shared_ptr<Surface>, std::shared_ptr<Alignment>, std::shared_ptr<Profile>,
+                                  std::shared_ptr<SuperPlan>, std::shared_ptr<Flows>, std::shared_ptr<Project>,
+                                  std::shared_ptr<base::Value>>;
 
 struct ScriptCtx {
   const i18n::Catalog* words;  // never null
@@ -53,6 +58,20 @@ struct ScriptError {
 /// The op tables (one per area; script_*.cpp).
 void add_core_ops(std::map<std::string, ScriptOp, std::less<>>& m);
 void add_alignment_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_design_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_sections_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_drain_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_featureline_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_survey_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_codes_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_deeds_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_drive_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+void add_project_ops(std::map<std::string, ScriptOp, std::less<>>& m);
+
+/// The JSON views the harness compares (script_core.cpp, script_alignment.cpp)
+[[nodiscard]] base::Value surface_view(const Surface& s);
+[[nodiscard]] base::Value al_view_of(const Alignment& a);
+[[nodiscard]] base::Value prof_view_of(const Profile& p);
 
 // helpers the op tables share
 [[nodiscard]] base::Value arg(const base::Array& a, std::size_t i);         // undefined past the end
@@ -61,6 +80,8 @@ void add_alignment_ops(std::map<std::string, ScriptOp, std::less<>>& m);
 [[nodiscard]] base::Value field(const base::Value& o, std::string_view k);  // o[k] (undefined when not an object)
 [[nodiscard]] bool nullish(const base::Value& v);
 [[nodiscard]] const base::Array& arr(const base::Value& v);  // the array, or an empty one
+/// A temporary's array, moved out (a reference to it then lives as long as the reference: no dangling)
+[[nodiscard]] base::Array arr(base::Value&& v);
 /// The registered object `name` of type T, or null.
 template <class T>
 [[nodiscard]] std::shared_ptr<T> reg_get(const ScriptCtx& c, const std::string& name) {

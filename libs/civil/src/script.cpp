@@ -6,6 +6,11 @@
 #include <limits>
 
 #include "cc/base/js.hpp"
+#include "cc/civil/alignment.hpp"
+#include "cc/civil/design.hpp"
+#include "cc/civil/drain.hpp"
+#include "cc/civil/project.hpp"
+#include "cc/civil/tin.hpp"
 
 namespace cc::civil {
 namespace {
@@ -50,6 +55,15 @@ const std::map<std::string, ScriptOp, std::less<>>& ops() {
     std::map<std::string, ScriptOp, std::less<>> m;
     add_core_ops(m);
     add_alignment_ops(m);
+    add_design_ops(m);
+    add_sections_ops(m);
+    add_drain_ops(m);
+    add_featureline_ops(m);
+    add_survey_ops(m);
+    add_codes_ops(m);
+    add_deeds_ops(m);
+    add_project_ops(m);
+    add_drive_ops(m);
     return m;
   }();
   return kOps;
@@ -75,6 +89,9 @@ bool nullish(const Value& v) {
 const base::Array& arr(const Value& v) {
   static const base::Array kEmpty;
   return v.is_array() ? v.as_array() : kEmpty;
+}
+base::Array arr(Value&& v) {
+  return v.is_array() ? std::move(v).as_array() : base::Array{};
 }
 
 std::vector<std::string> script_ops() {

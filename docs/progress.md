@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver); M8.4 (the part document); M8.5 (vec.js, refgeom.js); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M9.2 (CivilCraft's engine and project).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -762,3 +762,21 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   header in libs/partcraft, and refgeom.js (reference planes, axes and points from what they reference, through the
   caller's resolvers: the mesh kernel's next, the parity driver's tables now). Parity gen-vec + gen-refgeom: 17 845 /
   17 845 calls, seeds 1–30, exact (zero tolerance).
+- M9.2 (2026-10-27): the rest of CivilCraft's engine and its project, each 0.5 module ported function by function on
+  the JS's JSON values (inputs are project files: read with Number() as the JS's arithmetic reads them): superelev.js,
+  grading.js (slope lines, pads daylighted with fans and concave bisectors, the graded surface rebuilt item by item,
+  grid volumes), corridor.js, sections.js (exact sections through the triangle grid, cut and fill, average end areas, the
+  CSV), pipes.js and hydro.js (network checks, automatic inverts, the rational method, Manning sizing, hydraulic and
+  energy grade lines), featureline.js, desckeys.js (keys as case-blind globs, line codes, figures), parcels.js and
+  traverse.js (their deed-call and traverse regular expressions matched by hand), staking.js (rows and CSV; the sheets
+  come with the plot port), masshaul.js, solve-why.js, clip.js, point-edit.js, drive.js (the sun by NOAA's equations),
+  and project.js (state, snapshots as JSON.stringify, one undo step per change, points and TINs outside the snapshots,
+  memoised derived results so the same surface object comes back, the project file read with every check of 0.5's
+  fromJSON: GIS layers, coordinate system shape, grid and picture payloads). libs/base gained V8's asin and acos (fdlibm,
+  bit for bit with Node on 2 000 000 inputs) and Math.pow's rules (x·x for 2, √x for 0.5, then glibc's pow: 3 000 000
+  inputs the same). Found on the way: the script helpers' `arr()` returned a reference into a temporary when given one
+  (a range-for over it is safe in C++23 with Clang but dangles with GCC 14): it now moves the temporary's array out.
+  Parity (tools/parity/civil.mjs, gen-civil: every module and the project, tolerance 0): seeds 1–30, 21 695 calls in
+  1 080 scripts, 0 differ; drive seeds 1–20, 360 calls; every ported generator at seeds 1–10: 31 919 calls in 900
+  scripts, 0 differ (130 scripts wait for the files, GIS and 3D ops). Goldens regenerated (seed 1, 56 scripts); fuzz
+  seeds from them; unit tests (grid volume between planes, deed calls and closure, the project's undo and file).

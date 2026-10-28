@@ -1,0 +1,1 @@
+{"calls":[{"op":"project.fromJSON","args":[{"format":"civilcraft-project","version":2}],"as":"Q"},{"op":"project.toJSON","self":"Q"},{"op":"project.eg","self":"Q"}]}

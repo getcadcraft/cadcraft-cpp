@@ -83,32 +83,6 @@ std::vector<SurveyPoint> to_points(const Value& v) {
   }
   return out;
 }
-Value point_value(const SurveyPoint& p) {
-  return make_object({{"n", p.n}, {"x", p.x}, {"y", p.y}, {"z", p.z ? Value(*p.z) : Value(nullptr)}, {"d", p.d}});
-}
-
-Value parsed_value(const ParsedPoints& r) {
-  Array pts;
-  for (const SurveyPoint& p : r.points) {
-    pts.push_back(point_value(p));
-  }
-  Array bad;
-  for (const BadRow& b : r.bad) {
-    bad.push_back(make_object({{"line", b.line}, {"text", b.text}, {"why", b.why}}));
-  }
-  Value o = make_object({{"points", std::move(pts)},
-                         {"format", r.format ? Value(*r.format) : Value(nullptr)},
-                         {"formatFrom", r.format_from},
-                         {"delimiter", r.delimiter ? Value(*r.delimiter) : Value(nullptr)},
-                         {"header", r.header ? strs(*r.header) : Value(nullptr)},
-                         {"bad", std::move(bad)},
-                         {"badCount", r.bad_count},
-                         {"duplicates", r.duplicates}});
-  if (r.latlon) {
-    o.set("latlon", true);
-  }
-  return o;
-}
 
 // ---- tin
 Value report_value(const TinReport& r, bool faces) {
@@ -125,7 +99,9 @@ Value report_value(const TinReport& r, bool faces) {
   }
   return o;
 }
-Value surf_view(const Surface& s) {
+}  // namespace
+
+Value surface_view(const Surface& s) {
   Array ce;
   for (const auto& [a, b] : s.constrained_edges) {
     ce.emplace_back(Array{Value(a), Value(b)});
@@ -139,9 +115,11 @@ Value surf_view(const Surface& s) {
                       {"nT", static_cast<double>(s.triangle_count())},
                       {"constrainedEdges", std::move(ce)}});
 }
+namespace {
+
 Value built_value(const Built& b, bool faces) {
   return make_object(
-      {{"surface", b.surface ? surf_view(*b.surface) : Value(nullptr)}, {"report", report_value(b.report, faces)}});
+      {{"surface", b.surface ? surface_view(*b.surface) : Value(nullptr)}, {"report", report_value(b.report, faces)}});
 }
 const Surface& self_surface(ScriptCtx& c) {
   if (c.self == nullptr || !std::holds_alternative<std::shared_ptr<Surface>>(*c.self)) {
@@ -162,22 +140,7 @@ Value stats_value(const SurfaceStats& s) {
 }
 
 BuildInput to_build(const Value& a) {
-  BuildInput in;
-  for (const Value& p : arr(field(a, "points"))) {
-    TinPoint t{num(field(p, "x")), num(field(p, "y")), std::nullopt};
-    const Value z = field(p, "z");
-    if (z.is_number() && std::isfinite(z.as_number())) {
-      t.z = z.as_number();
-    }
-    in.points.push_back(t);
-  }
-  for (const Value& b : arr(field(a, "breaklines"))) {
-    Breakline bl;
-    for (const Value& p : arr(field(b, "pts"))) {
-      bl.pts.push_back({num(field(p, "x")), num(field(p, "y")), num(field(p, "z"))});
-    }
-    in.breaklines.push_back(std::move(bl));
-  }
+  BuildInput in = build_input_from(field(a, "points"), field(a, "breaklines"));
   const Value bnd = field(a, "boundary");
   if (bnd.truthy()) {
     in.boundary = to_p2(bnd);
@@ -230,7 +193,7 @@ void add_core_ops(std::map<std::string, ScriptOp, std::less<>>& m) {
     const Value o = arg(a, 1);
     const Value f = field(o, "format");
     const Value p = field(o, "prefer");
-    return parsed_value(parse_points(nullish(t) ? std::string() : str(t), f.is_undefined() ? "auto" : str(f),
+    return points_value(parse_points(nullish(t) ? std::string() : str(t), f.is_undefined() ? "auto" : str(f),
                                      p.is_undefined() ? "PNEZD" : str(p), *c.words));
   };
   m["points.groupKey"] = [](const Array& a, ScriptCtx&) -> Value {
@@ -328,7 +291,7 @@ void add_core_ops(std::map<std::string, ScriptOp, std::less<>>& m) {
   };
 
   // ---- Surface methods
-  m["surface.view"] = [](const Array&, ScriptCtx& c) -> Value { return surf_view(self_surface(c)); };
+  m["surface.view"] = [](const Array&, ScriptCtx& c) -> Value { return surface_view(self_surface(c)); };
   m["surface.stats"] = [](const Array&, ScriptCtx& c) -> Value { return stats_value(self_surface(c).stats()); };
   m["surface.elevationAt"] = [](const Array& a, ScriptCtx& c) -> Value {
     const auto z = self_surface(c).elevation_at(num(arg(a, 0)), num(arg(a, 1)), opt_num(arg(a, 2)).value_or(1e-9));
