@@ -1,6 +1,6 @@
 # Session log
 
-Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules).
+Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); M14.2 (cc-skp: small ZIP entries that claim a big size); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP core); M7.2 (IFC schema tables); M8.1 (lib/shapes, the PartCraft parity harness); M7.1 (cc-ifc STEP reader); M9.1 (CivilCraft's TIN); MSVC.1 (IFC STEP parser on an explicit stack); M7.2b (IFC model.js); M8.2 (PartCraft's core modules); M8.3 (the sketch and its solver).
 
 ## 2026-10-16 (session fork-cpp)
 
@@ -741,3 +741,12 @@ Last updated 2026-10-28 · Change: M7.1 (cc-ifc STEP reader); M5.8i1 (the LISP c
   not copied), 23 skipped (second readers not installed). Fuzz part_script now reaches every op: the first run found a NaN degree cast
   to int (UBSan; regression input fuzz/corpus/part_script/regress-81ba692b4ccf.json and libs/partcraft script_test),
   then 10.5 minutes × 4 workers, 11.4 M inputs, clean.
+- M8.3 (2026-10-27): the sketch in libs/partcraft: sketch.js (building, relations and dimensions with their signatures,
+  measuring, removal, corner fillets, bounds, profiles, the file reader; the sketch kept as the JS-shaped value it saves
+  as, V8's TypeError words where 0.5 trips on odd input) and solver.js (equations over the variable vector, the damped
+  least-norm Newton with its line search, the Gram–Schmidt rank analysis), sketch.* ops; params-part.js and the pp.*
+  ops are in, waiting for the part document (M8.4) to be checked. libs/cad params gained set_link, describe_links,
+  apply_params' overrides and values, and Drive::has_choices (additive). Parity gen-sketch: 68 479 / 68 479 calls at
+  1e-9, seeds 1–30; exact all but 4 (corner fillets: Math.acos / Math.tan, the C library's; gaps #12). Fuzz found a
+  constraint added to a sketch without a constraint list (null dereference; regression regress-901aa97d2779), then
+  10.5 minutes × 4 workers, 6.0 M inputs, clean.

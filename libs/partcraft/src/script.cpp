@@ -14,6 +14,8 @@ ops::Table table(const i18n::Catalog& words) {
   ops::add_shapes(x);
   ops::add_params(x, words);
   ops::add_modules(x, words);
+  ops::add_sketch(x, words);
+  ops::add_pp(x, words);
   return x;
 }
 

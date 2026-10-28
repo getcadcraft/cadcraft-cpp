@@ -81,15 +81,18 @@ struct Adapter {
 
 struct Applied {
   bool ok = false;
+  std::vector<std::pair<std::string, double>> values;       // every variable's value (evaluateVars' Map)
   std::vector<std::pair<std::string, std::string>> errors;  // where, message
   std::vector<std::string> changed;
 };
 /// applyParams(doc, p, adapter): every variable, then every link, written through the adapter
-[[nodiscard]] Applied apply_params(const Params& p, const Adapter& a, const i18n::Catalog& words);
+[[nodiscard]] Applied apply_params(const Params& p, const Adapter& a, const i18n::Catalog& words,
+                                   const std::vector<std::pair<std::string, double>>* overrides = nullptr);
 
 struct Drive {
   bool ok = false;
-  bool direct = false;  // not linked: the caller writes the value
+  bool direct = false;       // not linked: the caller writes the value
+  bool has_choices = false;  // a refusal of solveBack's, which names the driving variables to pick from
   std::string error;
   std::vector<std::string> choices;
   std::string var, link, from_text, to_text;
@@ -119,6 +122,24 @@ struct Uses {
 /// removeVar(p, name, { inline })
 [[nodiscard]] Edit remove_var(Params& p, std::string_view name, bool inline_value, const i18n::Catalog& words);
 bool remove_link(Params& p, std::string_view key);
+struct Linked {
+  bool ok = false;
+  double value = 0;
+  std::string error;
+};
+/// setLink(p, adapter, doc, key, expr): link (or relink) a document value to an expression, checked against the
+/// current values → {ok, value} | {ok: false, error}
+[[nodiscard]] Linked set_link(Params& p, const Adapter& a, std::string_view key, std::string_view expr,
+                              const i18n::Catalog& words);
+struct LinkInfo {
+  std::string target, expr, label;
+  std::optional<std::string> kind;  // the target's kind (none when the target is gone)
+  std::optional<double> value;      // the target's current value
+  std::optional<double> result;     // what the expression gives now
+  std::optional<std::string> error;
+};
+/// describeLinks(doc, p, adapter): each link's value, result and whether it resolves
+[[nodiscard]] std::vector<LinkInfo> describe_links(const Params& p, const Adapter& a, const i18n::Catalog& words);
 /// drivingBehind(p, src): the driving variables an expression ends up depending on (through driven ones)
 [[nodiscard]] std::vector<std::string> driving_behind(const Params& p, std::string_view src,
                                                       const i18n::Catalog& words);

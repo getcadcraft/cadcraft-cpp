@@ -288,7 +288,7 @@ void add_params(Table& t, const i18n::Catalog& words) {
     Value res;
     if (!r.ok) {
       res = base::make_object({{"ok", false}, {"error", r.error}});
-      if (found) {  // solveBack's refusals name the driving variables to pick from
+      if (r.has_choices) {  // solveBack's refusals name the driving variables to pick from
         res.append("choices", strings(r.choices));
       }
     } else if (driving) {

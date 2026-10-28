@@ -361,9 +361,11 @@ std::optional<std::string> value_problem(const Target& t, double v, const i18n::
   return std::nullopt;
 }
 
-Applied apply_params(const Params& p, const Adapter& a, const i18n::Catalog& words) {
-  const Evaluated ev = evaluate_vars(p, nullptr, words);
+Applied apply_params(const Params& p, const Adapter& a, const i18n::Catalog& words,
+                     const std::vector<std::pair<std::string, double>>* overrides) {
+  const Evaluated ev = evaluate_vars(p, overrides, words);
   Applied out;
+  out.values = ev.values;
   out.errors = ev.errors;
   const auto targets = a.targets ? a.targets() : std::vector<std::pair<std::string, Target>>{};
   std::set<std::string> known;
@@ -533,6 +535,7 @@ std::optional<double> solve_chain(const std::function<double(double)>& chain, do
 Drive solve_back(const Params& p, std::string_view src, double value, const std::optional<std::string>& prefer,
                  const std::string& label, const i18n::Catalog& words) {
   Drive out;
+  out.has_choices = true;
   const std::vector<std::string> behind = driving_behind(p, src, words);
   if (behind.empty()) {
     out.error = words.t("param.fixed_expression_change_equation", {{"label", label}, {"src", std::string(src)}});
@@ -569,6 +572,7 @@ Drive solve_back(const Params& p, std::string_view src, double value, const std:
     out.choices = behind;
     return out;
   }
+  out.has_choices = false;
   out.ok = true;
   out.var = name;
   out.from = from;
@@ -891,6 +895,85 @@ std::optional<std::string> apply_overrides(Params& p, const std::vector<std::pai
     w->expr = expr::format_number(v);
   }
   return std::nullopt;
+}
+
+namespace {
+
+/// params.js's own compute(src, values): only the variables that have values may be named.
+expr::Result compute_known(std::string_view src, const Evaluated& ev, const i18n::Catalog& words) {
+  std::set<std::string> names;
+  for (const auto& [k, v] : ev.values) {
+    names.insert(k);
+  }
+  const expr::Parsed r = expr::parse(src, names, words);
+  if (!r.ok) {
+    return {.ok = false, .value = 0, .uses = {}, .error = r.error, .pos = r.pos};
+  }
+  return expr::evaluate(r.ast, ev.value_map(), words);
+}
+
+}  // namespace
+
+Linked set_link(Params& p, const Adapter& a, std::string_view key, std::string_view ex, const i18n::Catalog& words) {
+  Linked out;
+  const auto targets = a.targets ? a.targets() : std::vector<std::pair<std::string, Target>>{};
+  const auto ti = std::ranges::find_if(targets, [key](const auto& t) { return t.first == key; });
+  if (ti == targets.end()) {
+    out.error = words.t("param.value_cannot_driven_equation");
+    return out;
+  }
+  const Evaluated ev = evaluate_vars(p, nullptr, words);
+  const expr::Result r = compute_known(ex, ev, words);
+  if (!r.ok) {
+    out.error = r.error;
+    return out;
+  }
+  const Target& t = ti->second;
+  if (const auto vp = value_problem(t, t.integer || t.kind == "count" ? base::js_round(r.value) : r.value, words)) {
+    out.error = *vp;
+    return out;
+  }
+  if (Link* l = link_for(p, key)) {
+    l->expr = std::string(ex);
+  } else {
+    if (p.links.size() >= Limits::links) {
+      out.error = words.t("param.too_many_equations");
+      return out;
+    }
+    p.links.push_back({.target = std::string(key), .expr = std::string(ex)});
+  }
+  out.ok = true;
+  out.value = r.value;
+  return out;
+}
+
+std::vector<LinkInfo> describe_links(const Params& p, const Adapter& a, const i18n::Catalog& words) {
+  const Evaluated ev = evaluate_vars(p, nullptr, words);
+  const auto targets = a.targets ? a.targets() : std::vector<std::pair<std::string, Target>>{};
+  std::vector<LinkInfo> out;
+  for (const Link& l : p.links) {
+    const auto ti = std::ranges::find_if(targets, [&l](const auto& t) { return t.first == l.target; });
+    const expr::Result r = compute_known(l.expr, ev, words);
+    LinkInfo i;
+    i.target = l.target;
+    i.expr = l.expr;
+    if (ti != targets.end()) {
+      i.label = ti->second.label;
+      i.kind = ti->second.kind;
+      i.value = ti->second.get();
+      if (!r.ok) {
+        i.error = r.error;
+      }
+    } else {
+      i.label = l.target;
+      i.error = words.t("param.equation_drives_something_gone");
+    }
+    if (r.ok) {
+      i.result = r.value;
+    }
+    out.push_back(std::move(i));
+  }
+  return out;
 }
 
 }  // namespace cc::cad::params
